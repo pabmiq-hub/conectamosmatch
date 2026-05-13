@@ -53,13 +53,13 @@
 }
 
 :root {
-  /* Light theme inspired by conectamos.club */
-  --background: oklch(1 0 0);                 /* white */
-  --foreground: oklch(0.13 0.02 280);         /* near-black with cool tone */
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.13 0.02 280);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.13 0.02 280);
+  /* Dark theme — keeps the violet brand gradient from conectamos.club */
+  --background: oklch(0.08 0.015 280);        /* near-black #0A0A0A */
+  --foreground: oklch(0.98 0 0);
+  --card: oklch(0.13 0.018 280);              /* #111 */
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.13 0.018 280);
+  --popover-foreground: oklch(0.98 0 0);
 
   /* Primary = violet (#6B00FF / blue-violet) */
   --primary: oklch(0.48 0.30 286);
@@ -70,35 +70,35 @@
   --brand-to: oklch(0.55 0.30 305);
   --gradient-brand: linear-gradient(135deg, var(--brand-from), var(--brand-to));
   --shadow-brand: 0 18px 40px -12px color-mix(in oklab, var(--brand-from) 45%, transparent);
-  --shadow-soft: 0 1px 2px rgba(15, 10, 40, 0.04), 0 8px 24px -8px rgba(15, 10, 40, 0.08);
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -8px rgba(0, 0, 0, 0.6);
 
-  --secondary: oklch(0.96 0.01 280);
-  --secondary-foreground: oklch(0.20 0.02 280);
+  --secondary: oklch(0.18 0.02 280);
+  --secondary-foreground: oklch(0.98 0 0);
 
-  --muted: oklch(0.97 0.005 280);
-  --muted-foreground: oklch(0.45 0.02 280);
+  --muted: oklch(0.16 0.018 280);
+  --muted-foreground: oklch(0.68 0.02 280);
 
-  --accent: oklch(0.95 0.04 295);
-  --accent-foreground: oklch(0.20 0.10 290);
+  --accent: oklch(0.22 0.08 295);
+  --accent-foreground: oklch(0.98 0 0);
 
   --destructive: oklch(0.62 0.22 25);
   --destructive-foreground: oklch(0.98 0 0);
 
-  --success: oklch(0.65 0.18 155);
+  --success: oklch(0.70 0.18 155);
   --success-foreground: oklch(0.05 0 0);
 
-  --border: oklch(0.92 0.01 280);
-  --input: oklch(0.94 0.01 280);
-  --ring: oklch(0.48 0.30 286);
+  --border: oklch(0.22 0.015 280);
+  --input: oklch(0.20 0.015 280);
+  --ring: oklch(0.55 0.25 290);
 
-  --sidebar: oklch(0.99 0.005 280);
-  --sidebar-foreground: oklch(0.20 0.02 280);
-  --sidebar-primary: oklch(0.48 0.30 286);
+  --sidebar: oklch(0.10 0.015 280);
+  --sidebar-foreground: oklch(0.92 0 0);
+  --sidebar-primary: oklch(0.55 0.25 290);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.96 0.02 290);
-  --sidebar-accent-foreground: oklch(0.20 0.10 290);
-  --sidebar-border: oklch(0.92 0.01 280);
-  --sidebar-ring: oklch(0.48 0.30 286);
+  --sidebar-accent: oklch(0.22 0.08 295);
+  --sidebar-accent-foreground: oklch(0.98 0 0);
+  --sidebar-border: oklch(0.22 0.015 280);
+  --sidebar-ring: oklch(0.55 0.25 290);
 
   /* Sponsor level palette */
   --gold: oklch(0.83 0.16 87);
