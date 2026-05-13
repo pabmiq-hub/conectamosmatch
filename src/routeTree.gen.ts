@@ -11,7 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegistroRouteImport } from './routes/registro'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedEmpresaVerSponsorsRouteImport } from './routes/_authenticated/empresa/ver-sponsors'
+import { Route as AuthenticatedEmpresaVerEmpresasRouteImport } from './routes/_authenticated/empresa/ver-empresas'
+import { Route as AuthenticatedEmpresaDashboardRouteImport } from './routes/_authenticated/empresa/dashboard'
 
 const RegistroRoute = RegistroRouteImport.update({
   id: '/registro',
@@ -23,38 +27,91 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedEmpresaVerSponsorsRoute =
+  AuthenticatedEmpresaVerSponsorsRouteImport.update({
+    id: '/empresa/ver-sponsors',
+    path: '/empresa/ver-sponsors',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedEmpresaVerEmpresasRoute =
+  AuthenticatedEmpresaVerEmpresasRouteImport.update({
+    id: '/empresa/ver-empresas',
+    path: '/empresa/ver-empresas',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedEmpresaDashboardRoute =
+  AuthenticatedEmpresaDashboardRouteImport.update({
+    id: '/empresa/dashboard',
+    path: '/empresa/dashboard',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/registro': typeof RegistroRoute
+  '/empresa/dashboard': typeof AuthenticatedEmpresaDashboardRoute
+  '/empresa/ver-empresas': typeof AuthenticatedEmpresaVerEmpresasRoute
+  '/empresa/ver-sponsors': typeof AuthenticatedEmpresaVerSponsorsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/registro': typeof RegistroRoute
+  '/empresa/dashboard': typeof AuthenticatedEmpresaDashboardRoute
+  '/empresa/ver-empresas': typeof AuthenticatedEmpresaVerEmpresasRoute
+  '/empresa/ver-sponsors': typeof AuthenticatedEmpresaVerSponsorsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/registro': typeof RegistroRoute
+  '/_authenticated/empresa/dashboard': typeof AuthenticatedEmpresaDashboardRoute
+  '/_authenticated/empresa/ver-empresas': typeof AuthenticatedEmpresaVerEmpresasRoute
+  '/_authenticated/empresa/ver-sponsors': typeof AuthenticatedEmpresaVerSponsorsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/registro'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/registro'
+    | '/empresa/dashboard'
+    | '/empresa/ver-empresas'
+    | '/empresa/ver-sponsors'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/registro'
-  id: '__root__' | '/' | '/login' | '/registro'
+  to:
+    | '/'
+    | '/login'
+    | '/registro'
+    | '/empresa/dashboard'
+    | '/empresa/ver-empresas'
+    | '/empresa/ver-sponsors'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/login'
+    | '/registro'
+    | '/_authenticated/empresa/dashboard'
+    | '/_authenticated/empresa/ver-empresas'
+    | '/_authenticated/empresa/ver-sponsors'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
   RegistroRoute: typeof RegistroRoute
 }
@@ -75,6 +132,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -82,14 +146,62 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/empresa/ver-sponsors': {
+      id: '/_authenticated/empresa/ver-sponsors'
+      path: '/empresa/ver-sponsors'
+      fullPath: '/empresa/ver-sponsors'
+      preLoaderRoute: typeof AuthenticatedEmpresaVerSponsorsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/empresa/ver-empresas': {
+      id: '/_authenticated/empresa/ver-empresas'
+      path: '/empresa/ver-empresas'
+      fullPath: '/empresa/ver-empresas'
+      preLoaderRoute: typeof AuthenticatedEmpresaVerEmpresasRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/empresa/dashboard': {
+      id: '/_authenticated/empresa/dashboard'
+      path: '/empresa/dashboard'
+      fullPath: '/empresa/dashboard'
+      preLoaderRoute: typeof AuthenticatedEmpresaDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
+interface AuthenticatedRouteChildren {
+  AuthenticatedEmpresaDashboardRoute: typeof AuthenticatedEmpresaDashboardRoute
+  AuthenticatedEmpresaVerEmpresasRoute: typeof AuthenticatedEmpresaVerEmpresasRoute
+  AuthenticatedEmpresaVerSponsorsRoute: typeof AuthenticatedEmpresaVerSponsorsRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedEmpresaDashboardRoute: AuthenticatedEmpresaDashboardRoute,
+  AuthenticatedEmpresaVerEmpresasRoute: AuthenticatedEmpresaVerEmpresasRoute,
+  AuthenticatedEmpresaVerSponsorsRoute: AuthenticatedEmpresaVerSponsorsRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
   RegistroRoute: RegistroRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
