@@ -1,11 +1,32 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
+import { Megaphone } from "lucide-react";
+
 export const Route = createFileRoute("/_authenticated/empresa/tablon")({
-  component: () => (
-    <div className="space-y-4">
-      <h1 className="font-display text-2xl font-bold text-uppercase-wide">Tablón</h1>
-      <div className="rounded-xl border border-border bg-card p-12 text-center">
-        <p className="text-sm text-muted-foreground">Sección en construcción — datos en vivo conectados a Lovable Cloud.</p>
-      </div>
-    </div>
-  ),
+  component: TablonEmpresa,
 });
+
+function TablonEmpresa() {
+  const [posts, setPosts] = useState<any[]>([]);
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("bulletin_posts").select("*").order("created_at", { ascending: false });
+      setPosts(data ?? []);
+    })();
+  }, []);
+  return (
+    <div className="space-y-6 max-w-3xl">
+      <PageHeader title="Tablón de anuncios" subtitle="Avisos del organizador del evento" />
+      {posts.length === 0 ? <EmptyState icon={Megaphone} title="Sin anuncios" /> : (
+        <div className="space-y-3">{posts.map((p) => (
+          <div key={p.id} className="rounded-xl border border-border bg-card p-4">
+            <div className="text-sm">{p.content}</div>
+            <div className="mt-2 text-[10px] text-uppercase-wide text-muted-foreground">{new Date(p.created_at).toLocaleString("es-ES")}</div>
+          </div>
+        ))}</div>
+      )}
+    </div>
+  );
+}

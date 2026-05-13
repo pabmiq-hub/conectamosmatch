@@ -1,11 +1,40 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
+import { PartnerCard } from "@/components/dashboard/PartnerCard";
+import { ActionButton, Eye, MessageSquare } from "@/components/dashboard/ActionButtons";
+import { Heart } from "lucide-react";
+
 export const Route = createFileRoute("/_authenticated/empresa/mis-matches")({
-  component: () => (
-    <div className="space-y-4">
-      <h1 className="font-display text-2xl font-bold text-uppercase-wide">💛 Tus matches</h1>
-      <div className="rounded-xl border border-border bg-card p-12 text-center">
-        <p className="text-sm text-muted-foreground">Sección en construcción — datos en vivo conectados a Lovable Cloud.</p>
-      </div>
-    </div>
-  ),
+  component: MisMatchesEmpresa,
 });
+
+function MisMatchesEmpresa() {
+  const [items, setItems] = useState<any[]>([]);
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: matches } = await supabase.from("matches").select("*").eq("empresa_user_id", user.id).eq("status", "mutual");
+      const ids = (matches ?? []).map((m: any) => m.sponsor_user_id).filter(Boolean);
+      if (!ids.length) { setItems([]); return; }
+      const { data: sps } = await supabase.from("sponsor_profiles").select("user_id, company_name, description, logo_url, sector, sponsorship_level").in("user_id", ids);
+      setItems(sps ?? []);
+    })();
+  }, []);
+
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Mis matches" subtitle="Sponsors con los que has hecho match mutuo" />
+      {items.length === 0 ? <EmptyState icon={Heart} title="Aún no tienes matches" hint="Da like a sponsors desde 'Ver Sponsors' para empezar" /> : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {items.map((s) => (
+            <PartnerCard key={s.user_id} name={s.company_name} description={s.description} logoUrl={s.logo_url} sector={s.sector} level={s.sponsorship_level}
+              actions={<><ActionButton icon={Eye} label="Ver" /><ActionButton icon={MessageSquare} label="Msg" variant="primary" /></>} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
