@@ -53,13 +53,13 @@
 }
 
 :root {
-  /* Light theme inspired by conectamos.club */
-  --background: oklch(1 0 0);                 /* white */
-  --foreground: oklch(0.13 0.02 280);         /* near-black with cool tone */
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.13 0.02 280);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.13 0.02 280);
+  /* Dark theme — keeps the violet brand gradient from conectamos.club */
+  --background: oklch(0.08 0.015 280);        /* near-black #0A0A0A */
+  --foreground: oklch(0.98 0 0);
+  --card: oklch(0.13 0.018 280);              /* #111 */
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.13 0.018 280);
+  --popover-foreground: oklch(0.98 0 0);
 
   /* Primary = violet (#6B00FF / blue-violet) */
   --primary: oklch(0.48 0.30 286);
