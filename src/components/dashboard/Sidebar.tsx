@@ -34,8 +34,6 @@ const navByRole: Record<AppRole, NavItem[]> = {
     { to: "/sponsor/ver-empresas", label: "Ver Empresas", icon: Search },
     { to: "/sponsor/mis-matches", label: "Mis Matches", icon: Heart },
     { to: "/sponsor/reuniones-1to1", label: "Reuniones 1to1", icon: ClipboardList },
-    { to: "/sponsor/mis-codigos", label: "Mis Códigos", icon: Ticket },
-    { to: "/sponsor/mis-invitados", label: "Mis Invitados", icon: UserCheck },
     { to: "/sponsor/mensajes", label: "Mensajes", icon: MessageSquare },
     { to: "/sponsor/tablon", label: "Tablón", icon: Megaphone },
     { to: "/sponsor/agenda", label: "Agenda", icon: Calendar },
