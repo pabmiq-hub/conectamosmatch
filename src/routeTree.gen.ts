@@ -37,6 +37,8 @@ import { Route as AuthenticatedAdminReunionesRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminMatchesRouteImport } from './routes/_authenticated/admin/matches'
 import { Route as AuthenticatedAdminEventosRouteImport } from './routes/_authenticated/admin/eventos'
 import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin/dashboard'
+import { Route as AuthenticatedAdminEventosIdRegistrosRouteImport } from './routes/_authenticated/admin/eventos.$id.registros'
+import { Route as AuthenticatedAdminEventosIdAgendaRouteImport } from './routes/_authenticated/admin/eventos.$id.agenda'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -200,13 +202,25 @@ const AuthenticatedAdminDashboardRoute =
     path: '/admin/dashboard',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAdminEventosIdRegistrosRoute =
+  AuthenticatedAdminEventosIdRegistrosRouteImport.update({
+    id: '/$id/registros',
+    path: '/$id/registros',
+    getParentRoute: () => AuthenticatedAdminEventosRoute,
+  } as any)
+const AuthenticatedAdminEventosIdAgendaRoute =
+  AuthenticatedAdminEventosIdAgendaRouteImport.update({
+    id: '/$id/agenda',
+    path: '/$id/agenda',
+    getParentRoute: () => AuthenticatedAdminEventosRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
-  '/admin/eventos': typeof AuthenticatedAdminEventosRoute
+  '/admin/eventos': typeof AuthenticatedAdminEventosRouteWithChildren
   '/admin/matches': typeof AuthenticatedAdminMatchesRoute
   '/admin/reuniones': typeof AuthenticatedAdminReunionesRoute
   '/admin/tablon': typeof AuthenticatedAdminTablonRoute
@@ -229,13 +243,15 @@ export interface FileRoutesByFullPath {
   '/sponsor/tablon': typeof AuthenticatedSponsorTablonRoute
   '/sponsor/ver-empresas': typeof AuthenticatedSponsorVerEmpresasRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/admin/eventos/$id/agenda': typeof AuthenticatedAdminEventosIdAgendaRoute
+  '/admin/eventos/$id/registros': typeof AuthenticatedAdminEventosIdRegistrosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
-  '/admin/eventos': typeof AuthenticatedAdminEventosRoute
+  '/admin/eventos': typeof AuthenticatedAdminEventosRouteWithChildren
   '/admin/matches': typeof AuthenticatedAdminMatchesRoute
   '/admin/reuniones': typeof AuthenticatedAdminReunionesRoute
   '/admin/tablon': typeof AuthenticatedAdminTablonRoute
@@ -258,6 +274,8 @@ export interface FileRoutesByTo {
   '/sponsor/tablon': typeof AuthenticatedSponsorTablonRoute
   '/sponsor/ver-empresas': typeof AuthenticatedSponsorVerEmpresasRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
+  '/admin/eventos/$id/agenda': typeof AuthenticatedAdminEventosIdAgendaRoute
+  '/admin/eventos/$id/registros': typeof AuthenticatedAdminEventosIdRegistrosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -266,7 +284,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/admin/login': typeof AdminLoginRoute
   '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
-  '/_authenticated/admin/eventos': typeof AuthenticatedAdminEventosRoute
+  '/_authenticated/admin/eventos': typeof AuthenticatedAdminEventosRouteWithChildren
   '/_authenticated/admin/matches': typeof AuthenticatedAdminMatchesRoute
   '/_authenticated/admin/reuniones': typeof AuthenticatedAdminReunionesRoute
   '/_authenticated/admin/tablon': typeof AuthenticatedAdminTablonRoute
@@ -289,6 +307,8 @@ export interface FileRoutesById {
   '/_authenticated/sponsor/tablon': typeof AuthenticatedSponsorTablonRoute
   '/_authenticated/sponsor/ver-empresas': typeof AuthenticatedSponsorVerEmpresasRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/admin/eventos/$id/agenda': typeof AuthenticatedAdminEventosIdAgendaRoute
+  '/_authenticated/admin/eventos/$id/registros': typeof AuthenticatedAdminEventosIdRegistrosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -320,6 +340,8 @@ export interface FileRouteTypes {
     | '/sponsor/tablon'
     | '/sponsor/ver-empresas'
     | '/admin/'
+    | '/admin/eventos/$id/agenda'
+    | '/admin/eventos/$id/registros'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -349,6 +371,8 @@ export interface FileRouteTypes {
     | '/sponsor/tablon'
     | '/sponsor/ver-empresas'
     | '/admin'
+    | '/admin/eventos/$id/agenda'
+    | '/admin/eventos/$id/registros'
   id:
     | '__root__'
     | '/'
@@ -379,6 +403,8 @@ export interface FileRouteTypes {
     | '/_authenticated/sponsor/tablon'
     | '/_authenticated/sponsor/ver-empresas'
     | '/_authenticated/admin/'
+    | '/_authenticated/admin/eventos/$id/agenda'
+    | '/_authenticated/admin/eventos/$id/registros'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -586,12 +612,44 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/admin/eventos/$id/registros': {
+      id: '/_authenticated/admin/eventos/$id/registros'
+      path: '/$id/registros'
+      fullPath: '/admin/eventos/$id/registros'
+      preLoaderRoute: typeof AuthenticatedAdminEventosIdRegistrosRouteImport
+      parentRoute: typeof AuthenticatedAdminEventosRoute
+    }
+    '/_authenticated/admin/eventos/$id/agenda': {
+      id: '/_authenticated/admin/eventos/$id/agenda'
+      path: '/$id/agenda'
+      fullPath: '/admin/eventos/$id/agenda'
+      preLoaderRoute: typeof AuthenticatedAdminEventosIdAgendaRouteImport
+      parentRoute: typeof AuthenticatedAdminEventosRoute
+    }
   }
 }
 
+interface AuthenticatedAdminEventosRouteChildren {
+  AuthenticatedAdminEventosIdAgendaRoute: typeof AuthenticatedAdminEventosIdAgendaRoute
+  AuthenticatedAdminEventosIdRegistrosRoute: typeof AuthenticatedAdminEventosIdRegistrosRoute
+}
+
+const AuthenticatedAdminEventosRouteChildren: AuthenticatedAdminEventosRouteChildren =
+  {
+    AuthenticatedAdminEventosIdAgendaRoute:
+      AuthenticatedAdminEventosIdAgendaRoute,
+    AuthenticatedAdminEventosIdRegistrosRoute:
+      AuthenticatedAdminEventosIdRegistrosRoute,
+  }
+
+const AuthenticatedAdminEventosRouteWithChildren =
+  AuthenticatedAdminEventosRoute._addFileChildren(
+    AuthenticatedAdminEventosRouteChildren,
+  )
+
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
-  AuthenticatedAdminEventosRoute: typeof AuthenticatedAdminEventosRoute
+  AuthenticatedAdminEventosRoute: typeof AuthenticatedAdminEventosRouteWithChildren
   AuthenticatedAdminMatchesRoute: typeof AuthenticatedAdminMatchesRoute
   AuthenticatedAdminReunionesRoute: typeof AuthenticatedAdminReunionesRoute
   AuthenticatedAdminTablonRoute: typeof AuthenticatedAdminTablonRoute
@@ -618,7 +676,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,
-  AuthenticatedAdminEventosRoute: AuthenticatedAdminEventosRoute,
+  AuthenticatedAdminEventosRoute: AuthenticatedAdminEventosRouteWithChildren,
   AuthenticatedAdminMatchesRoute: AuthenticatedAdminMatchesRoute,
   AuthenticatedAdminReunionesRoute: AuthenticatedAdminReunionesRoute,
   AuthenticatedAdminTablonRoute: AuthenticatedAdminTablonRoute,

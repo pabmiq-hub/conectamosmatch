@@ -1,64 +1,44 @@
-## Plan: Registro y gestión de usuarios
+## Estado actual
 
-Basado en tus respuestas, configuro el sistema así:
+**Hecho:** esquema BD (events con campos de reuniones, bulletin scope, función `assign_meeting_slots`, trigger `check_and_create_match` con auto-meeting, eliminación de `invitation_codes`), server functions de usuarios, modal de alta de usuarios, limpieza de rutas/sidebar de códigos.
 
-### 1. Modelo de acceso
-- **Sin auto-registro público.** El landing y `/registro` se reemplazan por una página informativa "Solicita acceso" (formulario de contacto) o se ocultan por completo. El acceso se realiza solo vía `/login`.
-- Los usuarios entran únicamente cuando el super admin les da de alta con un email y contraseña inicial que tú envías por tu canal.
-- Sponsors entran ya con su nivel asignado (PLATINUM/GOLD/SILVER/BRONZE) — alta inmediata, sin estado "pendiente".
+**Pendiente:** todo lo siguiente.
 
-### 2. Super admin inicial
-- Crear cuenta con email `miquel@conectamos.club` y contraseña `Miquel123++`.
-- Asignar `role = 'super_admin'` en `profiles`.
-- Email auto-confirmado para que pueda entrar directo.
+## Pasos
 
-### 3. Pantalla "Nuevo usuario" (Super Admin → Usuarios)
-Modal multi-step en `/admin/usuarios`:
+### 1. Limpieza de datos demo
+Migración SQL que borra todo excepto la cuenta `miquel@conectamos.club`:
+- Borrar `bulletin_posts`, `notifications`, `messages`, `meetings_1to1`, `matches`, `likes`, `event_registrations`, `event_agenda`, `events`
+- Borrar `empresa_profiles` y `sponsor_profiles` huérfanos (sin auth.users)
+- Borrar `auth.users` distintos del super_admin (cascada limpia profiles)
 
-**Paso 1 — Tipo de cuenta:** Empresa o Sponsor.
+### 2. Server functions nuevas en `src/lib/`
+Todas con `requireSupabaseAuth` + helper `assertSuperAdmin`:
+- `admin-events.functions.ts` — list/create/update/delete evento, gestionar `rooms[]`, ventana de reuniones, `meetings_per_user`, cambiar status (draft/published/ongoing/finished/cancelled)
+- `admin-agenda.functions.ts` — CRUD de `event_agenda` (items con orden, ponentes, sala)
+- `admin-matches.functions.ts` — listar con filtros, romper match
+- `admin-meetings.functions.ts` — listar por evento, invocar RPC `assign_meeting_slots`, reasignar hora/sala, cambiar estado, borrar
+- `admin-bulletin.functions.ts` — CRUD anuncios (scope global o por evento)
+- `admin-registrations.functions.ts` — listar inscritos por evento, marcar check-in, cambiar status
+- `admin-users.functions.ts` — añadir `bulkImportUsers` (recibe array parseado del XLSX y crea cuentas en bucle con resumen ok/errores)
 
-**Paso 2 — Datos de acceso:**
-- Nombre completo, email, contraseña inicial, teléfono.
+### 3. Páginas admin
+- `eventos.tsx` — modal CRUD completo: datos básicos, fechas, ubicación, salas (chips editables), `meetings_start_at/end_at`, `slot_duration_minutes`, `meetings_per_user`, status; acciones publicar/despublicar/cancelar/eliminar
+- `eventos.$id.tsx` (nueva) — layout con tabs: General · Agenda · Inscritos · Reuniones · Anuncios
+- `eventos.$id.agenda.tsx` (nueva) — CRUD items de agenda con orden drag-friendly
+- `eventos.$id.registros.tsx` (nueva) — tabla de inscritos con check-in y export CSV
+- `matches.tsx` — añadir filtro por evento/estado y acción "Romper match"
+- `reuniones.tsx` — selector de evento, botón "Auto-asignar slots" (RPC), edición inline de hora/sala/estado, ajuste rápido de `meetings_per_user`
+- `tablon.tsx` — selector scope (global/por evento) en el form, filtro en el listado, editar/borrar
+- `usuarios.tsx` — botón "Importar Excel" (parsea con `xlsx` en cliente y llama a `bulkImportUsers`); plantilla descargable
 
-**Paso 3 — Datos de empresa/sponsor:**
-- Empresa: nombre, sector, tamaño, web, ciudad, LinkedIn, tagline, descripción.
-- Sponsor: nombre, sector, categoría de patrocinio, **nivel** (PLATINUM/GOLD/SILVER/BRONZE), web, LinkedIn, tagline, descripción.
+### 4. Verificación end-to-end
+Crear evento → publicar → likes mutuos → match + meeting `pending` automático → auto-asignar slots → reunión con hora/sala → publicar anuncio global y por evento → check-in en inscrito → import XLSX con 2 filas (1 empresa, 1 sponsor).
 
-**Paso 4 — Confirmación:** resumen + botón "Crear cuenta".
+## Detalles técnicos
 
-Al confirmar: server function (`createServerFn` con `supabaseAdmin`) que:
-1. Crea el usuario en `auth.users` con `email_confirm: true` y la contraseña.
-2. El trigger `handle_new_user` crea la fila en `profiles` con el rol pasado en `user_metadata`.
-3. Inserta la fila en `empresa_profiles` o `sponsor_profiles` con todos los datos.
-4. Devuelve éxito; el modal muestra las credenciales para que las copies y envíes manualmente.
-
-### 4. Edición / Desactivación
-- Botón "Editar" por fila → mismo formulario en modo edición (sin cambiar contraseña salvo "Resetear contraseña").
-- Botón "Resetear contraseña" → genera nueva o pide una nueva, vía `supabaseAdmin.auth.admin.updateUserById`.
-- Toggle activo/inactivo (`profiles.is_active`).
-- Eliminar usuario (con confirmación) → `supabaseAdmin.auth.admin.deleteUser`.
-
-### 5. Limpieza del registro público
-- `/registro` queda como página privada/oculta o se elimina del menú público.
-- En `/login` quito el enlace "¿No tienes cuenta? Regístrate" (lo sustituyo por "¿Necesitas acceso? Contáctanos").
-
-### 6. Auth config
-- `auto_confirm_email = true` (para que las altas creadas por el admin entren sin verificar email).
-- `disable_signup = true` (impide que nadie cree cuenta vía API pública aunque conozca el endpoint).
-
----
-
-### Archivos a crear/editar
-- **Migración:** `auto_confirm_email` + `disable_signup` (vía `configure_auth`).
-- **Seed SQL:** insertar super admin `miquel@conectamos.club`.
-- **Nuevo:** `src/lib/admin-users.functions.ts` — `createUserAccount`, `updateUserAccount`, `deleteUserAccount`, `resetUserPassword`.
-- **Nuevo:** `src/components/admin/NewUserModal.tsx` — wizard multi-step.
-- **Editar:** `src/routes/_authenticated/admin/usuarios.tsx` — botón "Nuevo usuario" abre modal real, añadir editar/eliminar/reset.
-- **Editar:** `src/routes/login.tsx` — quitar link a registro.
-- **Eliminar o ocultar:** `src/routes/registro.tsx`.
-
-### Notas técnicas
-- Todas las operaciones admin usan `supabaseAdmin` dentro de `createServerFn` con middleware `requireSupabaseAuth` + check `has_role(userId, 'super_admin')` para que solo super admins puedan invocarlas.
-- La contraseña inicial nunca se guarda ni se envía por email automático: se muestra en pantalla al super admin para que la transmita manualmente.
-
-¿Procedo?
+- Patrón de modales: clonar `NewUserModal.tsx` (shadcn `Dialog`)
+- XLSX en cliente: `bun add xlsx`; columnas obligatorias: `email,password,role,full_name,company_name`; opcional: `sector,website,linkedin_url,sponsorship_level`
+- Cleanup data: ejecutar como migración (DELETE no es schema pero la migración es la vía limpia para varias tablas)
+- RPC: `await supabase.rpc("assign_meeting_slots", { p_event_id })` desde el server fn admin con `supabaseAdmin`
+- Sidebar y dashboard admin: añadir links a las nuevas vistas hijas de evento
