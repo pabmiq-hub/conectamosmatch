@@ -11,7 +11,7 @@ const itemSchema = z.object({
   speaker_name: z.string().max(200).optional().default(""),
   speaker_role: z.string().max(200).optional().default(""),
   room: z.string().max(120).optional().default(""),
-  agenda_type: z.enum(["keynote", "talk", "panel", "workshop", "break", "networking", "other"]).optional(),
+  agenda_type: z.enum(["bienvenida", "charla", "panel", "coffee_break", "comida", "networking", "reuniones_1to1", "cierre"]).optional().nullable(),
   event_date: z.string().optional().nullable(),
   time_start: z.string().optional().nullable(),
   time_end: z.string().optional().nullable(),

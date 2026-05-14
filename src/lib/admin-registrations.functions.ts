@@ -25,9 +25,9 @@ export const toggleCheckIn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.userId);
-    const patch = data.checkedIn
-      ? { checked_in_at: new Date().toISOString(), status: "attended" as const }
-      : { checked_in_at: null, status: "registered" as const };
+    const patch: { checked_in_at: string | null; status: "attended" | "registered" } = data.checkedIn
+      ? { checked_in_at: new Date().toISOString(), status: "attended" }
+      : { checked_in_at: null, status: "registered" };
     const { error } = await supabaseAdmin.from("event_registrations").update(patch).eq("id", data.id);
     if (error) throw new Response(error.message, { status: 400 });
     return { ok: true };
@@ -39,7 +39,7 @@ export const updateRegistrationStatus = createServerFn({ method: "POST" })
     z
       .object({
         id: z.string().uuid(),
-        status: z.enum(["registered", "confirmed", "attended", "cancelled", "no_show"]),
+        status: z.enum(["registered", "confirmed", "attended", "cancelled"]),
       })
       .parse(input),
   )

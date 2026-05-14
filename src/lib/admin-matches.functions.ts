@@ -10,7 +10,7 @@ export const listMatches = createServerFn({ method: "POST" })
     z
       .object({
         event_id: z.string().uuid().optional().nullable(),
-        status: z.enum(["pending", "mutual", "rejected", "expired"]).optional().nullable(),
+        status: z.enum(["pending", "mutual"]).optional().nullable(),
       })
       .parse(input ?? {}),
   )

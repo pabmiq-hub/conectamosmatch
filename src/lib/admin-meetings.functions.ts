@@ -55,7 +55,7 @@ export const updateMeeting = createServerFn({ method: "POST" })
             scheduled_time: z.string().optional().nullable(),
             room: z.string().max(120).optional().nullable(),
             duration_minutes: z.number().int().min(5).max(180).optional(),
-            status: z.enum(["pending", "scheduled", "completed", "cancelled", "no_show"]).optional(),
+            status: z.enum(["pending", "confirmed", "completed", "cancelled"]).optional(),
             notes: z.string().max(2000).optional().nullable(),
           })
           .partial(),
