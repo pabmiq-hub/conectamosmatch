@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { LevelBadge } from "@/components/brand/LevelBadge";
-import { Users, Building2, Sparkles, Plus, Search, Trash2 } from "lucide-react";
+import { Users, Building2, Sparkles, Plus, Search, Trash2, KeyRound, Power } from "lucide-react";
 import { toast } from "sonner";
+import { NewUserModal } from "@/components/admin/NewUserModal";
+import { deleteUserAccount, resetUserPassword, setUserActive } from "@/lib/admin-users.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/usuarios")({
   component: AdminUsuarios,
@@ -15,6 +18,10 @@ function AdminUsuarios() {
   const [q, setQ] = useState("");
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const resetPwd = useServerFn(resetUserPassword);
+  const setActive = useServerFn(setUserActive);
+  const delAccount = useServerFn(deleteUserAccount);
 
   async function load() {
     setLoading(true);
@@ -46,10 +53,13 @@ function AdminUsuarios() {
   return (
     <div className="space-y-6">
       <PageHeader title="Usuarios" subtitle="Gestión de empresas, sponsors y administradores" right={
-        <button className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide" onClick={() => toast.info("Crear usuario: flujo multi-step en próxima iteración")}>
+        <button className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide" onClick={() => setShowModal(true)}>
           <Plus className="h-4 w-4" /> Nuevo usuario
         </button>
       } />
+
+      {showModal && <NewUserModal onClose={() => setShowModal(false)} onCreated={load} />}
+
 
       <div className="flex flex-wrap items-center gap-2">
         {([["all","Todos",Users],["empresa","Empresas",Building2],["sponsor","Sponsors",Sparkles]] as const).map(([k, label, Icon]) => (
@@ -104,9 +114,27 @@ function AdminUsuarios() {
                     <span className={`text-[10px] font-bold text-uppercase-wide ${r.is_active ? "text-success" : "text-muted-foreground"}`}>{r.is_active ? "Activo" : "Inactivo"}</span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button className="text-muted-foreground hover:text-destructive" onClick={() => toast.info("Eliminar disponible próximamente")}>
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <div className="inline-flex items-center gap-1">
+                      {!String(r.id).startsWith("emp-") && !String(r.id).startsWith("spo-") && (
+                        <>
+                          <button title="Resetear contraseña" className="p-1.5 text-muted-foreground hover:text-foreground" onClick={async () => {
+                            const np = window.prompt("Nueva contraseña (mín. 8 caracteres):");
+                            if (!np || np.length < 8) return;
+                            try { await resetPwd({ data: { userId: r.id, password: np } }); toast.success("Contraseña actualizada"); }
+                            catch (e: any) { toast.error(e?.message ?? "Error"); }
+                          }}><KeyRound className="h-4 w-4" /></button>
+                          <button title={r.is_active ? "Desactivar" : "Activar"} className="p-1.5 text-muted-foreground hover:text-foreground" onClick={async () => {
+                            try { await setActive({ data: { userId: r.id, isActive: !r.is_active } }); toast.success(r.is_active ? "Desactivado" : "Activado"); load(); }
+                            catch (e: any) { toast.error(e?.message ?? "Error"); }
+                          }}><Power className="h-4 w-4" /></button>
+                          <button title="Eliminar" className="p-1.5 text-muted-foreground hover:text-destructive" onClick={async () => {
+                            if (!window.confirm(`¿Eliminar a ${r.company?.company_name ?? r.full_name}? Esta acción no se puede deshacer.`)) return;
+                            try { await delAccount({ data: { userId: r.id } }); toast.success("Usuario eliminado"); load(); }
+                            catch (e: any) { toast.error(e?.message ?? "Error"); }
+                          }}><Trash2 className="h-4 w-4" /></button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

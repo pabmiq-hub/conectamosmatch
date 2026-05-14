@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/brand/Logo";
@@ -65,8 +65,8 @@ function LoginPage() {
           </form>
 
           <div className="mt-6 text-center text-xs text-muted-foreground">
-            ¿No tienes cuenta?{" "}
-            <Link to="/registro" className="text-primary font-bold hover:underline text-uppercase-wide">Regístrate</Link>
+            ¿Necesitas acceso? Contáctanos en{" "}
+            <a href="mailto:hola@conectamos.club" className="text-primary font-bold hover:underline">hola@conectamos.club</a>
           </div>
         </div>
       </div>

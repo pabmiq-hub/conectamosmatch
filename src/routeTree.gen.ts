@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as RegistroRouteImport } from './routes/registro'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
@@ -40,11 +39,6 @@ import { Route as AuthenticatedAdminMatchesRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminEventosRouteImport } from './routes/_authenticated/admin/eventos'
 import { Route as AuthenticatedAdminCodigosRouteImport } from './routes/_authenticated/admin/codigos'
 
-const RegistroRoute = RegistroRouteImport.update({
-  id: '/registro',
-  path: '/registro',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -218,7 +212,6 @@ const AuthenticatedAdminCodigosRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/registro': typeof RegistroRoute
   '/admin/codigos': typeof AuthenticatedAdminCodigosRoute
   '/admin/eventos': typeof AuthenticatedAdminEventosRoute
   '/admin/matches': typeof AuthenticatedAdminMatchesRoute
@@ -249,7 +242,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/registro': typeof RegistroRoute
   '/admin/codigos': typeof AuthenticatedAdminCodigosRoute
   '/admin/eventos': typeof AuthenticatedAdminEventosRoute
   '/admin/matches': typeof AuthenticatedAdminMatchesRoute
@@ -282,7 +274,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
-  '/registro': typeof RegistroRoute
   '/_authenticated/admin/codigos': typeof AuthenticatedAdminCodigosRoute
   '/_authenticated/admin/eventos': typeof AuthenticatedAdminEventosRoute
   '/_authenticated/admin/matches': typeof AuthenticatedAdminMatchesRoute
@@ -315,7 +306,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
-    | '/registro'
     | '/admin/codigos'
     | '/admin/eventos'
     | '/admin/matches'
@@ -346,7 +336,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
-    | '/registro'
     | '/admin/codigos'
     | '/admin/eventos'
     | '/admin/matches'
@@ -378,7 +367,6 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/login'
-    | '/registro'
     | '/_authenticated/admin/codigos'
     | '/_authenticated/admin/eventos'
     | '/_authenticated/admin/matches'
@@ -411,18 +399,10 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
-  RegistroRoute: typeof RegistroRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/registro': {
-      id: '/registro'
-      path: '/registro'
-      fullPath: '/registro'
-      preLoaderRoute: typeof RegistroRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -697,18 +677,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
-  RegistroRoute: RegistroRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

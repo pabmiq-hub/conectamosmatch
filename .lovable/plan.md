@@ -1,53 +1,64 @@
+## Plan: Registro y gestión de usuarios
 
-# CONECTAMOS MATCH — Build Plan
+Basado en tus respuestas, configuro el sistema así:
 
-A B2B matchmaking SaaS with three role-based dashboards (Super Admin, Empresa, Sponsor), curated events, mutual-like matching, 1to1 meeting assignment, invitation codes, messaging, and a bulletin board.
+### 1. Modelo de acceso
+- **Sin auto-registro público.** El landing y `/registro` se reemplazan por una página informativa "Solicita acceso" (formulario de contacto) o se ocultan por completo. El acceso se realiza solo vía `/login`.
+- Los usuarios entran únicamente cuando el super admin les da de alta con un email y contraseña inicial que tú envías por tu canal.
+- Sponsors entran ya con su nivel asignado (PLATINUM/GOLD/SILVER/BRONZE) — alta inmediata, sin estado "pendiente".
 
-This is a very large scope (3 dashboards, ~25 routes, 13 tables, RLS, realtime messaging). I'll deliver it in phases so you can review each layer before the next, instead of a single multi-hour generation that's hard to QA.
+### 2. Super admin inicial
+- Crear cuenta con email `miquel@conectamos.club` y contraseña `Miquel123++`.
+- Asignar `role = 'super_admin'` en `profiles`.
+- Email auto-confirmado para que pueda entrar directo.
 
-## Phase 0 — Foundation (this turn after approval)
-- Enable Lovable Cloud (Supabase) for auth, DB, storage, realtime.
-- Apply design system to `src/styles.css`: dark `#0A0A0A` bg, card `#111`, border `#1E1E1E`, accent `#F5C842`, success `#4ADE80`, danger `#EF4444`, Space Grotesk + Inter via Google Fonts, uppercase tracking utility, badge variants (PLATINUM/GOLD/SILVER/BRONZE).
-- Public landing page `/` (dark hero, "Soy Empresa" / "Soy Sponsor" CTAs, how-it-works, features, footer).
-- Auth: `/login`, `/registro` (role select → enriched form per role), email/password + Google. Session listener, role-based redirect to `/admin`, `/empresa/dashboard`, or `/sponsor/dashboard`.
+### 3. Pantalla "Nuevo usuario" (Super Admin → Usuarios)
+Modal multi-step en `/admin/usuarios`:
 
-## Phase 1 — Database schema + RLS + match trigger
-All 13 tables exactly as specified (`profiles`, `empresa_profiles`, `sponsor_profiles`, `events`, `event_agenda`, `likes`, `matches`, `meetings_1to1`, `messages`, `bulletin_posts`, `invitation_codes`, `event_registrations`, `notifications`).
-- Role enum + `user_roles` pattern via `profiles.role` checked through a `SECURITY DEFINER` `has_role()` helper to avoid recursive RLS.
-- RLS policies per role exactly as you described (super_admin full, empresa/sponsor scoped reads, owner-only writes, matches/messages limited to participants).
-- `check_and_create_match()` trigger on `likes` insert: if reverse like exists across empresa↔sponsor in same event, insert mutual match + notifications for both.
-- Storage buckets: `logos`, `covers` (public read, owner write).
-- Seed realistic placeholder data (8 empresas, 12 sponsors across PLATINUM/GOLD/SILVER/BRONZE, 2 events, agenda items, sample likes/matches, bulletin posts, codes, invitados) so every screen renders production-looking content from first paint.
+**Paso 1 — Tipo de cuenta:** Empresa o Sponsor.
 
-## Phase 2 — Shared dashboard shell
-- `_authenticated` layout route with role guard.
-- Sidebar (160px, `#0D0D0D`, uppercase nav, golden left-border on active item, collapses to icon strip on tablet, bottom tab bar on mobile).
-- Topbar: notifications bell w/ dropdown, avatar menu, logout.
-- Reusable components: `SponsorCard`, `EmpresaCard`, `LevelBadge`, `AgendaTable`, `StatCard`, `ProfileModal` (slide-over with cover/logo/desc/integrations/actions), `LikeButton` (animated heart + toast + match toast), chat bubbles, `BulletinList`.
+**Paso 2 — Datos de acceso:**
+- Nombre completo, email, contraseña inicial, teléfono.
 
-## Phase 3 — Super Admin (`/admin/*`)
-Dashboard, usuarios (table + filters + multi-step create form with role-conditional step 2), eventos (cards + create/edit + agenda manager with drag-reorder + type icons), matches (table + filters + stats), reuniones (assign + bulk-generate), códigos, tablón.
+**Paso 3 — Datos de empresa/sponsor:**
+- Empresa: nombre, sector, tamaño, web, ciudad, LinkedIn, tagline, descripción.
+- Sponsor: nombre, sector, categoría de patrocinio, **nivel** (PLATINUM/GOLD/SILVER/BRONZE), web, LinkedIn, tagline, descripción.
 
-## Phase 4 — Empresa (`/empresa/*`)
-Dashboard with 3 stat cards + EXPLORAR SPONSORS CTA + compact agenda; mi-ficha (sectioned form, completion bar); ver-sponsors (4-col grid, VER/MSG/MATCH); ver-empresas (VER only); mis-matches (interesados list with like-back); reuniones-1to1; mensajes (thread list + chat); tablón; agenda.
+**Paso 4 — Confirmación:** resumen + botón "Crear cuenta".
 
-## Phase 5 — Sponsor (`/sponsor/*`)
-Dashboard; mi-ficha (with bidirectional native integrations search); ver-empresas (3-col, BRONZE shows amber lock banner + MATCH disabled); mis-matches; reuniones-1to1; mis-codigos (stats + table + copy shareable URL); mis-invitados (stats + filterable table); mensajes; tablón; agenda.
+Al confirmar: server function (`createServerFn` con `supabaseAdmin`) que:
+1. Crea el usuario en `auth.users` con `email_confirm: true` y la contraseña.
+2. El trigger `handle_new_user` crea la fila en `profiles` con el rol pasado en `user_metadata`.
+3. Inserta la fila en `empresa_profiles` o `sponsor_profiles` con todos los datos.
+4. Devuelve éxito; el modal muestra las credenciales para que las copies y envíes manualmente.
 
-## Phase 6 — Realtime + polish
-- Supabase realtime on `messages`, `matches`, `notifications` (live unread badges, match toasts).
-- Public registration via invitation code: `/eventos/:slug/registro?code=...`.
-- Profile completion auto-calc trigger.
-- Responsive sweeps (mobile bottom tabs, tablet icon sidebar).
-- Final QA pass on every route.
+### 4. Edición / Desactivación
+- Botón "Editar" por fila → mismo formulario en modo edición (sin cambiar contraseña salvo "Resetear contraseña").
+- Botón "Resetear contraseña" → genera nueva o pide una nueva, vía `supabaseAdmin.auth.admin.updateUserById`.
+- Toggle activo/inactivo (`profiles.is_active`).
+- Eliminar usuario (con confirmación) → `supabaseAdmin.auth.admin.deleteUser`.
 
-## Technical notes
-- TanStack Start file-based routes, TanStack Query for data, server functions with `requireSupabaseAuth` for any sensitive reads, browser client for realtime + auth UI.
-- All colors via semantic tokens in `styles.css` — no hardcoded hex in components.
-- Match logic in DB trigger (not client) for integrity.
-- Invitation code public registration uses a `/api/public/*` server route + admin client to insert profile and registration after verifying the code.
+### 5. Limpieza del registro público
+- `/registro` queda como página privada/oculta o se elimina del menú público.
+- En `/login` quito el enlace "¿No tienes cuenta? Regístrate" (lo sustituyo por "¿Necesitas acceso? Contáctanos").
 
-## One thing to confirm before I start
-Scope is enormous. My recommendation: I execute Phase 0 + Phase 1 + Phase 2 in the first build pass (foundation + DB + shell + landing + auth), then deliver Phases 3–6 in follow-up turns. That keeps each pass reviewable. If you'd rather I attempt everything in one mega-pass, say so and I'll go wide — but expect rougher edges that we'll iterate on.
+### 6. Auth config
+- `auto_confirm_email = true` (para que las altas creadas por el admin entren sin verificar email).
+- `disable_signup = true` (impide que nadie cree cuenta vía API pública aunque conozca el endpoint).
 
-Approve to proceed with Phase 0–2 first.
+---
+
+### Archivos a crear/editar
+- **Migración:** `auto_confirm_email` + `disable_signup` (vía `configure_auth`).
+- **Seed SQL:** insertar super admin `miquel@conectamos.club`.
+- **Nuevo:** `src/lib/admin-users.functions.ts` — `createUserAccount`, `updateUserAccount`, `deleteUserAccount`, `resetUserPassword`.
+- **Nuevo:** `src/components/admin/NewUserModal.tsx` — wizard multi-step.
+- **Editar:** `src/routes/_authenticated/admin/usuarios.tsx` — botón "Nuevo usuario" abre modal real, añadir editar/eliminar/reset.
+- **Editar:** `src/routes/login.tsx` — quitar link a registro.
+- **Eliminar o ocultar:** `src/routes/registro.tsx`.
+
+### Notas técnicas
+- Todas las operaciones admin usan `supabaseAdmin` dentro de `createServerFn` con middleware `requireSupabaseAuth` + check `has_role(userId, 'super_admin')` para que solo super admins puedan invocarlas.
+- La contraseña inicial nunca se guarda ni se envía por email automático: se muestra en pantalla al super admin para que la transmita manualmente.
+
+¿Procedo?

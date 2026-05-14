@@ -22,9 +22,9 @@ function Landing() {
             <Link to="/login" className="rounded-full px-4 py-2 text-sm font-medium hover:bg-muted">
               Iniciar sesión
             </Link>
-            <Link to="/registro" className="rounded-full bg-brand-gradient px-5 py-2 text-sm font-semibold text-white shadow-brand hover:opacity-95 transition">
-              Quiero apuntarme
-            </Link>
+            <a href="mailto:hola@conectamos.club?subject=Quiero%20apuntarme" className="rounded-full bg-brand-gradient px-5 py-2 text-sm font-semibold text-white shadow-brand hover:opacity-95 transition">
+              Solicitar acceso
+            </a>
           </nav>
         </div>
       </header>
@@ -53,10 +53,10 @@ function Landing() {
                 donde C-Levels conectan, conversan y descubren soluciones reales.
               </p>
               <div className="mt-10 flex flex-wrap items-center gap-3">
-                <Link to="/registro" className="group inline-flex items-center gap-2 rounded-full bg-brand-gradient px-6 py-3 text-sm font-semibold text-white shadow-brand hover:opacity-95 transition">
-                  Quiero apuntarme
+                <a href="mailto:hola@conectamos.club?subject=Quiero%20apuntarme" className="group inline-flex items-center gap-2 rounded-full bg-brand-gradient px-6 py-3 text-sm font-semibold text-white shadow-brand hover:opacity-95 transition">
+                  Solicitar acceso
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Link>
+                </a>
                 <a href="#como-funciona" className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-6 py-3 text-sm font-semibold hover:bg-muted">
                   Cómo funciona
                 </a>
@@ -168,12 +168,12 @@ function Landing() {
                 </p>
               </div>
               <div className="flex gap-3">
-                <Link to="/registro" search={{ role: "empresa" }} className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-foreground hover:bg-white/90">
+                <a href="mailto:hola@conectamos.club?subject=Soy%20Empresa" className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-foreground hover:bg-white/90">
                   <Building2 className="h-4 w-4" /> Soy Empresa
-                </Link>
-                <Link to="/registro" search={{ role: "sponsor" }} className="inline-flex items-center gap-2 rounded-full border border-white/30 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10">
+                </a>
+                <a href="mailto:hola@conectamos.club?subject=Soy%20Sponsor" className="inline-flex items-center gap-2 rounded-full border border-white/30 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10">
                   <Sparkles className="h-4 w-4" /> Soy Sponsor
-                </Link>
+                </a>
               </div>
             </div>
           </div>
