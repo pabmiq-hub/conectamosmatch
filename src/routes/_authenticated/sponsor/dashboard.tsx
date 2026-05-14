@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { AgendaTable } from "@/components/dashboard/AgendaTable";
 import { LevelBadge } from "@/components/brand/LevelBadge";
-import { Heart, Calendar, Ticket, UserCheck, Search, Lock } from "lucide-react";
+import { Heart, Calendar, Search, Lock } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/sponsor/dashboard")({
   component: SponsorDashboard,
