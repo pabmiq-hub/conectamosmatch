@@ -65,8 +65,8 @@ function LoginPage() {
           </form>
 
           <div className="mt-6 text-center text-xs text-muted-foreground">
-            ¿No tienes cuenta?{" "}
-            <Link to="/registro" className="text-primary font-bold hover:underline text-uppercase-wide">Regístrate</Link>
+            ¿Necesitas acceso? Contáctanos en{" "}
+            <a href="mailto:hola@conectamos.club" className="text-primary font-bold hover:underline">hola@conectamos.club</a>
           </div>
         </div>
       </div>
