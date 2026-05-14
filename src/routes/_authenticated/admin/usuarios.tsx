@@ -18,6 +18,10 @@ function AdminUsuarios() {
   const [q, setQ] = useState("");
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const resetPwd = useServerFn(resetUserPassword);
+  const setActive = useServerFn(setUserActive);
+  const delAccount = useServerFn(deleteUserAccount);
 
   async function load() {
     setLoading(true);
