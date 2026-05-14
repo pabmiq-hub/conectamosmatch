@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedSponsorVerEmpresasRouteImport } from './routes/_authenticated/sponsor/ver-empresas'
 import { Route as AuthenticatedSponsorTablonRouteImport } from './routes/_authenticated/sponsor/tablon'
@@ -51,6 +52,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin/login',
+  path: '/admin/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
@@ -212,6 +218,7 @@ const AuthenticatedAdminCodigosRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/admin/login': typeof AdminLoginRoute
   '/admin/codigos': typeof AuthenticatedAdminCodigosRoute
   '/admin/eventos': typeof AuthenticatedAdminEventosRoute
   '/admin/matches': typeof AuthenticatedAdminMatchesRoute
@@ -242,6 +249,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/admin/login': typeof AdminLoginRoute
   '/admin/codigos': typeof AuthenticatedAdminCodigosRoute
   '/admin/eventos': typeof AuthenticatedAdminEventosRoute
   '/admin/matches': typeof AuthenticatedAdminMatchesRoute
@@ -274,6 +282,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/admin/login': typeof AdminLoginRoute
   '/_authenticated/admin/codigos': typeof AuthenticatedAdminCodigosRoute
   '/_authenticated/admin/eventos': typeof AuthenticatedAdminEventosRoute
   '/_authenticated/admin/matches': typeof AuthenticatedAdminMatchesRoute
@@ -306,6 +315,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/admin/login'
     | '/admin/codigos'
     | '/admin/eventos'
     | '/admin/matches'
@@ -336,6 +346,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/admin/login'
     | '/admin/codigos'
     | '/admin/eventos'
     | '/admin/matches'
@@ -367,6 +378,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/login'
+    | '/admin/login'
     | '/_authenticated/admin/codigos'
     | '/_authenticated/admin/eventos'
     | '/_authenticated/admin/matches'
@@ -399,6 +411,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  AdminLoginRoute: typeof AdminLoginRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -422,6 +435,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/login': {
+      id: '/admin/login'
+      path: '/admin/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/': {
@@ -677,6 +697,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
+  AdminLoginRoute: AdminLoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
