@@ -38,6 +38,7 @@ import { Route as AuthenticatedAdminTablonRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminReunionesRouteImport } from './routes/_authenticated/admin/reuniones'
 import { Route as AuthenticatedAdminMatchesRouteImport } from './routes/_authenticated/admin/matches'
 import { Route as AuthenticatedAdminEventosRouteImport } from './routes/_authenticated/admin/eventos'
+import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin/dashboard'
 import { Route as AuthenticatedAdminCodigosRouteImport } from './routes/_authenticated/admin/codigos'
 
 const LoginRoute = LoginRouteImport.update({
@@ -208,6 +209,12 @@ const AuthenticatedAdminEventosRoute =
     path: '/admin/eventos',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAdminDashboardRoute =
+  AuthenticatedAdminDashboardRouteImport.update({
+    id: '/admin/dashboard',
+    path: '/admin/dashboard',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedAdminCodigosRoute =
   AuthenticatedAdminCodigosRouteImport.update({
     id: '/admin/codigos',
@@ -220,6 +227,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/codigos': typeof AuthenticatedAdminCodigosRoute
+  '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/eventos': typeof AuthenticatedAdminEventosRoute
   '/admin/matches': typeof AuthenticatedAdminMatchesRoute
   '/admin/reuniones': typeof AuthenticatedAdminReunionesRoute
@@ -251,6 +259,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/codigos': typeof AuthenticatedAdminCodigosRoute
+  '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/eventos': typeof AuthenticatedAdminEventosRoute
   '/admin/matches': typeof AuthenticatedAdminMatchesRoute
   '/admin/reuniones': typeof AuthenticatedAdminReunionesRoute
@@ -284,6 +293,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/admin/login': typeof AdminLoginRoute
   '/_authenticated/admin/codigos': typeof AuthenticatedAdminCodigosRoute
+  '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/_authenticated/admin/eventos': typeof AuthenticatedAdminEventosRoute
   '/_authenticated/admin/matches': typeof AuthenticatedAdminMatchesRoute
   '/_authenticated/admin/reuniones': typeof AuthenticatedAdminReunionesRoute
@@ -317,6 +327,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/admin/login'
     | '/admin/codigos'
+    | '/admin/dashboard'
     | '/admin/eventos'
     | '/admin/matches'
     | '/admin/reuniones'
@@ -348,6 +359,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/admin/login'
     | '/admin/codigos'
+    | '/admin/dashboard'
     | '/admin/eventos'
     | '/admin/matches'
     | '/admin/reuniones'
@@ -380,6 +392,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/admin/login'
     | '/_authenticated/admin/codigos'
+    | '/_authenticated/admin/dashboard'
     | '/_authenticated/admin/eventos'
     | '/_authenticated/admin/matches'
     | '/_authenticated/admin/reuniones'
@@ -619,6 +632,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminEventosRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/admin/dashboard': {
+      id: '/_authenticated/admin/dashboard'
+      path: '/admin/dashboard'
+      fullPath: '/admin/dashboard'
+      preLoaderRoute: typeof AuthenticatedAdminDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/admin/codigos': {
       id: '/_authenticated/admin/codigos'
       path: '/admin/codigos'
@@ -631,6 +651,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminCodigosRoute: typeof AuthenticatedAdminCodigosRoute
+  AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
   AuthenticatedAdminEventosRoute: typeof AuthenticatedAdminEventosRoute
   AuthenticatedAdminMatchesRoute: typeof AuthenticatedAdminMatchesRoute
   AuthenticatedAdminReunionesRoute: typeof AuthenticatedAdminReunionesRoute
@@ -660,6 +681,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminCodigosRoute: AuthenticatedAdminCodigosRoute,
+  AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,
   AuthenticatedAdminEventosRoute: AuthenticatedAdminEventosRoute,
   AuthenticatedAdminMatchesRoute: AuthenticatedAdminMatchesRoute,
   AuthenticatedAdminReunionesRoute: AuthenticatedAdminReunionesRoute,

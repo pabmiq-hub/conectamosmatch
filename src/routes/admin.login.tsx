@@ -24,7 +24,7 @@ function AdminLoginPage() {
           .eq("id", data.session.user.id)
           .maybeSingle();
         if (p?.role === "super_admin") {
-          nav({ to: "/admin/dashboard" });
+          nav({ to: "/admin" });
         }
       }
     });
@@ -51,7 +51,7 @@ function AdminLoginPage() {
       return;
     }
     toast.success("Bienvenido, administrador");
-    nav({ to: "/admin/dashboard" });
+    nav({ to: "/admin" });
   }
 
   return (
