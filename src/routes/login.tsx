@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/brand/Logo";
@@ -20,7 +20,12 @@ function LoginPage() {
     supabase.auth.getSession().then(async ({ data }) => {
       if (data.session) {
         const { data: p } = await supabase.from("profiles").select("role").eq("id", data.session.user.id).maybeSingle();
-        nav({ to: dashboardPathFor((p?.role as any) ?? "empresa") });
+        const role = (p?.role as any) ?? "empresa";
+        if (role === "super_admin") {
+          await supabase.auth.signOut();
+          return;
+        }
+        nav({ to: dashboardPathFor(role) });
       }
     });
   }, [nav]);
@@ -35,8 +40,14 @@ function LoginPage() {
       return;
     }
     const { data: p } = await supabase.from("profiles").select("role").eq("id", data.user!.id).maybeSingle();
+    const role = (p?.role as any) ?? "empresa";
+    if (role === "super_admin") {
+      await supabase.auth.signOut();
+      toast.error("Los administradores deben acceder desde /admin/login");
+      return;
+    }
     toast.success("Sesión iniciada");
-    nav({ to: dashboardPathFor((p?.role as any) ?? "empresa") });
+    nav({ to: dashboardPathFor(role) });
   }
 
   return (
@@ -68,6 +79,11 @@ function LoginPage() {
             ¿Necesitas acceso? Contáctanos en{" "}
             <a href="mailto:hola@conectamos.club" className="text-primary font-bold hover:underline">hola@conectamos.club</a>
           </div>
+        </div>
+        <div className="mt-4 text-center">
+          <Link to="/admin/login" className="text-xs text-muted-foreground hover:text-primary">
+            Acceso administrador
+          </Link>
         </div>
       </div>
     </div>
