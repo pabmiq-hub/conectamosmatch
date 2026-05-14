@@ -114,9 +114,27 @@ function AdminUsuarios() {
                     <span className={`text-[10px] font-bold text-uppercase-wide ${r.is_active ? "text-success" : "text-muted-foreground"}`}>{r.is_active ? "Activo" : "Inactivo"}</span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button className="text-muted-foreground hover:text-destructive" onClick={() => toast.info("Eliminar disponible próximamente")}>
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <div className="inline-flex items-center gap-1">
+                      {!String(r.id).startsWith("emp-") && !String(r.id).startsWith("spo-") && (
+                        <>
+                          <button title="Resetear contraseña" className="p-1.5 text-muted-foreground hover:text-foreground" onClick={async () => {
+                            const np = window.prompt("Nueva contraseña (mín. 8 caracteres):");
+                            if (!np || np.length < 8) return;
+                            try { await resetPwd({ data: { userId: r.id, password: np } }); toast.success("Contraseña actualizada"); }
+                            catch (e: any) { toast.error(e?.message ?? "Error"); }
+                          }}><KeyRound className="h-4 w-4" /></button>
+                          <button title={r.is_active ? "Desactivar" : "Activar"} className="p-1.5 text-muted-foreground hover:text-foreground" onClick={async () => {
+                            try { await setActive({ data: { userId: r.id, isActive: !r.is_active } }); toast.success(r.is_active ? "Desactivado" : "Activado"); load(); }
+                            catch (e: any) { toast.error(e?.message ?? "Error"); }
+                          }}><Power className="h-4 w-4" /></button>
+                          <button title="Eliminar" className="p-1.5 text-muted-foreground hover:text-destructive" onClick={async () => {
+                            if (!window.confirm(`¿Eliminar a ${r.company?.company_name ?? r.full_name}? Esta acción no se puede deshacer.`)) return;
+                            try { await delAccount({ data: { userId: r.id } }); toast.success("Usuario eliminado"); load(); }
+                            catch (e: any) { toast.error(e?.message ?? "Error"); }
+                          }}><Trash2 className="h-4 w-4" /></button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
