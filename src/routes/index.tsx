@@ -53,10 +53,10 @@ function Landing() {
                 donde C-Levels conectan, conversan y descubren soluciones reales.
               </p>
               <div className="mt-10 flex flex-wrap items-center gap-3">
-                <Link to="/registro" className="group inline-flex items-center gap-2 rounded-full bg-brand-gradient px-6 py-3 text-sm font-semibold text-white shadow-brand hover:opacity-95 transition">
-                  Quiero apuntarme
+                <a href="mailto:hola@conectamos.club?subject=Quiero%20apuntarme" className="group inline-flex items-center gap-2 rounded-full bg-brand-gradient px-6 py-3 text-sm font-semibold text-white shadow-brand hover:opacity-95 transition">
+                  Solicitar acceso
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Link>
+                </a>
                 <a href="#como-funciona" className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-6 py-3 text-sm font-semibold hover:bg-muted">
                   Cómo funciona
                 </a>
