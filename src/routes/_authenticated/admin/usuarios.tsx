@@ -53,10 +53,13 @@ function AdminUsuarios() {
   return (
     <div className="space-y-6">
       <PageHeader title="Usuarios" subtitle="Gestión de empresas, sponsors y administradores" right={
-        <button className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide" onClick={() => toast.info("Crear usuario: flujo multi-step en próxima iteración")}>
+        <button className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide" onClick={() => setShowModal(true)}>
           <Plus className="h-4 w-4" /> Nuevo usuario
         </button>
       } />
+
+      {showModal && <NewUserModal onClose={() => setShowModal(false)} onCreated={load} />}
+
 
       <div className="flex flex-wrap items-center gap-2">
         {([["all","Todos",Users],["empresa","Empresas",Building2],["sponsor","Sponsors",Sparkles]] as const).map(([k, label, Icon]) => (
