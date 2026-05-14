@@ -15,7 +15,6 @@ const navByRole: Record<AppRole, NavItem[]> = {
     { to: "/admin/eventos", label: "Eventos", icon: Calendar },
     { to: "/admin/matches", label: "Matches", icon: Heart },
     { to: "/admin/reuniones", label: "Reuniones 1to1", icon: ClipboardList },
-    { to: "/admin/codigos", label: "Códigos", icon: Ticket },
     { to: "/admin/tablon", label: "Tablón", icon: Megaphone },
   ],
   empresa: [
