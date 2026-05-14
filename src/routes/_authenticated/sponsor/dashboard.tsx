@@ -15,7 +15,7 @@ function SponsorDashboard() {
   const [level, setLevel] = useState<string>("BRONZE");
   const [agenda, setAgenda] = useState<any[]>([]);
   const [eventTitle, setEventTitle] = useState("");
-  const [stats, setStats] = useState({ matches: 0, meetings: 0, codes: 0, invited: 0 });
+  const [stats, setStats] = useState({ matches: 0, meetings: 0 });
 
   useEffect(() => {
     (async () => {
