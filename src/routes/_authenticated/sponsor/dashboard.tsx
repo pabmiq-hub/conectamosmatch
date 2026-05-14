@@ -30,13 +30,11 @@ function SponsorDashboard() {
         const { data: ag } = await supabase.from("event_agenda").select("*").eq("event_id", ev.id).order("order_index");
         setAgenda(ag ?? []);
       }
-      const [m, mt, c, inv] = await Promise.all([
+      const [m, mt] = await Promise.all([
         supabase.from("matches").select("*", { count: "exact", head: true }).eq("sponsor_user_id", user.id).eq("status","mutual"),
         supabase.from("meetings_1to1").select("*", { count: "exact", head: true }).eq("sponsor_user_id", user.id),
-        supabase.from("invitation_codes").select("*", { count: "exact", head: true }).eq("sponsor_user_id", user.id),
-        supabase.from("event_registrations").select("invitation_code_id").not("invitation_code_id","is",null),
       ]);
-      setStats({ matches: m.count ?? 0, meetings: mt.count ?? 0, codes: c.count ?? 0, invited: (inv.data ?? []).length });
+      setStats({ matches: m.count ?? 0, meetings: mt.count ?? 0 });
     })();
   }, []);
 
