@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { AgendaTable } from "@/components/dashboard/AgendaTable";
 import { LevelBadge } from "@/components/brand/LevelBadge";
-import { Heart, Calendar, Ticket, UserCheck, Search, Lock } from "lucide-react";
+import { Heart, Calendar, Search, Lock } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/sponsor/dashboard")({
   component: SponsorDashboard,
@@ -15,7 +15,7 @@ function SponsorDashboard() {
   const [level, setLevel] = useState<string>("BRONZE");
   const [agenda, setAgenda] = useState<any[]>([]);
   const [eventTitle, setEventTitle] = useState("");
-  const [stats, setStats] = useState({ matches: 0, meetings: 0, codes: 0, invited: 0 });
+  const [stats, setStats] = useState({ matches: 0, meetings: 0 });
 
   useEffect(() => {
     (async () => {
@@ -30,13 +30,11 @@ function SponsorDashboard() {
         const { data: ag } = await supabase.from("event_agenda").select("*").eq("event_id", ev.id).order("order_index");
         setAgenda(ag ?? []);
       }
-      const [m, mt, c, inv] = await Promise.all([
+      const [m, mt] = await Promise.all([
         supabase.from("matches").select("*", { count: "exact", head: true }).eq("sponsor_user_id", user.id).eq("status","mutual"),
         supabase.from("meetings_1to1").select("*", { count: "exact", head: true }).eq("sponsor_user_id", user.id),
-        supabase.from("invitation_codes").select("*", { count: "exact", head: true }).eq("sponsor_user_id", user.id),
-        supabase.from("event_registrations").select("invitation_code_id").not("invitation_code_id","is",null),
       ]);
-      setStats({ matches: m.count ?? 0, meetings: mt.count ?? 0, codes: c.count ?? 0, invited: (inv.data ?? []).length });
+      setStats({ matches: m.count ?? 0, meetings: mt.count ?? 0 });
     })();
   }, []);
 
@@ -61,11 +59,9 @@ function SponsorDashboard() {
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2">
         <StatCard icon={Heart} value={stats.matches} label="Matches mutuos" accent />
         <StatCard icon={Calendar} value={stats.meetings} label="1to1 agendadas" accent />
-        <StatCard icon={Ticket} value={stats.codes} label="Códigos creados" accent />
-        <StatCard icon={UserCheck} value={stats.invited} label="Invitados registrados" accent />
       </div>
 
       <div className="flex justify-center">

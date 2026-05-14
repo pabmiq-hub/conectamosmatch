@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { signOut, type AppRole } from "@/lib/auth";
-import { LayoutDashboard, User, Search, Users, Heart, Calendar, MessageSquare, Megaphone, ClipboardList, Ticket, UserCheck, LogOut, Settings, Building2 } from "lucide-react";
+import { LayoutDashboard, User, Search, Users, Heart, Calendar, MessageSquare, Megaphone, ClipboardList, LogOut, Settings, Building2 } from "lucide-react";
 
 export interface NavItem {
   to: string;
@@ -15,7 +15,6 @@ const navByRole: Record<AppRole, NavItem[]> = {
     { to: "/admin/eventos", label: "Eventos", icon: Calendar },
     { to: "/admin/matches", label: "Matches", icon: Heart },
     { to: "/admin/reuniones", label: "Reuniones 1to1", icon: ClipboardList },
-    { to: "/admin/codigos", label: "Códigos", icon: Ticket },
     { to: "/admin/tablon", label: "Tablón", icon: Megaphone },
   ],
   empresa: [
@@ -35,8 +34,6 @@ const navByRole: Record<AppRole, NavItem[]> = {
     { to: "/sponsor/ver-empresas", label: "Ver Empresas", icon: Search },
     { to: "/sponsor/mis-matches", label: "Mis Matches", icon: Heart },
     { to: "/sponsor/reuniones-1to1", label: "Reuniones 1to1", icon: ClipboardList },
-    { to: "/sponsor/mis-codigos", label: "Mis Códigos", icon: Ticket },
-    { to: "/sponsor/mis-invitados", label: "Mis Invitados", icon: UserCheck },
     { to: "/sponsor/mensajes", label: "Mensajes", icon: MessageSquare },
     { to: "/sponsor/tablon", label: "Tablón", icon: Megaphone },
     { to: "/sponsor/agenda", label: "Agenda", icon: Calendar },

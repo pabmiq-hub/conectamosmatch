@@ -21,6 +21,8 @@ export type Database = {
           created_at: string | null
           event_id: string | null
           id: string
+          scope: Database["public"]["Enums"]["bulletin_scope_t"]
+          title: string | null
         }
         Insert: {
           author_id?: string | null
@@ -28,6 +30,8 @@ export type Database = {
           created_at?: string | null
           event_id?: string | null
           id?: string
+          scope?: Database["public"]["Enums"]["bulletin_scope_t"]
+          title?: string | null
         }
         Update: {
           author_id?: string | null
@@ -35,6 +39,8 @@ export type Database = {
           created_at?: string | null
           event_id?: string | null
           id?: string
+          scope?: Database["public"]["Enums"]["bulletin_scope_t"]
+          title?: string | null
         }
         Relationships: [
           {
@@ -195,7 +201,6 @@ export type Database = {
           checked_in_at: string | null
           event_id: string | null
           id: string
-          invitation_code_id: string | null
           registered_at: string | null
           role_at_event: Database["public"]["Enums"]["attendee_role_t"] | null
           status: Database["public"]["Enums"]["registration_status_t"] | null
@@ -209,7 +214,6 @@ export type Database = {
           checked_in_at?: string | null
           event_id?: string | null
           id?: string
-          invitation_code_id?: string | null
           registered_at?: string | null
           role_at_event?: Database["public"]["Enums"]["attendee_role_t"] | null
           status?: Database["public"]["Enums"]["registration_status_t"] | null
@@ -223,7 +227,6 @@ export type Database = {
           checked_in_at?: string | null
           event_id?: string | null
           id?: string
-          invitation_code_id?: string | null
           registered_at?: string | null
           role_at_event?: Database["public"]["Enums"]["attendee_role_t"] | null
           status?: Database["public"]["Enums"]["registration_status_t"] | null
@@ -235,13 +238,6 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_registrations_invitation_code_id_fkey"
-            columns: ["invitation_code_id"]
-            isOneToOne: false
-            referencedRelation: "invitation_codes"
             referencedColumns: ["id"]
           },
           {
@@ -269,6 +265,11 @@ export type Database = {
           location_name: string | null
           max_empresas: number | null
           max_sponsors: number | null
+          meetings_end_at: string | null
+          meetings_per_user: number
+          meetings_start_at: string | null
+          rooms: string[]
+          slot_duration_minutes: number
           slug: string | null
           status: Database["public"]["Enums"]["event_status_t"] | null
           title: string
@@ -289,6 +290,11 @@ export type Database = {
           location_name?: string | null
           max_empresas?: number | null
           max_sponsors?: number | null
+          meetings_end_at?: string | null
+          meetings_per_user?: number
+          meetings_start_at?: string | null
+          rooms?: string[]
+          slot_duration_minutes?: number
           slug?: string | null
           status?: Database["public"]["Enums"]["event_status_t"] | null
           title: string
@@ -309,6 +315,11 @@ export type Database = {
           location_name?: string | null
           max_empresas?: number | null
           max_sponsors?: number | null
+          meetings_end_at?: string | null
+          meetings_per_user?: number
+          meetings_start_at?: string | null
+          rooms?: string[]
+          slot_duration_minutes?: number
           slug?: string | null
           status?: Database["public"]["Enums"]["event_status_t"] | null
           title?: string
@@ -318,60 +329,6 @@ export type Database = {
           {
             foreignKeyName: "events_created_by_fkey"
             columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      invitation_codes: {
-        Row: {
-          code: string
-          created_at: string | null
-          description: string | null
-          discount_percent: number | null
-          event_id: string | null
-          id: string
-          is_active: boolean | null
-          max_uses: number | null
-          sponsor_user_id: string | null
-          times_used: number | null
-        }
-        Insert: {
-          code: string
-          created_at?: string | null
-          description?: string | null
-          discount_percent?: number | null
-          event_id?: string | null
-          id?: string
-          is_active?: boolean | null
-          max_uses?: number | null
-          sponsor_user_id?: string | null
-          times_used?: number | null
-        }
-        Update: {
-          code?: string
-          created_at?: string | null
-          description?: string | null
-          discount_percent?: number | null
-          event_id?: string | null
-          id?: string
-          is_active?: boolean | null
-          max_uses?: number | null
-          sponsor_user_id?: string | null
-          times_used?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "invitation_codes_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invitation_codes_sponsor_user_id_fkey"
-            columns: ["sponsor_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -783,6 +740,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assign_meeting_slots: {
+        Args: { p_event_id: string }
+        Returns: {
+          assigned: number
+          skipped: number
+        }[]
+      }
       get_my_role: {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
@@ -807,6 +771,7 @@ export type Database = {
         | "panel"
       app_role: "super_admin" | "empresa" | "sponsor"
       attendee_role_t: "empresa" | "sponsor"
+      bulletin_scope_t: "global" | "event"
       company_size_t: "1-10" | "11-50" | "51-200" | "201-500" | "500+"
       event_status_t:
         | "draft"
@@ -961,6 +926,7 @@ export const Constants = {
       ],
       app_role: ["super_admin", "empresa", "sponsor"],
       attendee_role_t: ["empresa", "sponsor"],
+      bulletin_scope_t: ["global", "event"],
       company_size_t: ["1-10", "11-50", "51-200", "201-500", "500+"],
       event_status_t: [
         "draft",
