@@ -22,9 +22,9 @@ function Landing() {
             <Link to="/login" className="rounded-full px-4 py-2 text-sm font-medium hover:bg-muted">
               Iniciar sesión
             </Link>
-            <Link to="/registro" className="rounded-full bg-brand-gradient px-5 py-2 text-sm font-semibold text-white shadow-brand hover:opacity-95 transition">
-              Quiero apuntarme
-            </Link>
+            <a href="mailto:hola@conectamos.club?subject=Quiero%20apuntarme" className="rounded-full bg-brand-gradient px-5 py-2 text-sm font-semibold text-white shadow-brand hover:opacity-95 transition">
+              Solicitar acceso
+            </a>
           </nav>
         </div>
       </header>
