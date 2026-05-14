@@ -168,12 +168,12 @@ function Landing() {
                 </p>
               </div>
               <div className="flex gap-3">
-                <Link to="/registro" search={{ role: "empresa" }} className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-foreground hover:bg-white/90">
+                <a href="mailto:hola@conectamos.club?subject=Soy%20Empresa" className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-foreground hover:bg-white/90">
                   <Building2 className="h-4 w-4" /> Soy Empresa
-                </Link>
-                <Link to="/registro" search={{ role: "sponsor" }} className="inline-flex items-center gap-2 rounded-full border border-white/30 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10">
+                </a>
+                <a href="mailto:hola@conectamos.club?subject=Soy%20Sponsor" className="inline-flex items-center gap-2 rounded-full border border-white/30 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10">
                   <Sparkles className="h-4 w-4" /> Soy Sponsor
-                </Link>
+                </a>
               </div>
             </div>
           </div>
