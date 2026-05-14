@@ -185,7 +185,7 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
   );
 }
 
-function Field({ label, value, onChange, type = "text", placeholder }: any) {
+function Field({ label, value, onChange, type = "text", placeholder }: { label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string }) {
   return (
     <div>
       <label className="text-xs text-uppercase-wide text-muted-foreground">{label}</label>
