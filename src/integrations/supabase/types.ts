@@ -267,6 +267,7 @@ export type Database = {
           location_city: string | null
           location_name: string | null
           max_empresas: number | null
+          max_likes_per_user: number
           max_sponsors: number | null
           meetings_end_at: string | null
           meetings_per_user: number
@@ -292,6 +293,7 @@ export type Database = {
           location_city?: string | null
           location_name?: string | null
           max_empresas?: number | null
+          max_likes_per_user?: number
           max_sponsors?: number | null
           meetings_end_at?: string | null
           meetings_per_user?: number
@@ -317,6 +319,7 @@ export type Database = {
           location_city?: string | null
           location_name?: string | null
           max_empresas?: number | null
+          max_likes_per_user?: number
           max_sponsors?: number | null
           meetings_end_at?: string | null
           meetings_per_user?: number
