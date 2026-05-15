@@ -75,6 +75,7 @@ export type Database = {
           logo_url: string | null
           looking_for: string | null
           profile_completion: number | null
+          responsables: Json
           sector: string | null
           tagline: string | null
           tags: string[] | null
@@ -98,6 +99,7 @@ export type Database = {
           logo_url?: string | null
           looking_for?: string | null
           profile_completion?: number | null
+          responsables?: Json
           sector?: string | null
           tagline?: string | null
           tags?: string[] | null
@@ -121,6 +123,7 @@ export type Database = {
           logo_url?: string | null
           looking_for?: string | null
           profile_completion?: number | null
+          responsables?: Json
           sector?: string | null
           tagline?: string | null
           tags?: string[] | null
@@ -661,6 +664,7 @@ export type Database = {
           logo_url: string | null
           native_integrations: string[] | null
           profile_completion: number | null
+          responsables: Json
           sector: string | null
           sponsorship_category: string | null
           sponsorship_level:
@@ -687,6 +691,7 @@ export type Database = {
           logo_url?: string | null
           native_integrations?: string[] | null
           profile_completion?: number | null
+          responsables?: Json
           sector?: string | null
           sponsorship_category?: string | null
           sponsorship_level?:
@@ -713,6 +718,7 @@ export type Database = {
           logo_url?: string | null
           native_integrations?: string[] | null
           profile_completion?: number | null
+          responsables?: Json
           sector?: string | null
           sponsorship_category?: string | null
           sponsorship_level?:
