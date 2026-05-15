@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/dashboard/EmptyState";
 import { LevelBadge } from "@/components/brand/LevelBadge";
-import { Save, Lock } from "lucide-react";
+import { LogoUploader } from "@/components/dashboard/LogoUploader";
+import { ResponsablesEditor, type Responsable } from "@/components/dashboard/ResponsablesEditor";
+import { Save } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/sponsor/mi-ficha")({
@@ -11,7 +13,6 @@ export const Route = createFileRoute("/_authenticated/sponsor/mi-ficha")({
 });
 
 const SECTORS = ["Banca","Tecnología","Energía","Bebidas","Transporte","E-commerce","Telecom","Salud","Otros"];
-const INTEGRATIONS = ["Stand premium","Stand demo","Charla magistral","Workshop técnico","Mesa redonda","Cocktail networking","Patrocinio café","Sponsor de viajes","Stand B2B","Stand sostenibilidad"];
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <label className="block"><span className="block text-[10px] text-uppercase-wide font-bold text-muted-foreground mb-1.5">{label}</span>{children}</label>;
@@ -19,7 +20,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 const inputCls = "w-full rounded-md border border-border bg-background px-3 py-2 text-sm";
 
 function MiFichaSponsor() {
-  const [form, setForm] = useState<any>({ company_name: "", tagline: "", description: "", sector: "", website: "", logo_url: "", location_city: "", linkedin_url: "", target_audience: "", budget_range: "", native_integrations: [] as string[] });
+  const [form, setForm] = useState<any>({ company_name: "", tagline: "", description: "", sector: "", website: "", logo_url: "", location_city: "", linkedin_url: "", target_audience: "", budget_range: "", responsables: [] as Responsable[] });
   const [level, setLevel] = useState("BRONZE");
   const [userId, setUserId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -30,21 +31,15 @@ function MiFichaSponsor() {
       if (!user) return;
       setUserId(user.id);
       const { data } = await supabase.from("sponsor_profiles").select("*").eq("user_id", user.id).maybeSingle();
-      if (data) { setForm({ ...data, native_integrations: data.native_integrations ?? [] }); setLevel(data.sponsorship_level ?? "BRONZE"); }
+      if (data) { setForm({ ...data, responsables: (data as any).responsables ?? [] }); setLevel(data.sponsorship_level ?? "BRONZE"); }
     })();
   }, []);
-
-  const isBronze = level === "BRONZE";
-
-  function toggleIntegration(name: string) {
-    if (isBronze && !["Stand demo","Stand B2B"].includes(name)) { toast.error("Función reservada para SILVER+"); return; }
-    setForm((f: any) => ({ ...f, native_integrations: f.native_integrations.includes(name) ? f.native_integrations.filter((n: string) => n !== name) : [...f.native_integrations, name] }));
-  }
 
   async function save() {
     if (!userId) return;
     setBusy(true);
-    const { error } = await supabase.from("sponsor_profiles").upsert({ ...form, user_id: userId }, { onConflict: "user_id" });
+    const payload = { ...form, user_id: userId, responsables: form.responsables ?? [] };
+    const { error } = await supabase.from("sponsor_profiles").upsert(payload, { onConflict: "user_id" });
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Ficha guardada");
@@ -61,6 +56,7 @@ function MiFichaSponsor() {
         </div>
       } />
       <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+        {userId && <LogoUploader userId={userId} value={form.logo_url} onChange={(url) => setForm({ ...form, logo_url: url })} />}
         <Field label="Nombre"><input className={inputCls} value={form.company_name ?? ""} onChange={(e) => setForm({ ...form, company_name: e.target.value })} /></Field>
         <Field label="Tagline"><input className={inputCls} value={form.tagline ?? ""} onChange={(e) => setForm({ ...form, tagline: e.target.value })} /></Field>
         <Field label="Descripción"><textarea rows={4} className={inputCls} value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
@@ -69,27 +65,11 @@ function MiFichaSponsor() {
           <Field label="Web"><input className={inputCls} value={form.website ?? ""} onChange={(e) => setForm({ ...form, website: e.target.value })} /></Field>
           <Field label="LinkedIn"><input className={inputCls} value={form.linkedin_url ?? ""} onChange={(e) => setForm({ ...form, linkedin_url: e.target.value })} /></Field>
           <Field label="Ciudad"><input className={inputCls} value={form.location_city ?? ""} onChange={(e) => setForm({ ...form, location_city: e.target.value })} /></Field>
-          <Field label="Logo URL"><input className={inputCls} value={form.logo_url ?? ""} onChange={(e) => setForm({ ...form, logo_url: e.target.value })} /></Field>
           <Field label="Presupuesto"><input className={inputCls} value={form.budget_range ?? ""} onChange={(e) => setForm({ ...form, budget_range: e.target.value })} placeholder="ej: 10.000-25.000€" /></Field>
         </div>
         <Field label="Audiencia objetivo"><input className={inputCls} value={form.target_audience ?? ""} onChange={(e) => setForm({ ...form, target_audience: e.target.value })} /></Field>
 
-        <div>
-          <span className="block text-[10px] text-uppercase-wide font-bold text-muted-foreground mb-2">Integraciones nativas</span>
-          <div className="flex flex-wrap gap-2">
-            {INTEGRATIONS.map((n) => {
-              const locked = isBronze && !["Stand demo","Stand B2B"].includes(n);
-              const active = form.native_integrations?.includes(n);
-              return (
-                <button key={n} type="button" onClick={() => toggleIntegration(n)}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold text-uppercase-wide transition-colors ${active ? "bg-primary text-primary-foreground border-primary" : locked ? "border-border text-muted-foreground/60" : "border-border text-muted-foreground hover:bg-muted"}`}>
-                  {locked && <Lock className="h-3 w-3" />} {n}
-                </button>
-              );
-            })}
-          </div>
-          {isBronze && <p className="mt-2 text-[10px] text-muted-foreground">Algunas integraciones requieren nivel SILVER o superior.</p>}
-        </div>
+        <ResponsablesEditor value={form.responsables ?? []} onChange={(r) => setForm({ ...form, responsables: r })} />
       </div>
     </div>
   );

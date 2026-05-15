@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PartnerCard } from "@/components/dashboard/PartnerCard";
 import { ActionButton, LikeButton, Eye, MessageSquare } from "@/components/dashboard/ActionButtons";
+import { PartnerDetailModal, type PartnerDetail } from "@/components/dashboard/PartnerDetailModal";
 
 export const Route = createFileRoute("/_authenticated/empresa/ver-sponsors")({
   component: VerSponsors,
@@ -13,6 +14,7 @@ function VerSponsors() {
   const [eventId, setEventId] = useState<string | null>(null);
   const [items, setItems] = useState<any[]>([]);
   const [likedSet, setLikedSet] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<PartnerDetail | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -21,7 +23,7 @@ function VerSponsors() {
       setMe(user.id);
       const { data: ev } = await supabase.from("events").select("id").in("status", ["published","ongoing"]).order("event_date").limit(1).maybeSingle();
       setEventId(ev?.id ?? null);
-      const { data: sp } = await supabase.from("sponsor_profiles").select("user_id, company_name, description, logo_url, sector, sponsorship_level");
+      const { data: sp } = await supabase.from("sponsor_profiles").select("user_id, company_name, description, logo_url, sector, sponsorship_level, website, location_city, responsables");
       setItems(sp ?? []);
       const { data: my } = await supabase.from("likes").select("to_user_id").eq("from_user_id", user.id);
       setLikedSet(new Set((my ?? []).map((l: any) => l.to_user_id)));
@@ -46,7 +48,7 @@ function VerSponsors() {
             level={s.sponsorship_level}
             actions={
               <>
-                <ActionButton icon={Eye} label="Ver" />
+                <ActionButton icon={Eye} label="Ver" onClick={() => setSelected(s)} />
                 <ActionButton icon={MessageSquare} label="Msg" />
                 {me && <LikeButton fromUserId={me} toUserId={s.user_id} eventId={eventId} alreadyLiked={likedSet.has(s.user_id)} partnerName={s.company_name} />}
               </>
@@ -55,6 +57,7 @@ function VerSponsors() {
         ))}
         {items.length === 0 && <div className="col-span-full text-center text-sm text-muted-foreground py-12">Aún no hay sponsors registrados.</div>}
       </div>
+      <PartnerDetailModal open={!!selected} onClose={() => setSelected(null)} partner={selected} />
     </div>
   );
 }
