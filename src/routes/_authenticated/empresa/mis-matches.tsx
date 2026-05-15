@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { PartnerCard } from "@/components/dashboard/PartnerCard";
 import { ActionButton, Eye, MessageSquare } from "@/components/dashboard/ActionButtons";
+import { PartnerDetailModal, type PartnerDetail } from "@/components/dashboard/PartnerDetailModal";
 import { Heart } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/empresa/mis-matches")({
@@ -12,6 +13,7 @@ export const Route = createFileRoute("/_authenticated/empresa/mis-matches")({
 
 function MisMatchesEmpresa() {
   const [items, setItems] = useState<any[]>([]);
+  const [selected, setSelected] = useState<PartnerDetail | null>(null);
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -19,7 +21,7 @@ function MisMatchesEmpresa() {
       const { data: matches } = await supabase.from("matches").select("*").eq("empresa_user_id", user.id).eq("status", "mutual");
       const ids = (matches ?? []).map((m: any) => m.sponsor_user_id).filter(Boolean);
       if (!ids.length) { setItems([]); return; }
-      const { data: sps } = await supabase.from("sponsor_profiles").select("user_id, company_name, description, logo_url, sector, sponsorship_level").in("user_id", ids);
+      const { data: sps } = await supabase.from("sponsor_profiles").select("user_id, company_name, description, logo_url, sector, sponsorship_level, website, location_city, responsables").in("user_id", ids);
       setItems(sps ?? []);
     })();
   }, []);
@@ -31,10 +33,11 @@ function MisMatchesEmpresa() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {items.map((s) => (
             <PartnerCard key={s.user_id} name={s.company_name} description={s.description} logoUrl={s.logo_url} sector={s.sector} level={s.sponsorship_level}
-              actions={<><ActionButton icon={Eye} label="Ver" /><ActionButton icon={MessageSquare} label="Msg" variant="primary" /></>} />
+              actions={<><ActionButton icon={Eye} label="Ver" onClick={() => setSelected(s)} /><ActionButton icon={MessageSquare} label="Msg" variant="primary" /></>} />
           ))}
         </div>
       )}
+      <PartnerDetailModal open={!!selected} onClose={() => setSelected(null)} partner={selected} />
     </div>
   );
 }
