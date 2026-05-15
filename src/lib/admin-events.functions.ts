@@ -24,6 +24,7 @@ const eventSchema = z.object({
   slot_duration_minutes: z.number().int().min(5).max(180).default(30),
   meetings_start_at: z.string().optional().nullable(),
   meetings_end_at: z.string().optional().nullable(),
+  max_likes_per_user: z.number().int().min(1).max(500).default(20),
 });
 
 export const listEvents = createServerFn({ method: "POST" })
