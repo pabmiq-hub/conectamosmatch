@@ -1,5 +1,5 @@
-import { Bell } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
+import { NotificationsBell } from "@/components/dashboard/NotificationsBell";
 
 export function Topbar({ title, userName }: { title?: string; userName?: string | null }) {
   return (
@@ -9,9 +9,7 @@ export function Topbar({ title, userName }: { title?: string; userName?: string 
         {title && <h1 className="hidden md:block font-display text-sm font-bold text-uppercase-wide text-muted-foreground">{title}</h1>}
       </div>
       <div className="flex items-center gap-3">
-        <button className="relative rounded-md p-2 hover:bg-muted">
-          <Bell className="h-4 w-4" />
-        </button>
+        <NotificationsBell />
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
             {(userName ?? "U").slice(0, 1).toUpperCase()}
