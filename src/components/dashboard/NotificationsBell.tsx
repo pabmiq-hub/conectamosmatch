@@ -79,7 +79,11 @@ export function NotificationsBell() {
       setItems((prev) => prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x)));
     }
     setOpen(false);
-    if (n.link) navigate({ to: n.link as any });
+    if (n.link) {
+      const [path, qs] = n.link.split("?");
+      const search = qs ? Object.fromEntries(new URLSearchParams(qs)) : undefined;
+      navigate({ to: path as any, search: search as any });
+    }
   }
 
   async function markAll() {
