@@ -109,13 +109,12 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
         ) : step === 1 ? (
           <div className="grid gap-4 md:grid-cols-2">
             {([
-              { r: "empresa" as Role, icon: Building2, t: "Empresa", d: "Empresa que busca soluciones SaaS y partners." },
-              { r: "sponsor" as Role, icon: Sparkles, t: "Sponsor", d: "SaaS / proveedor que quiere conectar con empresas." },
-            ]).map(({ r, icon: Icon, t, d }) => (
+              { r: "empresa" as Role, icon: Building2, t: "Empresa" },
+              { r: "sponsor" as Role, icon: Sparkles, t: "Sponsor" },
+            ]).map(({ r, icon: Icon, t }) => (
               <button key={r} onClick={() => { setRole(r); setStep(2); }} className="text-left rounded-xl border border-border bg-background p-5 hover:border-primary transition">
                 <Icon className="h-6 w-6 text-primary" />
                 <h3 className="mt-3 font-display text-base font-bold text-uppercase-wide">{t}</h3>
-                <p className="mt-1 text-xs text-muted-foreground">{d}</p>
               </button>
             ))}
           </div>
