@@ -69,7 +69,7 @@ function MiFichaEmpresa() {
           <Field label="Ciudad"><input className={inputCls} value={form.location_city ?? ""} onChange={(e) => setForm({ ...form, location_city: e.target.value })} /></Field>
         </div>
         <Field label="¿Qué buscas en este evento?"><textarea rows={2} className={inputCls} value={form.looking_for ?? ""} onChange={(e) => setForm({ ...form, looking_for: e.target.value })} /></Field>
-        <Field label="Tags (separadas por coma)"><input className={inputCls} value={form.tags ?? ""} onChange={(e) => setForm({ ...form, tags: e.target.value })} placeholder="saas, b2b, fintech" /></Field>
+        <Field label="Tags (separadas por coma)"><input className={inputCls} value={form.tags ?? ""} onChange={(e) => setForm({ ...form, tags: e.target.value })} placeholder="tecnología, b2b, retail" /></Field>
         <ResponsablesEditor value={form.responsables ?? []} onChange={(r) => setForm({ ...form, responsables: r })} />
       </div>
     </div>
