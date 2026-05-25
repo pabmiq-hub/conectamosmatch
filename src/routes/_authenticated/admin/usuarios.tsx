@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { LevelBadge } from "@/components/brand/LevelBadge";
-import { Users, Building2, Sparkles, Plus, Search, Trash2, KeyRound, Power, Upload } from "lucide-react";
+import { Users, Building2, Sparkles, Plus, Search, Trash2, KeyRound, Power, Upload, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { NewUserModal } from "@/components/admin/NewUserModal";
 import { ImportUsersModal } from "@/components/admin/ImportUsersModal";
@@ -56,6 +56,13 @@ function AdminUsuarios() {
     <div className="space-y-6">
       <PageHeader title="Usuarios" subtitle="Gestión de empresas, sponsors y administradores" right={
         <div className="flex gap-2">
+          <button className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide" onClick={() => {
+            const url = `${window.location.origin}/registro`;
+            navigator.clipboard.writeText(url);
+            toast.success("Enlace de registro copiado");
+          }}>
+            <Link2 className="h-4 w-4" /> Copiar enlace de registro
+          </button>
           <button className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide" onClick={() => setShowImport(true)}>
             <Upload className="h-4 w-4" /> Importar Excel
           </button>
