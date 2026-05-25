@@ -36,7 +36,7 @@ export function ImportUsersModal({ onClose, onDone }: { onClose: () => void; onD
         role: "sponsor",
         phone: "",
         company_name: "Sponsor SA",
-        sector: "SaaS",
+        sector: "Tecnología",
         company_size: "",
         location_city: "",
         website: "https://sponsor.com",
