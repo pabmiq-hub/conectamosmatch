@@ -24,17 +24,22 @@ export const listMatches = createServerFn({ method: "POST" })
 
     const empIds = Array.from(new Set((matches ?? []).map((m: any) => m.empresa_user_id).filter(Boolean)));
     const spIds = Array.from(new Set((matches ?? []).map((m: any) => m.sponsor_user_id).filter(Boolean)));
-    const [{ data: emps }, { data: sps }] = await Promise.all([
+    const allIds = Array.from(new Set([...empIds, ...spIds]));
+    const [{ data: emps }, { data: sps }, { data: profs }] = await Promise.all([
       supabaseAdmin.from("empresa_profiles").select("user_id, company_name, logo_url").in("user_id", empIds.length ? empIds : ["00000000-0000-0000-0000-000000000000"]),
       supabaseAdmin.from("sponsor_profiles").select("user_id, company_name, logo_url, sponsorship_level").in("user_id", spIds.length ? spIds : ["00000000-0000-0000-0000-000000000000"]),
+      supabaseAdmin.from("profiles").select("id, full_name, account_role").in("id", allIds.length ? allIds : ["00000000-0000-0000-0000-000000000000"]),
     ]);
     const eMap = new Map((emps ?? []).map((e: any) => [e.user_id, e]));
     const sMap = new Map((sps ?? []).map((s: any) => [s.user_id, s]));
+    const pMap = new Map((profs ?? []).map((p: any) => [p.id, p]));
     return {
       matches: (matches ?? []).map((m: any) => ({
         ...m,
         empresa: eMap.get(m.empresa_user_id) ?? null,
         sponsor: sMap.get(m.sponsor_user_id) ?? null,
+        empresa_responsable: pMap.get(m.empresa_user_id) ?? null,
+        sponsor_responsable: pMap.get(m.sponsor_user_id) ?? null,
       })),
     };
   });
