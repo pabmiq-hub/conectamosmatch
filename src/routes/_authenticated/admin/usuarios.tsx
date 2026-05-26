@@ -22,6 +22,7 @@ function AdminUsuarios() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
   const resetPwd = useServerFn(resetUserPassword);
   const setActive = useServerFn(setUserActive);
   const delAccount = useServerFn(deleteUserAccount);
