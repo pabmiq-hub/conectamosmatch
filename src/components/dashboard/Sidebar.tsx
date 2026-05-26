@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { signOut, type AppRole } from "@/lib/auth";
-import { LayoutDashboard, User, Search, Users, Heart, Calendar, MessageSquare, Megaphone, ClipboardList, LogOut, Settings, Building2 } from "lucide-react";
+import { LayoutDashboard, User, Search, Users, Heart, Calendar, MessageSquare, Megaphone, ClipboardList, LogOut, Settings, Building2, UsersRound } from "lucide-react";
 
 export interface NavItem {
   to: string;
