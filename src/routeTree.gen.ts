@@ -21,6 +21,7 @@ import { Route as AuthenticatedSponsorReuniones1to1RouteImport } from './routes/
 import { Route as AuthenticatedSponsorMisMatchesRouteImport } from './routes/_authenticated/sponsor/mis-matches'
 import { Route as AuthenticatedSponsorMiFichaRouteImport } from './routes/_authenticated/sponsor/mi-ficha'
 import { Route as AuthenticatedSponsorMensajesRouteImport } from './routes/_authenticated/sponsor/mensajes'
+import { Route as AuthenticatedSponsorEquipoRouteImport } from './routes/_authenticated/sponsor/equipo'
 import { Route as AuthenticatedSponsorDashboardRouteImport } from './routes/_authenticated/sponsor/dashboard'
 import { Route as AuthenticatedSponsorAgendaRouteImport } from './routes/_authenticated/sponsor/agenda'
 import { Route as AuthenticatedEmpresaVerSponsorsRouteImport } from './routes/_authenticated/empresa/ver-sponsors'
@@ -30,6 +31,7 @@ import { Route as AuthenticatedEmpresaReuniones1to1RouteImport } from './routes/
 import { Route as AuthenticatedEmpresaMisMatchesRouteImport } from './routes/_authenticated/empresa/mis-matches'
 import { Route as AuthenticatedEmpresaMiFichaRouteImport } from './routes/_authenticated/empresa/mi-ficha'
 import { Route as AuthenticatedEmpresaMensajesRouteImport } from './routes/_authenticated/empresa/mensajes'
+import { Route as AuthenticatedEmpresaEquipoRouteImport } from './routes/_authenticated/empresa/equipo'
 import { Route as AuthenticatedEmpresaDashboardRouteImport } from './routes/_authenticated/empresa/dashboard'
 import { Route as AuthenticatedEmpresaAgendaRouteImport } from './routes/_authenticated/empresa/agenda'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin/usuarios'
@@ -106,6 +108,12 @@ const AuthenticatedSponsorMensajesRoute =
     path: '/sponsor/mensajes',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedSponsorEquipoRoute =
+  AuthenticatedSponsorEquipoRouteImport.update({
+    id: '/sponsor/equipo',
+    path: '/sponsor/equipo',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedSponsorDashboardRoute =
   AuthenticatedSponsorDashboardRouteImport.update({
     id: '/sponsor/dashboard',
@@ -158,6 +166,12 @@ const AuthenticatedEmpresaMensajesRoute =
   AuthenticatedEmpresaMensajesRouteImport.update({
     id: '/empresa/mensajes',
     path: '/empresa/mensajes',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedEmpresaEquipoRoute =
+  AuthenticatedEmpresaEquipoRouteImport.update({
+    id: '/empresa/equipo',
+    path: '/empresa/equipo',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedEmpresaDashboardRoute =
@@ -234,6 +248,7 @@ export interface FileRoutesByFullPath {
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/empresa/agenda': typeof AuthenticatedEmpresaAgendaRoute
   '/empresa/dashboard': typeof AuthenticatedEmpresaDashboardRoute
+  '/empresa/equipo': typeof AuthenticatedEmpresaEquipoRoute
   '/empresa/mensajes': typeof AuthenticatedEmpresaMensajesRoute
   '/empresa/mi-ficha': typeof AuthenticatedEmpresaMiFichaRoute
   '/empresa/mis-matches': typeof AuthenticatedEmpresaMisMatchesRoute
@@ -243,6 +258,7 @@ export interface FileRoutesByFullPath {
   '/empresa/ver-sponsors': typeof AuthenticatedEmpresaVerSponsorsRoute
   '/sponsor/agenda': typeof AuthenticatedSponsorAgendaRoute
   '/sponsor/dashboard': typeof AuthenticatedSponsorDashboardRoute
+  '/sponsor/equipo': typeof AuthenticatedSponsorEquipoRoute
   '/sponsor/mensajes': typeof AuthenticatedSponsorMensajesRoute
   '/sponsor/mi-ficha': typeof AuthenticatedSponsorMiFichaRoute
   '/sponsor/mis-matches': typeof AuthenticatedSponsorMisMatchesRoute
@@ -266,6 +282,7 @@ export interface FileRoutesByTo {
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/empresa/agenda': typeof AuthenticatedEmpresaAgendaRoute
   '/empresa/dashboard': typeof AuthenticatedEmpresaDashboardRoute
+  '/empresa/equipo': typeof AuthenticatedEmpresaEquipoRoute
   '/empresa/mensajes': typeof AuthenticatedEmpresaMensajesRoute
   '/empresa/mi-ficha': typeof AuthenticatedEmpresaMiFichaRoute
   '/empresa/mis-matches': typeof AuthenticatedEmpresaMisMatchesRoute
@@ -275,6 +292,7 @@ export interface FileRoutesByTo {
   '/empresa/ver-sponsors': typeof AuthenticatedEmpresaVerSponsorsRoute
   '/sponsor/agenda': typeof AuthenticatedSponsorAgendaRoute
   '/sponsor/dashboard': typeof AuthenticatedSponsorDashboardRoute
+  '/sponsor/equipo': typeof AuthenticatedSponsorEquipoRoute
   '/sponsor/mensajes': typeof AuthenticatedSponsorMensajesRoute
   '/sponsor/mi-ficha': typeof AuthenticatedSponsorMiFichaRoute
   '/sponsor/mis-matches': typeof AuthenticatedSponsorMisMatchesRoute
@@ -300,6 +318,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/_authenticated/empresa/agenda': typeof AuthenticatedEmpresaAgendaRoute
   '/_authenticated/empresa/dashboard': typeof AuthenticatedEmpresaDashboardRoute
+  '/_authenticated/empresa/equipo': typeof AuthenticatedEmpresaEquipoRoute
   '/_authenticated/empresa/mensajes': typeof AuthenticatedEmpresaMensajesRoute
   '/_authenticated/empresa/mi-ficha': typeof AuthenticatedEmpresaMiFichaRoute
   '/_authenticated/empresa/mis-matches': typeof AuthenticatedEmpresaMisMatchesRoute
@@ -309,6 +328,7 @@ export interface FileRoutesById {
   '/_authenticated/empresa/ver-sponsors': typeof AuthenticatedEmpresaVerSponsorsRoute
   '/_authenticated/sponsor/agenda': typeof AuthenticatedSponsorAgendaRoute
   '/_authenticated/sponsor/dashboard': typeof AuthenticatedSponsorDashboardRoute
+  '/_authenticated/sponsor/equipo': typeof AuthenticatedSponsorEquipoRoute
   '/_authenticated/sponsor/mensajes': typeof AuthenticatedSponsorMensajesRoute
   '/_authenticated/sponsor/mi-ficha': typeof AuthenticatedSponsorMiFichaRoute
   '/_authenticated/sponsor/mis-matches': typeof AuthenticatedSponsorMisMatchesRoute
@@ -334,6 +354,7 @@ export interface FileRouteTypes {
     | '/admin/usuarios'
     | '/empresa/agenda'
     | '/empresa/dashboard'
+    | '/empresa/equipo'
     | '/empresa/mensajes'
     | '/empresa/mi-ficha'
     | '/empresa/mis-matches'
@@ -343,6 +364,7 @@ export interface FileRouteTypes {
     | '/empresa/ver-sponsors'
     | '/sponsor/agenda'
     | '/sponsor/dashboard'
+    | '/sponsor/equipo'
     | '/sponsor/mensajes'
     | '/sponsor/mi-ficha'
     | '/sponsor/mis-matches'
@@ -366,6 +388,7 @@ export interface FileRouteTypes {
     | '/admin/usuarios'
     | '/empresa/agenda'
     | '/empresa/dashboard'
+    | '/empresa/equipo'
     | '/empresa/mensajes'
     | '/empresa/mi-ficha'
     | '/empresa/mis-matches'
@@ -375,6 +398,7 @@ export interface FileRouteTypes {
     | '/empresa/ver-sponsors'
     | '/sponsor/agenda'
     | '/sponsor/dashboard'
+    | '/sponsor/equipo'
     | '/sponsor/mensajes'
     | '/sponsor/mi-ficha'
     | '/sponsor/mis-matches'
@@ -399,6 +423,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/usuarios'
     | '/_authenticated/empresa/agenda'
     | '/_authenticated/empresa/dashboard'
+    | '/_authenticated/empresa/equipo'
     | '/_authenticated/empresa/mensajes'
     | '/_authenticated/empresa/mi-ficha'
     | '/_authenticated/empresa/mis-matches'
@@ -408,6 +433,7 @@ export interface FileRouteTypes {
     | '/_authenticated/empresa/ver-sponsors'
     | '/_authenticated/sponsor/agenda'
     | '/_authenticated/sponsor/dashboard'
+    | '/_authenticated/sponsor/equipo'
     | '/_authenticated/sponsor/mensajes'
     | '/_authenticated/sponsor/mi-ficha'
     | '/_authenticated/sponsor/mis-matches'
@@ -513,6 +539,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSponsorMensajesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/sponsor/equipo': {
+      id: '/_authenticated/sponsor/equipo'
+      path: '/sponsor/equipo'
+      fullPath: '/sponsor/equipo'
+      preLoaderRoute: typeof AuthenticatedSponsorEquipoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/sponsor/dashboard': {
       id: '/_authenticated/sponsor/dashboard'
       path: '/sponsor/dashboard'
@@ -574,6 +607,13 @@ declare module '@tanstack/react-router' {
       path: '/empresa/mensajes'
       fullPath: '/empresa/mensajes'
       preLoaderRoute: typeof AuthenticatedEmpresaMensajesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/empresa/equipo': {
+      id: '/_authenticated/empresa/equipo'
+      path: '/empresa/equipo'
+      fullPath: '/empresa/equipo'
+      preLoaderRoute: typeof AuthenticatedEmpresaEquipoRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/empresa/dashboard': {
@@ -676,6 +716,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRoute
   AuthenticatedEmpresaAgendaRoute: typeof AuthenticatedEmpresaAgendaRoute
   AuthenticatedEmpresaDashboardRoute: typeof AuthenticatedEmpresaDashboardRoute
+  AuthenticatedEmpresaEquipoRoute: typeof AuthenticatedEmpresaEquipoRoute
   AuthenticatedEmpresaMensajesRoute: typeof AuthenticatedEmpresaMensajesRoute
   AuthenticatedEmpresaMiFichaRoute: typeof AuthenticatedEmpresaMiFichaRoute
   AuthenticatedEmpresaMisMatchesRoute: typeof AuthenticatedEmpresaMisMatchesRoute
@@ -685,6 +726,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedEmpresaVerSponsorsRoute: typeof AuthenticatedEmpresaVerSponsorsRoute
   AuthenticatedSponsorAgendaRoute: typeof AuthenticatedSponsorAgendaRoute
   AuthenticatedSponsorDashboardRoute: typeof AuthenticatedSponsorDashboardRoute
+  AuthenticatedSponsorEquipoRoute: typeof AuthenticatedSponsorEquipoRoute
   AuthenticatedSponsorMensajesRoute: typeof AuthenticatedSponsorMensajesRoute
   AuthenticatedSponsorMiFichaRoute: typeof AuthenticatedSponsorMiFichaRoute
   AuthenticatedSponsorMisMatchesRoute: typeof AuthenticatedSponsorMisMatchesRoute
@@ -703,6 +745,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRoute,
   AuthenticatedEmpresaAgendaRoute: AuthenticatedEmpresaAgendaRoute,
   AuthenticatedEmpresaDashboardRoute: AuthenticatedEmpresaDashboardRoute,
+  AuthenticatedEmpresaEquipoRoute: AuthenticatedEmpresaEquipoRoute,
   AuthenticatedEmpresaMensajesRoute: AuthenticatedEmpresaMensajesRoute,
   AuthenticatedEmpresaMiFichaRoute: AuthenticatedEmpresaMiFichaRoute,
   AuthenticatedEmpresaMisMatchesRoute: AuthenticatedEmpresaMisMatchesRoute,
@@ -713,6 +756,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedEmpresaVerSponsorsRoute: AuthenticatedEmpresaVerSponsorsRoute,
   AuthenticatedSponsorAgendaRoute: AuthenticatedSponsorAgendaRoute,
   AuthenticatedSponsorDashboardRoute: AuthenticatedSponsorDashboardRoute,
+  AuthenticatedSponsorEquipoRoute: AuthenticatedSponsorEquipoRoute,
   AuthenticatedSponsorMensajesRoute: AuthenticatedSponsorMensajesRoute,
   AuthenticatedSponsorMiFichaRoute: AuthenticatedSponsorMiFichaRoute,
   AuthenticatedSponsorMisMatchesRoute: AuthenticatedSponsorMisMatchesRoute,
@@ -737,3 +781,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
