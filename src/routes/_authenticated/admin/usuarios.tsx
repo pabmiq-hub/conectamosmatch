@@ -29,7 +29,7 @@ function AdminUsuarios() {
 
   async function load() {
     setLoading(true);
-    const { data: profiles } = await supabase.from("profiles").select("id, email, full_name, role, is_active, created_at").order("created_at", { ascending: false });
+    const { data: profiles } = await supabase.from("profiles").select("id, email, full_name, role, account_role, is_active, created_at").order("created_at", { ascending: false });
     const { data: empresas } = await supabase.from("empresa_profiles").select("user_id, company_name, sector, logo_url, is_verified");
     const { data: sponsors } = await supabase.from("sponsor_profiles").select("user_id, company_name, sector, logo_url, sponsorship_level, is_verified");
     const empMap = new Map((empresas ?? []).map((e: any) => [e.user_id, e]));
@@ -118,7 +118,14 @@ function AdminUsuarios() {
                   </td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">{r.email}</td>
                   <td className="px-4 py-3">
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{r.role}</span>
+                    <div className="flex flex-col gap-1">
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-uppercase-wide w-fit">{r.role}</span>
+                      {r.account_role && r.role !== "super_admin" && (
+                        <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold text-uppercase-wide w-fit ${r.account_role === "owner" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                          {r.account_role === "owner" ? "Owner" : "Responsable"}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-xs">
                     {r.company?.sector ?? "—"}
