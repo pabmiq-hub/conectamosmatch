@@ -118,7 +118,14 @@ function AdminUsuarios() {
                   </td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">{r.email}</td>
                   <td className="px-4 py-3">
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{r.role}</span>
+                    <div className="flex flex-col gap-1">
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-uppercase-wide w-fit">{r.role}</span>
+                      {r.account_role && r.role !== "super_admin" && (
+                        <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold text-uppercase-wide w-fit ${r.account_role === "owner" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                          {r.account_role === "owner" ? "Owner" : "Responsable"}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-xs">
                     {r.company?.sector ?? "—"}
