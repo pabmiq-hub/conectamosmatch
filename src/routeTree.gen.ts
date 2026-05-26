@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as RegistroRouteImport } from './routes/registro'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
@@ -43,11 +42,6 @@ import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminEventosIdRegistrosRouteImport } from './routes/_authenticated/admin/eventos.$id.registros'
 import { Route as AuthenticatedAdminEventosIdAgendaRouteImport } from './routes/_authenticated/admin/eventos.$id.agenda'
 
-const RegistroRoute = RegistroRouteImport.update({
-  id: '/registro',
-  path: '/registro',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -238,7 +232,6 @@ const AuthenticatedAdminEventosIdAgendaRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/registro': typeof RegistroRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/eventos': typeof AuthenticatedAdminEventosRouteWithChildren
@@ -272,7 +265,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/registro': typeof RegistroRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/eventos': typeof AuthenticatedAdminEventosRouteWithChildren
@@ -308,7 +300,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
-  '/registro': typeof RegistroRoute
   '/admin/login': typeof AdminLoginRoute
   '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/_authenticated/admin/eventos': typeof AuthenticatedAdminEventosRouteWithChildren
@@ -344,7 +335,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
-    | '/registro'
     | '/admin/login'
     | '/admin/dashboard'
     | '/admin/eventos'
@@ -378,7 +368,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
-    | '/registro'
     | '/admin/login'
     | '/admin/dashboard'
     | '/admin/eventos'
@@ -413,7 +402,6 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/login'
-    | '/registro'
     | '/admin/login'
     | '/_authenticated/admin/dashboard'
     | '/_authenticated/admin/eventos'
@@ -449,19 +437,11 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
-  RegistroRoute: typeof RegistroRoute
   AdminLoginRoute: typeof AdminLoginRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/registro': {
-      id: '/registro'
-      path: '/registro'
-      fullPath: '/registro'
-      preLoaderRoute: typeof RegistroRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -775,9 +755,18 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
-  RegistroRoute: RegistroRoute,
   AdminLoginRoute: AdminLoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

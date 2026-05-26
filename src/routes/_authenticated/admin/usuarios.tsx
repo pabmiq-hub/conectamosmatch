@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { LevelBadge } from "@/components/brand/LevelBadge";
-import { Users, Building2, Sparkles, Plus, Search, Trash2, KeyRound, Power, Upload, Link2 } from "lucide-react";
+import { Users, Building2, Sparkles, Plus, Search, Trash2, KeyRound, Power, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { NewUserModal } from "@/components/admin/NewUserModal";
 import { ImportUsersModal } from "@/components/admin/ImportUsersModal";
