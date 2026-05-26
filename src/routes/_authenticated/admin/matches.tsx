@@ -46,9 +46,25 @@ function AdminMatches() {
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id} className="border-t border-border">
-                  <td className="px-4 py-3 font-medium text-xs">{r.empresa?.company_name ?? "—"}</td>
+                  <td className="px-4 py-3 text-xs">
+                    <div className="font-medium">{r.empresa?.company_name ?? "—"}</div>
+                    {r.empresa_responsable?.full_name && (
+                      <div className="text-[10px] text-muted-foreground">
+                        {r.empresa_responsable.full_name}
+                        {r.empresa_responsable.account_role === "owner" && <span className="ml-1 text-primary">· owner</span>}
+                      </div>
+                    )}
+                  </td>
                   <td className="px-2 py-3"><ArrowRight className="h-4 w-4 text-primary" /></td>
-                  <td className="px-4 py-3 font-medium text-xs">{r.sponsor?.company_name ?? "—"}</td>
+                  <td className="px-4 py-3 text-xs">
+                    <div className="font-medium">{r.sponsor?.company_name ?? "—"}</div>
+                    {r.sponsor_responsable?.full_name && (
+                      <div className="text-[10px] text-muted-foreground">
+                        {r.sponsor_responsable.full_name}
+                        {r.sponsor_responsable.account_role === "owner" && <span className="ml-1 text-primary">· owner</span>}
+                      </div>
+                    )}
+                  </td>
                   <td className="px-4 py-3"><span className="rounded-full bg-success/15 text-success px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{r.status}</span></td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">{r.matched_at && new Date(r.matched_at).toLocaleDateString("es-ES")}</td>
                   <td className="px-4 py-3 text-right">
