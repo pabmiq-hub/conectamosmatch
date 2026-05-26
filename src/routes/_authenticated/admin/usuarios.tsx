@@ -64,14 +64,6 @@ function AdminUsuarios() {
           </button>
         </div>
       } />
-          <button className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide" onClick={() => setShowImport(true)}>
-            <Upload className="h-4 w-4" /> Importar Excel
-          </button>
-          <button className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide" onClick={() => setShowModal(true)}>
-            <Plus className="h-4 w-4" /> Nuevo usuario
-          </button>
-        </div>
-      } />
 
       {showModal && <NewUserModal onClose={() => setShowModal(false)} onCreated={load} />}
       {showImport && <ImportUsersModal onClose={() => setShowImport(false)} onDone={load} />}
