@@ -45,14 +45,36 @@ async function createOne(d: z.infer<typeof createSchema>) {
   });
   if (error || !created.user) throw new Error(error?.message ?? "No se pudo crear");
   const userId = created.user.id;
-  await supabaseAdmin
-    .from("profiles")
-    .upsert({ id: userId, email: d.email, full_name: d.full_name, phone: d.phone, role: d.role });
+
+  let accountId: string | null = null;
   if (d.role === "empresa" && d.empresa) {
-    await supabaseAdmin.from("empresa_profiles").upsert({ user_id: userId, ...d.empresa });
+    const { data: prof, error: e } = await supabaseAdmin
+      .from("empresa_profiles")
+      .insert({ user_id: userId, ...d.empresa })
+      .select("id")
+      .single();
+    if (e) throw new Error(e.message);
+    accountId = prof.id;
   } else if (d.role === "sponsor" && d.sponsor) {
-    await supabaseAdmin.from("sponsor_profiles").upsert({ user_id: userId, ...d.sponsor });
+    const { data: prof, error: e } = await supabaseAdmin
+      .from("sponsor_profiles")
+      .insert({ user_id: userId, ...d.sponsor })
+      .select("id")
+      .single();
+    if (e) throw new Error(e.message);
+    accountId = prof.id;
   }
+
+  await supabaseAdmin.from("profiles").upsert({
+    id: userId,
+    email: d.email,
+    full_name: d.full_name,
+    phone: d.phone,
+    role: d.role,
+    account_id: accountId,
+    account_role: "owner",
+  });
+
   return userId;
 }
 
@@ -63,6 +85,67 @@ export const createUserAccount = createServerFn({ method: "POST" })
     await assertSuperAdmin(context.userId);
     const userId = await createOne(data);
     return { userId, email: data.email };
+  });
+
+// Add a "manager" responsable to an existing account
+const inviteResponsableSchema = z.object({
+  accountId: z.string().uuid(),
+  accountType: z.enum(["empresa", "sponsor"]),
+  full_name: z.string().min(1).max(200),
+  email: z.string().email().max(200),
+  password: z.string().min(8).max(100),
+  phone: z.string().max(40).optional().default(""),
+});
+
+export const inviteResponsable = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => inviteResponsableSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+
+    // Verify account exists
+    const table = data.accountType === "empresa" ? "empresa_profiles" : "sponsor_profiles";
+    const { data: account, error: accErr } = await supabaseAdmin
+      .from(table)
+      .select("id")
+      .eq("id", data.accountId)
+      .maybeSingle();
+    if (accErr || !account) throw new Error("La cuenta no existe");
+
+    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+      email: data.email,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: { full_name: data.full_name, role: data.accountType },
+    });
+    if (error || !created.user) throw new Error(error?.message ?? "No se pudo crear");
+    const userId = created.user.id;
+
+    await supabaseAdmin.from("profiles").upsert({
+      id: userId,
+      email: data.email,
+      full_name: data.full_name,
+      phone: data.phone,
+      role: data.accountType,
+      account_id: data.accountId,
+      account_role: "manager",
+    });
+
+    return { userId, email: data.email };
+  });
+
+export const listAccounts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertSuperAdmin(context.userId);
+    const [{ data: emp }, { data: sp }] = await Promise.all([
+      supabaseAdmin.from("empresa_profiles").select("id, company_name").order("company_name"),
+      supabaseAdmin.from("sponsor_profiles").select("id, company_name").order("company_name"),
+    ]);
+    return {
+      empresas: (emp ?? []).map((e: any) => ({ id: e.id, name: e.company_name })),
+      sponsors: (sp ?? []).map((s: any) => ({ id: s.id, name: s.company_name })),
+    };
   });
 
 export const resetUserPassword = createServerFn({ method: "POST" })
@@ -96,8 +179,16 @@ export const deleteUserAccount = createServerFn({ method: "POST" })
     if (data.userId === context.userId) {
       throw new Response("No puedes eliminar tu propia cuenta", { status: 400 });
     }
-    await supabaseAdmin.from("empresa_profiles").delete().eq("user_id", data.userId);
-    await supabaseAdmin.from("sponsor_profiles").delete().eq("user_id", data.userId);
+    // Only owners delete the account profile rows. Managers just lose their auth user.
+    const { data: prof } = await supabaseAdmin
+      .from("profiles")
+      .select("account_role")
+      .eq("id", data.userId)
+      .maybeSingle();
+    if (prof?.account_role === "owner") {
+      await supabaseAdmin.from("empresa_profiles").delete().eq("user_id", data.userId);
+      await supabaseAdmin.from("sponsor_profiles").delete().eq("user_id", data.userId);
+    }
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
     if (error) throw new Response(error.message, { status: 400 });
     return { ok: true };

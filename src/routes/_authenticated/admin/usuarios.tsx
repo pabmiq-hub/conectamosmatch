@@ -4,10 +4,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { LevelBadge } from "@/components/brand/LevelBadge";
-import { Users, Building2, Sparkles, Plus, Search, Trash2, KeyRound, Power, Upload, Link2 } from "lucide-react";
+import { Users, Building2, Sparkles, Plus, Search, Trash2, KeyRound, Power, Upload, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { NewUserModal } from "@/components/admin/NewUserModal";
 import { ImportUsersModal } from "@/components/admin/ImportUsersModal";
+import { InviteResponsableModal } from "@/components/admin/InviteResponsableModal";
 import { deleteUserAccount, resetUserPassword, setUserActive } from "@/lib/admin-users.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/usuarios")({
@@ -21,6 +22,7 @@ function AdminUsuarios() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
   const resetPwd = useServerFn(resetUserPassword);
   const setActive = useServerFn(setUserActive);
   const delAccount = useServerFn(deleteUserAccount);
@@ -56,24 +58,21 @@ function AdminUsuarios() {
     <div className="space-y-6">
       <PageHeader title="Usuarios" subtitle="Gestión de empresas, sponsors y administradores" right={
         <div className="flex gap-2">
-          <button className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide" onClick={() => {
-            const url = `${window.location.origin}/registro`;
-            navigator.clipboard.writeText(url);
-            toast.success("Enlace de registro copiado");
-          }}>
-            <Link2 className="h-4 w-4" /> Copiar enlace de registro
-          </button>
           <button className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide" onClick={() => setShowImport(true)}>
             <Upload className="h-4 w-4" /> Importar Excel
           </button>
+          <button className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide" onClick={() => setShowInvite(true)}>
+            <UserPlus className="h-4 w-4" /> Invitar responsable
+          </button>
           <button className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide" onClick={() => setShowModal(true)}>
-            <Plus className="h-4 w-4" /> Nuevo usuario
+            <Plus className="h-4 w-4" /> Nueva cuenta
           </button>
         </div>
       } />
 
       {showModal && <NewUserModal onClose={() => setShowModal(false)} onCreated={load} />}
       {showImport && <ImportUsersModal onClose={() => setShowImport(false)} onDone={load} />}
+      {showInvite && <InviteResponsableModal onClose={() => setShowInvite(false)} onCreated={load} />}
 
 
       <div className="flex flex-wrap items-center gap-2">

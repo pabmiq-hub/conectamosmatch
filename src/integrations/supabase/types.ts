@@ -618,6 +618,8 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_id: string | null
+          account_role: string
           avatar_url: string | null
           created_at: string | null
           email: string | null
@@ -629,6 +631,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          account_id?: string | null
+          account_role?: string
           avatar_url?: string | null
           created_at?: string | null
           email?: string | null
@@ -640,6 +644,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          account_id?: string | null
+          account_role?: string
           avatar_url?: string | null
           created_at?: string | null
           email?: string | null
@@ -749,6 +755,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      account_id_of: { Args: { _user: string }; Returns: string }
       assign_meeting_slots: {
         Args: { p_event_id: string }
         Returns: {
@@ -767,6 +774,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      my_account_id: { Args: never; Returns: string }
+      same_account: { Args: { _a: string; _b: string }; Returns: boolean }
     }
     Enums: {
       agenda_type_t:
