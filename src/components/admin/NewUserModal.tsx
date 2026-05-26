@@ -87,7 +87,7 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
             <h2 className="font-display text-lg font-bold text-uppercase-wide">
               {created ? "Cuenta creada" : `Nuevo usuario${role ? ` · ${role}` : ""}`}
             </h2>
-            {!created && <p className="text-xs text-muted-foreground mt-1">Paso {step} de 4</p>}
+            {!created && <p className="text-xs text-muted-foreground mt-1">Paso {step} de 4 · esta persona será <span className="font-bold text-primary">owner</span> de la cuenta. Para añadir más responsables usa "Invitar responsable".</p>}
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
         </div>
