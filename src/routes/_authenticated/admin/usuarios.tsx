@@ -29,7 +29,7 @@ function AdminUsuarios() {
 
   async function load() {
     setLoading(true);
-    const { data: profiles } = await supabase.from("profiles").select("id, email, full_name, role, is_active, created_at").order("created_at", { ascending: false });
+    const { data: profiles } = await supabase.from("profiles").select("id, email, full_name, role, account_role, is_active, created_at").order("created_at", { ascending: false });
     const { data: empresas } = await supabase.from("empresa_profiles").select("user_id, company_name, sector, logo_url, is_verified");
     const { data: sponsors } = await supabase.from("sponsor_profiles").select("user_id, company_name, sector, logo_url, sponsorship_level, is_verified");
     const empMap = new Map((empresas ?? []).map((e: any) => [e.user_id, e]));
