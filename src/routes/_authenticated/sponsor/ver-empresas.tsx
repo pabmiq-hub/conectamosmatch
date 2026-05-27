@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PartnerCard } from "@/components/dashboard/PartnerCard";
-import { ActionButton, LikeButton, Eye, MessageSquare } from "@/components/dashboard/ActionButtons";
+import { ActionButton, LikeButton, Eye } from "@/components/dashboard/ActionButtons";
 import { PageHeader } from "@/components/dashboard/EmptyState";
 import { PartnerDetailModal, type PartnerDetail } from "@/components/dashboard/PartnerDetailModal";
 

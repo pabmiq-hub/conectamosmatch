@@ -1,4 +1,4 @@
-import { Eye, MessageSquare, Heart } from "lucide-react";
+import { Eye, Heart } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -94,4 +94,4 @@ export function LikeButton({
   );
 }
 
-export { Eye, MessageSquare };
+export { Eye };
