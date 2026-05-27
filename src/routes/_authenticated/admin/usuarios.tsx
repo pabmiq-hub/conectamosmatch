@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { LevelBadge } from "@/components/brand/LevelBadge";
-import { Users, Building2, Sparkles, Plus, Search, Trash2, KeyRound, Power, Upload, UserPlus, Inbox, Check, X, CornerDownRight, Shield } from "lucide-react";
+import { Users, Building2, Sparkles, Plus, Search, Trash2, KeyRound, Power, Upload, UserPlus, Inbox, Check, X, CornerDownRight, Shield, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { NewUserModal } from "@/components/admin/NewUserModal";
 import { ImportUsersModal } from "@/components/admin/ImportUsersModal";
@@ -36,6 +36,7 @@ function AdminUsuarios() {
   const [showModal, setShowModal] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [requests, setRequests] = useState<ResponsableRequest[]>([]);
   const [approving, setApproving] = useState<ResponsableRequest | null>(null);
   const resetPwd = useServerFn(resetUserPassword);
@@ -192,12 +193,23 @@ function AdminUsuarios() {
             const head = g.owner ?? g.managers[0];
             const accountName = head?.company?.company_name ?? head?.full_name ?? "(sin nombre)";
             const role = head?.role;
+            const key = head?.account_id ?? head?.id ?? "";
+            const isOpen = expanded.has(key);
+            const canExpand = g.managers.length > 0;
+            const toggle = () => {
+              if (!canExpand) return;
+              setExpanded((prev) => {
+                const next = new Set(prev);
+                if (next.has(key)) next.delete(key); else next.add(key);
+                return next;
+              });
+            };
             return (
-              <div key={head?.account_id ?? head?.id} className="rounded-xl border border-border bg-card overflow-hidden">
+              <div key={key} className="rounded-xl border border-border bg-card overflow-hidden">
                 {/* Account header (owner) */}
-                <AccountHeader owner={g.owner} role={role} accountName={accountName} onReset={onReset} onToggle={onToggle} onDelete={onDelete} />
+                <AccountHeader owner={g.owner} role={role} accountName={accountName} managersCount={g.managers.length} isOpen={isOpen} onToggle={toggle} canExpand={canExpand} onReset={onReset} onToggleActive={onToggle} onDelete={onDelete} />
                 {/* Managers */}
-                {g.managers.length > 0 && (
+                {isOpen && g.managers.length > 0 && (
                   <ul className="divide-y divide-border border-t border-border bg-muted/10">
                     {g.managers.map((m) => (
                       <li key={m.id} className="flex items-center gap-3 px-4 py-2.5 pl-10 text-sm">
@@ -260,20 +272,31 @@ function AdminUsuarios() {
   );
 }
 
-function AccountHeader({ owner, role, accountName, onReset, onToggle, onDelete }: { owner: Profile | null; role: string | undefined; accountName: string; onReset: (id: string) => void; onToggle: (p: Profile) => void; onDelete: (p: Profile) => void }) {
+function AccountHeader({ owner, role, accountName, managersCount, isOpen, onToggle, canExpand, onReset, onToggleActive, onDelete }: { owner: Profile | null; role: string | undefined; accountName: string; managersCount: number; isOpen: boolean; onToggle: () => void; canExpand: boolean; onReset: (id: string) => void; onToggleActive: (p: Profile) => void; onDelete: (p: Profile) => void }) {
   const Icon = role === "sponsor" ? Sparkles : Building2;
   const company = owner?.company;
   return (
-    <div className="flex items-center gap-3 px-4 py-3 bg-muted/20">
+    <div
+      className={`flex items-center gap-3 px-4 py-3 bg-muted/20 ${canExpand ? "cursor-pointer hover:bg-muted/40 transition-colors" : ""}`}
+      onClick={canExpand ? onToggle : undefined}
+      role={canExpand ? "button" : undefined}
+      aria-expanded={canExpand ? isOpen : undefined}
+    >
+      <ChevronRight className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${isOpen ? "rotate-90" : ""} ${canExpand ? "" : "opacity-30"}`} />
       <div className="h-10 w-10 rounded-md bg-card border border-border overflow-hidden flex items-center justify-center shrink-0">
         {company?.logo_url ? <img src={company.logo_url} className="max-h-full max-w-full" alt="" /> : <Icon className="h-5 w-5 text-muted-foreground" />}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="font-display font-bold text-sm truncate">{accountName}</span>
           <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[9px] font-bold text-uppercase-wide">{role}</span>
           {company?.is_verified && <span className="text-[9px] text-success">✓ Verificada</span>}
           {company?.sponsorship_level && <LevelBadge level={company.sponsorship_level} />}
+          {managersCount > 0 && (
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[9px] font-bold text-uppercase-wide text-muted-foreground">
+              {managersCount} {managersCount === 1 ? "responsable" : "responsables"}
+            </span>
+          )}
         </div>
         {owner ? (
           <div className="text-[11px] text-muted-foreground truncate">
@@ -286,10 +309,10 @@ function AccountHeader({ owner, role, accountName, onReset, onToggle, onDelete }
       </div>
       <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">Owner</span>
       {owner && (
-        <>
+        <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
           <span className={`text-[10px] font-bold text-uppercase-wide ${owner.is_active ? "text-success" : "text-muted-foreground"}`}>{owner.is_active ? "Activo" : "Inactivo"}</span>
-          <RowActions p={owner} onReset={onReset} onToggle={onToggle} onDelete={onDelete} />
-        </>
+          <RowActions p={owner} onReset={onReset} onToggle={onToggleActive} onDelete={onDelete} />
+        </div>
       )}
     </div>
   );
