@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PartnerCard } from "@/components/dashboard/PartnerCard";
-import { ActionButton, LikeButton, Eye, MessageSquare } from "@/components/dashboard/ActionButtons";
+import { ActionButton, LikeButton, Eye } from "@/components/dashboard/ActionButtons";
 import { PartnerDetailModal, type PartnerDetail } from "@/components/dashboard/PartnerDetailModal";
 
 export const Route = createFileRoute("/_authenticated/empresa/ver-sponsors")({
@@ -58,7 +58,7 @@ function VerSponsors() {
             actions={
               <>
                 <ActionButton icon={Eye} label="Ver" onClick={() => setSelected(s)} />
-                <ActionButton icon={MessageSquare} label="Msg" />
+                
                 {me && <LikeButton fromUserId={me} toUserId={s.user_id} eventId={eventId} alreadyLiked={likedSet.has(s.user_id)} partnerName={s.company_name} disabled={reachedCap && !likedSet.has(s.user_id)} />}
               </>
             }

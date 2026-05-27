@@ -520,61 +520,6 @@ export type Database = {
           },
         ]
       }
-      messages: {
-        Row: {
-          content: string
-          created_at: string | null
-          event_id: string | null
-          from_user_id: string | null
-          id: string
-          is_read: boolean | null
-          read_at: string | null
-          to_user_id: string | null
-        }
-        Insert: {
-          content: string
-          created_at?: string | null
-          event_id?: string | null
-          from_user_id?: string | null
-          id?: string
-          is_read?: boolean | null
-          read_at?: string | null
-          to_user_id?: string | null
-        }
-        Update: {
-          content?: string
-          created_at?: string | null
-          event_id?: string | null
-          from_user_id?: string | null
-          id?: string
-          is_read?: boolean | null
-          read_at?: string | null
-          to_user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "messages_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_from_user_id_fkey"
-            columns: ["from_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_to_user_id_fkey"
-            columns: ["to_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       notifications: {
         Row: {
           body: string | null

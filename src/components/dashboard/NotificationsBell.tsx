@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Bell, Heart, MessageSquare, Calendar, Megaphone, Sparkles, Check } from "lucide-react";
+import { Bell, Heart, Calendar, Megaphone, Sparkles, Check } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -17,7 +17,6 @@ type Notif = {
 const ICON: Record<string, typeof Bell> = {
   new_match: Sparkles,
   like_received: Heart,
-  new_message: MessageSquare,
   meeting_assigned: Calendar,
   meeting_updated: Calendar,
   bulletin_new: Megaphone,
@@ -57,9 +56,7 @@ export function NotificationsBell() {
         const n = payload.new as Notif;
         setItems((prev) => [n, ...prev].slice(0, 15));
         if (n.type === "new_match") {
-          toast.success(n.title ?? "¡Nuevo match!", { description: "Ya puedes escribirle desde Mensajes" });
-        } else if (n.type === "new_message") {
-          toast(n.title ?? "Nuevo mensaje", { description: n.body ?? "" });
+          toast.success(n.title ?? "¡Nuevo match!", { description: "Revisa tus matches" });
         }
       }).subscribe();
     return () => { supabase.removeChannel(ch); };

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Logo } from "@/components/brand/Logo";
-import { ArrowRight, Building2, Sparkles, Calendar, Users, Heart, MessageSquare } from "lucide-react";
+import { ArrowRight, Building2, Sparkles, Calendar, Users, Heart } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -144,7 +144,7 @@ function Landing() {
             {[
               { icon: Heart, t: "Matchmaking curado", d: "Algoritmo de doble like que garantiza interés mutuo antes del match." },
               { icon: Calendar, t: "Agenda integrada", d: "Charlas, networking y reuniones 1:1 en una sola vista." },
-              { icon: MessageSquare, t: "Mensajería directa", d: "Habla con tus matches y otros perfiles del evento en tiempo real." },
+              { icon: Users, t: "Equipo colaborativo", d: "Invita a varios responsables a gestionar la cuenta de tu organización." },
             ].map(({ icon: Icon, t, d }) => (
               <div key={t} className="rounded-2xl border border-border bg-background p-6">
                 <Icon className="h-6 w-6 text-primary" />
