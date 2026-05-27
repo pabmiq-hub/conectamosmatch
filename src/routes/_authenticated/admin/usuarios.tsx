@@ -193,12 +193,23 @@ function AdminUsuarios() {
             const head = g.owner ?? g.managers[0];
             const accountName = head?.company?.company_name ?? head?.full_name ?? "(sin nombre)";
             const role = head?.role;
+            const key = head?.account_id ?? head?.id ?? "";
+            const isOpen = expanded.has(key);
+            const canExpand = g.managers.length > 0;
+            const toggle = () => {
+              if (!canExpand) return;
+              setExpanded((prev) => {
+                const next = new Set(prev);
+                if (next.has(key)) next.delete(key); else next.add(key);
+                return next;
+              });
+            };
             return (
-              <div key={head?.account_id ?? head?.id} className="rounded-xl border border-border bg-card overflow-hidden">
+              <div key={key} className="rounded-xl border border-border bg-card overflow-hidden">
                 {/* Account header (owner) */}
-                <AccountHeader owner={g.owner} role={role} accountName={accountName} onReset={onReset} onToggle={onToggle} onDelete={onDelete} />
+                <AccountHeader owner={g.owner} role={role} accountName={accountName} managersCount={g.managers.length} isOpen={isOpen} onToggle={toggle} canExpand={canExpand} onReset={onReset} onToggleActive={onToggle} onDelete={onDelete} />
                 {/* Managers */}
-                {g.managers.length > 0 && (
+                {isOpen && g.managers.length > 0 && (
                   <ul className="divide-y divide-border border-t border-border bg-muted/10">
                     {g.managers.map((m) => (
                       <li key={m.id} className="flex items-center gap-3 px-4 py-2.5 pl-10 text-sm">
