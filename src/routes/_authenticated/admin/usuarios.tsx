@@ -272,20 +272,31 @@ function AdminUsuarios() {
   );
 }
 
-function AccountHeader({ owner, role, accountName, onReset, onToggle, onDelete }: { owner: Profile | null; role: string | undefined; accountName: string; onReset: (id: string) => void; onToggle: (p: Profile) => void; onDelete: (p: Profile) => void }) {
+function AccountHeader({ owner, role, accountName, managersCount, isOpen, onToggle, canExpand, onReset, onToggleActive, onDelete }: { owner: Profile | null; role: string | undefined; accountName: string; managersCount: number; isOpen: boolean; onToggle: () => void; canExpand: boolean; onReset: (id: string) => void; onToggleActive: (p: Profile) => void; onDelete: (p: Profile) => void }) {
   const Icon = role === "sponsor" ? Sparkles : Building2;
   const company = owner?.company;
   return (
-    <div className="flex items-center gap-3 px-4 py-3 bg-muted/20">
+    <div
+      className={`flex items-center gap-3 px-4 py-3 bg-muted/20 ${canExpand ? "cursor-pointer hover:bg-muted/40 transition-colors" : ""}`}
+      onClick={canExpand ? onToggle : undefined}
+      role={canExpand ? "button" : undefined}
+      aria-expanded={canExpand ? isOpen : undefined}
+    >
+      <ChevronRight className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${isOpen ? "rotate-90" : ""} ${canExpand ? "" : "opacity-30"}`} />
       <div className="h-10 w-10 rounded-md bg-card border border-border overflow-hidden flex items-center justify-center shrink-0">
         {company?.logo_url ? <img src={company.logo_url} className="max-h-full max-w-full" alt="" /> : <Icon className="h-5 w-5 text-muted-foreground" />}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="font-display font-bold text-sm truncate">{accountName}</span>
           <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[9px] font-bold text-uppercase-wide">{role}</span>
           {company?.is_verified && <span className="text-[9px] text-success">✓ Verificada</span>}
           {company?.sponsorship_level && <LevelBadge level={company.sponsorship_level} />}
+          {managersCount > 0 && (
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[9px] font-bold text-uppercase-wide text-muted-foreground">
+              {managersCount} {managersCount === 1 ? "responsable" : "responsables"}
+            </span>
+          )}
         </div>
         {owner ? (
           <div className="text-[11px] text-muted-foreground truncate">
@@ -298,10 +309,10 @@ function AccountHeader({ owner, role, accountName, onReset, onToggle, onDelete }
       </div>
       <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">Owner</span>
       {owner && (
-        <>
+        <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
           <span className={`text-[10px] font-bold text-uppercase-wide ${owner.is_active ? "text-success" : "text-muted-foreground"}`}>{owner.is_active ? "Activo" : "Inactivo"}</span>
-          <RowActions p={owner} onReset={onReset} onToggle={onToggle} onDelete={onDelete} />
-        </>
+          <RowActions p={owner} onReset={onReset} onToggle={onToggleActive} onDelete={onDelete} />
+        </div>
       )}
     </div>
   );
