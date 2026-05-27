@@ -603,6 +603,51 @@ export type Database = {
         }
         Relationships: []
       }
+      responsable_requests: {
+        Row: {
+          account_id: string
+          account_type: string
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          phone: string | null
+          rejection_reason: string | null
+          requested_by: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["responsable_request_status_t"]
+        }
+        Insert: {
+          account_id: string
+          account_type: string
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          phone?: string | null
+          rejection_reason?: string | null
+          requested_by: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["responsable_request_status_t"]
+        }
+        Update: {
+          account_id?: string
+          account_type?: string
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          rejection_reason?: string | null
+          requested_by?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["responsable_request_status_t"]
+        }
+        Relationships: []
+      }
       sponsor_profiles: {
         Row: {
           budget_range: string | null
@@ -748,6 +793,11 @@ export type Database = {
         | "registered"
         | "confirmed"
         | "attended"
+        | "cancelled"
+      responsable_request_status_t:
+        | "pending"
+        | "approved"
+        | "rejected"
         | "cancelled"
       sponsor_level_t: "PLATINUM" | "GOLD" | "SILVER" | "BRONZE"
     }
@@ -904,6 +954,12 @@ export const Constants = {
         "registered",
         "confirmed",
         "attended",
+        "cancelled",
+      ],
+      responsable_request_status_t: [
+        "pending",
+        "approved",
+        "rejected",
         "cancelled",
       ],
       sponsor_level_t: ["PLATINUM", "GOLD", "SILVER", "BRONZE"],

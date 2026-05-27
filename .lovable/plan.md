@@ -1,71 +1,63 @@
-# Plan: Matches, chat y notificaciones
+# Gestión de responsables vinculados a cuentas
 
-## Objetivo
+Hoy los responsables aparecen como cuentas independientes en el panel del super admin, lo que oculta que dependen de una empresa o sponsor. Además, solo el super admin puede crearlos. Vamos a cambiar dos cosas:
 
-Tras un like mutuo, empresa y sponsor quedan emparejados automáticamente, el chat queda desbloqueado y ambos reciben aviso en la campana de la topbar. El admin sigue gestionando la asignación de las reuniones 1to1, pero ahora cualquier cambio también notifica. Añadimos aviso anónimo de "te han dado like", de mensajes nuevos y de anuncios del tablón. Se aplica un tope de 20 likes por usuario/evento, configurable por el admin a nivel de evento.
+## 1. Visualización en `/admin/usuarios`
 
-## Cambios en base de datos
+La lista pasa a agruparse por **cuenta** (empresa o sponsor). Cada fila principal es la cuenta (owner), y debajo, indentados, aparecen sus responsables (managers) con un indicador visual claro de dependencia (línea/sangría + chip "Responsable de {nombre cuenta}").
 
-1. **`events.max_likes_per_user`** (int, default `20`) — el admin puede subir/bajar el tope desde el modal de evento.
-2. **Triggers nuevos en `notifications`**:
-   - `on_like_insert` → notifica al receptor con tipo `like_received`, sin revelar autor (`"Alguien se ha interesado por tu perfil"`).
-   - `on_message_insert` → notifica al destinatario con tipo `new_message` (link a `/{role}/mensajes`).
-   - `on_meeting_change` (insert + update de `scheduled_time`/`room`/`status`) → notifica a empresa y sponsor con tipo `meeting_assigned` o `meeting_updated`.
-   - `on_bulletin_insert` → notifica a todos los usuarios autenticados (filtrando por scope/event_id).
-3. **Realtime**: `ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;` y `messages` (para que el chat también sea live).
-4. **Tope de likes**: el trigger existente `check_and_create_match` no valida cantidad; añadimos validación en `before insert on likes` que cuente likes del `from_user_id` para ese `event_id` y rechace si supera `events.max_likes_per_user`.
+- Owner: fila normal con badge `OWNER` y el badge de empresa/sponsor.
+- Manager: fila anidada visualmente bajo su owner, con badge `RESPONSABLE` y referencia explícita al nombre de la cuenta a la que pertenece.
+- Super admin: aparte, sin agrupar.
+- Los filtros "Empresas / Sponsors" siguen funcionando y agrupan por tipo de cuenta.
 
-## Server functions
+## 2. Flujo de solicitud por la propia empresa/sponsor
 
-- `src/lib/notifications.functions.ts`
-  - `listNotifications({ unreadOnly })` — devuelve las del usuario con un join ligero.
-  - `markNotificationRead({ id })` y `markAllRead()`.
-  - `getUnreadCount()` para el badge inicial (luego se actualiza por realtime).
-- `src/lib/admin-events.functions.ts` — añadir `max_likes_per_user` a la validación Zod y al payload del modal.
+Las empresas y sponsors pueden **proponer** responsables desde su panel "Mi Equipo":
 
-## UI
+- Botón "Solicitar nuevo responsable" → modal con nombre completo, email y teléfono (sin contraseña).
+- Crea una solicitud en estado `pending` asociada a su `account_id`.
+- En la lista del equipo aparecen tanto los responsables activos como las solicitudes pendientes (con badge "Pendiente de aprobación").
+- Pueden cancelar una solicitud pendiente.
 
-### Campana de notificaciones
-Reemplazar el `<button>` estático del `Topbar` por un `NotificationsBell`:
-- Badge con contador (rojo, esquina sup-der) que se actualiza vía suscripción realtime a `notifications` filtrada por `user_id`.
-- Click abre un `<Popover>` con las últimas 10 notificaciones (icono según tipo, título, tiempo relativo, indicador "no leído").
-- Click en una notificación → navega a `link` y marca como leída.
-- Botón "Marcar todas como leídas" + link "Ver todas" (futuro, fuera de scope).
+El super admin gestiona las solicitudes en una nueva sección **"Solicitudes de responsable"** dentro de `/admin/usuarios`:
 
-### Match → chat
-- En `MensajesPanel`, las conversaciones se construyen a partir de `matches` mutuos (no solo de mensajes existentes), de modo que un match nuevo aparece inmediatamente como hilo vacío listo para escribir.
-- Al recibir notificación de `new_match`, el link lleva directo a `/{role}/mensajes` con el partner preseleccionado (vía query param `?with=<user_id>`).
+- Lista de solicitudes pendientes con cuenta, nombre y email.
+- Al aprobar: el super admin asigna una contraseña (campo con botón "Generar"), se crea el usuario auth, se vincula como `manager` de la cuenta, y la solicitud pasa a `approved`.
+- Al rechazar: la solicitud pasa a `rejected` con motivo opcional.
+- Notificación al owner de la cuenta cuando se aprueba/rechaza.
 
-### Tope de likes
-- En `ver-sponsors.tsx` y `ver-empresas.tsx` (vista sponsor): leer `events.max_likes_per_user` del evento activo, mostrar `{usados}/{tope} seleccionados` real, deshabilitar el `LikeButton` cuando `usados >= tope` con tooltip "Has alcanzado el límite del evento".
-- En el modal de evento del admin (`EventModal`): añadir input numérico "Likes máximos por participante".
+El botón "Invitar responsable" del super admin se mantiene como atajo directo (sin pasar por solicitud), por si necesita crear uno manualmente.
 
-### Toast en match
-Cuando llega notificación realtime de tipo `new_match`, además del badge, lanzar un `toast.success("¡Nuevo match con X! Ya puedes escribirle")` con acción "Abrir chat".
+## Detalles técnicos
 
-## Tipos de notificación y links
+**Migración SQL**:
+- Nueva tabla `public.responsable_requests`:
+  - `id uuid PK`, `account_id uuid`, `account_type ('empresa'|'sponsor')`, `requested_by uuid` (user del owner), `full_name`, `email`, `phone`, `status ('pending'|'approved'|'rejected')`, `rejection_reason text`, `reviewed_by uuid`, `reviewed_at`, `created_at`.
+  - Índice por `account_id` y por `status`.
+  - GRANTs a `authenticated` y `service_role`.
+  - RLS:
+    - SELECT: miembros de la cuenta (`same_account` con `requested_by`) o super_admin.
+    - INSERT: owner de la cuenta (`account_role='owner'` y `account_id` coincide).
+    - UPDATE/DELETE: solo super_admin (vía service role en server functions).
 
-| type              | título                              | link destino                          |
-|-------------------|-------------------------------------|---------------------------------------|
-| `new_match`       | ¡Nuevo match con {nombre}!         | `/{role}/mensajes?with={user_id}`     |
-| `like_received`   | Alguien se ha interesado por ti     | `/{role}/ver-{contraparte}`           |
-| `new_message`     | Nuevo mensaje de {nombre}           | `/{role}/mensajes?with={user_id}`     |
-| `meeting_assigned`| Reunión 1to1 programada             | `/{role}/reuniones-1to1`              |
-| `meeting_updated` | Tu reunión 1to1 ha cambiado         | `/{role}/reuniones-1to1`              |
-| `bulletin_new`    | Nuevo anuncio: {título}             | `/{role}/tablon`                      |
+**Server functions nuevas** (`src/lib/responsable-requests.functions.ts`):
+- `requestResponsable({ full_name, email, phone })` — owner crea solicitud para su cuenta.
+- `listMyAccountRequests()` — lista solicitudes de la cuenta del usuario.
+- `cancelMyRequest({ id })` — owner cancela una pendiente suya.
+- `listAllRequests()` — super admin lista todas (con filtro de status).
+- `approveRequest({ id, password })` — super admin crea el auth user + perfil manager + marca approved.
+- `rejectRequest({ id, reason })` — super admin rechaza.
 
-## Orden de implementación
+**UI**:
+- `EquipoPanel.tsx`: añadir sección "Solicitudes pendientes" y botón "Solicitar responsable" (solo visible para owners).
+- Nuevo `RequestResponsableModal.tsx` (lado empresa/sponsor).
+- Nuevo `ApproveRequestModal.tsx` (lado super admin, con password + generar).
+- `admin/usuarios.tsx`: reorganizar la tabla en grupos por cuenta + nueva pestaña/sección "Solicitudes (N)".
 
-1. Migración SQL (columna `max_likes_per_user`, triggers de notificación, validación de tope, realtime publication).
-2. Server functions de notificaciones.
-3. Componente `NotificationsBell` + integración en `Topbar` + suscripción realtime.
-4. `MensajesPanel`: hilos derivados de matches + soporte `?with=`.
-5. Vistas de directorio: contador real + bloqueo a partir del tope.
-6. `EventModal` admin: campo `max_likes_per_user`.
-7. QA manual: like mutuo entre dos cuentas → notificación instantánea + chat funcional + reunión pendiente visible.
+## Lo que NO cambia
+- El modelo de cuentas multi-responsable (account_id / account_role) ya implementado.
+- El super admin sigue pudiendo crear owners y responsables directamente.
+- Los responsables existentes mantienen su estado.
 
-## Fuera de scope (para más adelante)
-
-- Página `/notificaciones` con histórico y filtros.
-- Notificaciones por email.
-- Confirmación bilateral de reuniones.
+¿Apruebas el plan?
