@@ -58,7 +58,7 @@ function VerSponsors() {
             actions={
               <>
                 <ActionButton icon={Eye} label="Ver" onClick={() => setSelected(s)} />
-                <ActionButton icon={MessageSquare} label="Msg" />
+                
                 {me && <LikeButton fromUserId={me} toUserId={s.user_id} eventId={eventId} alreadyLiked={likedSet.has(s.user_id)} partnerName={s.company_name} disabled={reachedCap && !likedSet.has(s.user_id)} />}
               </>
             }

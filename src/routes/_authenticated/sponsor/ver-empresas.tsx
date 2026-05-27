@@ -50,7 +50,7 @@ function VerEmpresasSponsor() {
           <PartnerCard key={e.user_id ?? e.company_name} name={e.company_name} description={e.description} logoUrl={e.logo_url} sector={e.sector} size={e.company_size}
             actions={<>
               <ActionButton icon={Eye} label="Ver" onClick={() => setSelected(e)} />
-              <ActionButton icon={MessageSquare} label="Msg" />
+              
               {me && e.user_id && <LikeButton fromUserId={me} toUserId={e.user_id} eventId={eventId} alreadyLiked={likedSet.has(e.user_id)} partnerName={e.company_name} disabled={reachedCap && !likedSet.has(e.user_id)} />}
             </>} />
         ))}
