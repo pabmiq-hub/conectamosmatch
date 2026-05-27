@@ -1,25 +1,84 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { listMyTeam, type TeamMember } from "@/lib/account-team.functions";
+import { listMyAccountRequests, cancelMyRequest } from "@/lib/responsable-requests.functions";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
-import { Users, Calendar, MapPin } from "lucide-react";
+import { RequestResponsableModal } from "@/components/dashboard/RequestResponsableModal";
+import { supabase } from "@/integrations/supabase/client";
+import { Users, Calendar, MapPin, UserPlus, Clock, X } from "lucide-react";
+import { toast } from "sonner";
+
+type Req = { id: string; full_name: string; email: string; phone: string | null; status: string; rejection_reason: string | null; created_at: string };
 
 export function EquipoPanel({ subtitle }: { subtitle: string }) {
   const fetchTeam = useServerFn(listMyTeam);
+  const fetchRequests = useServerFn(listMyAccountRequests);
+  const cancelReq = useServerFn(cancelMyRequest);
   const [team, setTeam] = useState<TeamMember[]>([]);
+  const [requests, setRequests] = useState<Req[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isOwner, setIsOwner] = useState(false);
+  const [showRequest, setShowRequest] = useState(false);
 
-  useEffect(() => {
-    fetchTeam().then((d) => { setTeam(d); setLoading(false); }).catch(() => setLoading(false));
-  }, []);
+  async function load() {
+    setLoading(true);
+    const { data: session } = await supabase.auth.getSession();
+    if (session.session) {
+      const { data: me } = await supabase.from("profiles").select("account_role").eq("id", session.session.user.id).maybeSingle();
+      setIsOwner(me?.account_role === "owner");
+    }
+    const [t, r] = await Promise.all([fetchTeam(), fetchRequests()]);
+    setTeam(t);
+    setRequests(r as Req[]);
+    setLoading(false);
+  }
+  useEffect(() => { load(); }, []);
+
+  const pending = requests.filter((r) => r.status === "pending");
+  const past = requests.filter((r) => r.status !== "pending");
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Mi equipo" subtitle={subtitle} />
+      <PageHeader title="Mi equipo" subtitle={subtitle} right={isOwner ? (
+        <button onClick={() => setShowRequest(true)} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide">
+          <UserPlus className="h-4 w-4" /> Solicitar responsable
+        </button>
+      ) : undefined} />
+
+      {showRequest && <RequestResponsableModal onClose={() => setShowRequest(false)} onCreated={load} />}
+
+      {pending.length > 0 && (
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="border-b border-border bg-muted/30 px-4 py-2.5 text-[10px] font-bold text-uppercase-wide text-muted-foreground flex items-center gap-2">
+            <Clock className="h-3.5 w-3.5" /> Solicitudes pendientes ({pending.length})
+          </div>
+          <ul className="divide-y divide-border">
+            {pending.map((r) => (
+              <li key={r.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+                <div>
+                  <div className="font-bold">{r.full_name}</div>
+                  <div className="text-[11px] text-muted-foreground">{r.email}{r.phone ? ` · ${r.phone}` : ""}</div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="rounded-full bg-warning/10 text-warning px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">Pendiente</span>
+                  {isOwner && (
+                    <button title="Cancelar" onClick={async () => {
+                      if (!window.confirm("¿Cancelar la solicitud?")) return;
+                      try { await cancelReq({ data: { id: r.id } }); toast.success("Solicitud cancelada"); load(); }
+                      catch (e: any) { toast.error(e?.message ?? "Error"); }
+                    }} className="text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {loading ? (
         <EmptyState icon={Users} title="Cargando equipo..." />
       ) : team.length === 0 ? (
-        <EmptyState icon={Users} title="Sin responsables" hint="El super administrador puede añadir más responsables a tu cuenta" />
+        <EmptyState icon={Users} title="Sin responsables" hint={isOwner ? "Pulsa “Solicitar responsable” para añadir un compañero" : "El owner puede solicitar nuevos responsables"} />
       ) : (
         <div className="space-y-4">
           {team.map((m) => (
@@ -64,7 +123,25 @@ export function EquipoPanel({ subtitle }: { subtitle: string }) {
           ))}
         </div>
       )}
-      <p className="text-[11px] text-muted-foreground">Solo lectura: para añadir o quitar responsables contacta con el super administrador.</p>
+
+      {past.length > 0 && (
+        <details className="rounded-xl border border-border bg-card overflow-hidden">
+          <summary className="cursor-pointer border-b border-border bg-muted/30 px-4 py-2.5 text-[10px] font-bold text-uppercase-wide text-muted-foreground">
+            Historial de solicitudes ({past.length})
+          </summary>
+          <ul className="divide-y divide-border">
+            {past.map((r) => (
+              <li key={r.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+                <div>
+                  <div className="font-bold">{r.full_name}</div>
+                  <div className="text-[11px] text-muted-foreground">{r.email}{r.rejection_reason ? ` · ${r.rejection_reason}` : ""}</div>
+                </div>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold text-uppercase-wide ${r.status === "approved" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>{r.status}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
     </div>
   );
 }
