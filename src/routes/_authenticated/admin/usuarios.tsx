@@ -336,6 +336,15 @@ function AccountHeader({ owner, role, accountName, managersCount, isOpen, onTogg
         )}
       </div>
       <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">Owner</span>
+      {onAddResponsable && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onAddResponsable(); }}
+          title="Añadir responsable a esta cuenta"
+          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[10px] font-bold text-uppercase-wide hover:bg-muted"
+        >
+          <UserPlus className="h-3.5 w-3.5" /> Responsable
+        </button>
+      )}
       {owner && (
         <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
           <span className={`text-[10px] font-bold text-uppercase-wide ${owner.is_active ? "text-success" : "text-muted-foreground"}`}>{owner.is_active ? "Activo" : "Inactivo"}</span>
