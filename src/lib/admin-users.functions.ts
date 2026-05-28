@@ -245,12 +245,14 @@ export const bulkImportUsers = createServerFn({ method: "POST" })
     for (const raw of data.rows) {
       try {
         const r = bulkRowSchema.parse(raw);
+        const accountType = r.account_type ?? "empresa";
         await createOne({
           full_name: r.full_name,
           email: r.email,
           password: r.password,
           phone: r.phone,
-          role: r.role,
+          role: accountType,
+
           empresa:
             r.role === "empresa"
               ? {
