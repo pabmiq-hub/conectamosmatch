@@ -194,25 +194,44 @@ export const deleteUserAccount = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const optStr = z.preprocess(
+  (v) => (v === undefined || v === null ? "" : String(v)),
+  z.string().optional().default(""),
+);
+const accountTypeSchema = z.preprocess((v) => {
+  const s = typeof v === "string" ? v.trim().toLowerCase() : v;
+  if (s === "sponsor" || s === "patrocinador") return "sponsor";
+  return "empresa"; // default — Excel "role" column is treated as job title
+}, z.enum(["empresa", "sponsor"]));
+
 const bulkRowSchema = z.object({
-  full_name: z.string().min(1),
-  email: z.string().email(),
-  password: z.string().min(8),
-  role: z.enum(["empresa", "sponsor"]),
-  phone: z.string().optional().default(""),
-  company_name: z.string().min(1),
-  sector: z.string().optional().default(""),
-  website: z.string().optional().default(""),
-  linkedin_url: z.string().optional().default(""),
-  tagline: z.string().optional().default(""),
-  description: z.string().optional().default(""),
+  full_name: z.preprocess((v) => (v == null ? "" : String(v).trim()), z.string().min(1)),
+  email: z.preprocess((v) => (v == null ? "" : String(v).trim()), z.string().email()),
+  password: z.preprocess(
+    (v) => {
+      const s = v == null ? "" : String(v);
+      return s.length >= 8 ? s : `Cambiar${Math.random().toString(36).slice(2, 10)}!`;
+    },
+    z.string().min(8),
+  ),
+  // account_type column drives the role; legacy "role" column is now job title (ignored for routing)
+  account_type: accountTypeSchema.optional(),
+  role: optStr, // job title (free text), preserved but unused for routing
+  phone: optStr,
+  company_name: z.preprocess((v) => (v == null ? "" : String(v).trim()), z.string().min(1)),
+  sector: optStr,
+  website: optStr,
+  linkedin_url: optStr,
+  tagline: optStr,
+  description: optStr,
   // empresa
   company_size: z.enum(["1-10", "11-50", "51-200", "201-500", "500+"]).optional(),
-  location_city: z.string().optional().default(""),
+  location_city: optStr,
   // sponsor
-  sponsorship_category: z.string().optional().default(""),
+  sponsorship_category: optStr,
   sponsorship_level: z.enum(["PLATINUM", "GOLD", "SILVER", "BRONZE"]).optional(),
 });
+
 
 export const bulkImportUsers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
