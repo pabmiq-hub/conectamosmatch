@@ -254,7 +254,7 @@ export const bulkImportUsers = createServerFn({ method: "POST" })
           role: accountType,
 
           empresa:
-            r.role === "empresa"
+            accountType === "empresa"
               ? {
                   company_name: r.company_name,
                   sector: r.sector,
@@ -267,7 +267,7 @@ export const bulkImportUsers = createServerFn({ method: "POST" })
                 }
               : undefined,
           sponsor:
-            r.role === "sponsor"
+            accountType === "sponsor"
               ? {
                   company_name: r.company_name,
                   sector: r.sector,
