@@ -6,19 +6,20 @@ import { toast } from "sonner";
 
 type AccountType = "empresa" | "sponsor";
 
-export function InviteResponsableModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+export function InviteResponsableModal({ onClose, onCreated, preset }: { onClose: () => void; onCreated: () => void; preset?: { accountId: string; accountType: AccountType; accountName?: string } }) {
   const invite = useServerFn(inviteResponsable);
   const fetchAccounts = useServerFn(listAccounts);
   const [accounts, setAccounts] = useState<{ empresas: { id: string; name: string }[]; sponsors: { id: string; name: string }[] }>({ empresas: [], sponsors: [] });
-  const [accountType, setAccountType] = useState<AccountType>("empresa");
-  const [accountId, setAccountId] = useState("");
+  const [accountType, setAccountType] = useState<AccountType>(preset?.accountType ?? "empresa");
+  const [accountId, setAccountId] = useState(preset?.accountId ?? "");
   const [full_name, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
+  const locked = !!preset;
 
-  useEffect(() => { fetchAccounts().then(setAccounts).catch(() => {}); }, []);
+  useEffect(() => { if (!locked) fetchAccounts().then(setAccounts).catch(() => {}); }, []);
 
   function genPassword() {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
