@@ -199,9 +199,17 @@ function AdminUsuarios() {
             <Icon className="h-3.5 w-3.5" /> {label}
           </button>
         ))}
-        <div className="ml-auto relative">
-          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar..." className="w-64 rounded-md border border-border bg-card pl-8 pr-3 py-2 text-xs" />
+        <div className="ml-auto flex items-center gap-2">
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} className="rounded-md border border-border bg-card px-2 py-2 text-xs font-bold text-uppercase-wide">
+            <option value="company_asc">Empresa A→Z</option>
+            <option value="company_desc">Empresa Z→A</option>
+            <option value="owner_asc">Owner A→Z</option>
+            <option value="owner_desc">Owner Z→A</option>
+          </select>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar empresa u owner..." className="w-64 rounded-md border border-border bg-card pl-8 pr-3 py-2 text-xs" />
+          </div>
         </div>
       </div>
 
