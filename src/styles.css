@@ -5,19 +5,10 @@
 @custom-variant dark (&:is(.dark *));
 
 @font-face {
-  font-family: "Militech";
-  src: url("/fonts/militech-regular.otf") format("opentype"),
-       url("/fonts/militech-regular.ttf") format("truetype");
+  font-family: "Misthefa Aveline";
+  src: url("/fonts/misthefa-aveline.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Militech";
-  src: url("/fonts/militech-oblique.otf") format("opentype"),
-       url("/fonts/militech-oblique.ttf") format("truetype");
-  font-weight: 400;
-  font-style: italic;
   font-display: swap;
 }
 
