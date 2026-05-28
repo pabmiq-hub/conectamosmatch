@@ -157,6 +157,7 @@ function AdminUsuarios() {
       {showModal && <NewUserModal onClose={() => setShowModal(false)} onCreated={load} />}
       {showImport && <ImportUsersModal onClose={() => setShowImport(false)} onDone={load} />}
       {showInvite && <InviteResponsableModal onClose={() => setShowInvite(false)} onCreated={load} />}
+      {invitePreset && <InviteResponsableModal preset={invitePreset} onClose={() => setInvitePreset(null)} onCreated={load} />}
       {approving && <ApproveRequestModal req={approving} onClose={() => setApproving(null)} onDone={load} />}
 
       {/* Pending requests panel */}
