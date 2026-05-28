@@ -31,11 +31,13 @@ type Profile = {
 function AdminUsuarios() {
   const [tab, setTab] = useState<"all" | "empresa" | "sponsor" | "admin">("all");
   const [q, setQ] = useState("");
+  const [sortBy, setSortBy] = useState<"company_asc" | "company_desc" | "owner_asc" | "owner_desc">("company_asc");
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+  const [invitePreset, setInvitePreset] = useState<{ accountId: string; accountType: "empresa" | "sponsor"; accountName: string } | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [requests, setRequests] = useState<ResponsableRequest[]>([]);
   const [approving, setApproving] = useState<ResponsableRequest | null>(null);
