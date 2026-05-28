@@ -94,12 +94,29 @@ function AdminUsuarios() {
       return true;
     });
 
+    // Sort
+    const cmp = (a: { owner: Profile | null; managers: Profile[] }, b: { owner: Profile | null; managers: Profile[] }) => {
+      const ah = a.owner ?? a.managers[0];
+      const bh = b.owner ?? b.managers[0];
+      const companyA = (ah?.company?.company_name ?? ah?.full_name ?? "").toLowerCase();
+      const companyB = (bh?.company?.company_name ?? bh?.full_name ?? "").toLowerCase();
+      const ownerA = (a.owner?.full_name ?? a.owner?.email ?? "").toLowerCase();
+      const ownerB = (b.owner?.full_name ?? b.owner?.email ?? "").toLowerCase();
+      switch (sortBy) {
+        case "company_desc": return companyB.localeCompare(companyA);
+        case "owner_asc": return ownerA.localeCompare(ownerB);
+        case "owner_desc": return ownerB.localeCompare(ownerA);
+        default: return companyA.localeCompare(companyB);
+      }
+    };
+    groups.sort(cmp);
+
     return {
       groups,
       admins: tab === "all" || tab === "admin" ? admins.filter(matchQ) : [],
       orphans: tab === "all" ? orphans.filter(matchQ) : [],
     };
-  }, [profiles, tab, q]);
+  }, [profiles, tab, q, sortBy]);
 
   const pendingRequests = requests.filter((r) => r.status === "pending");
 
