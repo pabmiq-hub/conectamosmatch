@@ -31,11 +31,13 @@ type Profile = {
 function AdminUsuarios() {
   const [tab, setTab] = useState<"all" | "empresa" | "sponsor" | "admin">("all");
   const [q, setQ] = useState("");
+  const [sortBy, setSortBy] = useState<"company_asc" | "company_desc" | "owner_asc" | "owner_desc">("company_asc");
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+  const [invitePreset, setInvitePreset] = useState<{ accountId: string; accountType: "empresa" | "sponsor"; accountName: string } | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [requests, setRequests] = useState<ResponsableRequest[]>([]);
   const [approving, setApproving] = useState<ResponsableRequest | null>(null);
@@ -92,12 +94,29 @@ function AdminUsuarios() {
       return true;
     });
 
+    // Sort
+    const cmp = (a: { owner: Profile | null; managers: Profile[] }, b: { owner: Profile | null; managers: Profile[] }) => {
+      const ah = a.owner ?? a.managers[0];
+      const bh = b.owner ?? b.managers[0];
+      const companyA = (ah?.company?.company_name ?? ah?.full_name ?? "").toLowerCase();
+      const companyB = (bh?.company?.company_name ?? bh?.full_name ?? "").toLowerCase();
+      const ownerA = (a.owner?.full_name ?? a.owner?.email ?? "").toLowerCase();
+      const ownerB = (b.owner?.full_name ?? b.owner?.email ?? "").toLowerCase();
+      switch (sortBy) {
+        case "company_desc": return companyB.localeCompare(companyA);
+        case "owner_asc": return ownerA.localeCompare(ownerB);
+        case "owner_desc": return ownerB.localeCompare(ownerA);
+        default: return companyA.localeCompare(companyB);
+      }
+    };
+    groups.sort(cmp);
+
     return {
       groups,
       admins: tab === "all" || tab === "admin" ? admins.filter(matchQ) : [],
       orphans: tab === "all" ? orphans.filter(matchQ) : [],
     };
-  }, [profiles, tab, q]);
+  }, [profiles, tab, q, sortBy]);
 
   const pendingRequests = requests.filter((r) => r.status === "pending");
 
@@ -138,6 +157,7 @@ function AdminUsuarios() {
       {showModal && <NewUserModal onClose={() => setShowModal(false)} onCreated={load} />}
       {showImport && <ImportUsersModal onClose={() => setShowImport(false)} onDone={load} />}
       {showInvite && <InviteResponsableModal onClose={() => setShowInvite(false)} onCreated={load} />}
+      {invitePreset && <InviteResponsableModal preset={invitePreset} onClose={() => setInvitePreset(null)} onCreated={load} />}
       {approving && <ApproveRequestModal req={approving} onClose={() => setApproving(null)} onDone={load} />}
 
       {/* Pending requests panel */}
@@ -179,9 +199,17 @@ function AdminUsuarios() {
             <Icon className="h-3.5 w-3.5" /> {label}
           </button>
         ))}
-        <div className="ml-auto relative">
-          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar..." className="w-64 rounded-md border border-border bg-card pl-8 pr-3 py-2 text-xs" />
+        <div className="ml-auto flex items-center gap-2">
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} className="rounded-md border border-border bg-card px-2 py-2 text-xs font-bold text-uppercase-wide">
+            <option value="company_asc">Empresa A→Z</option>
+            <option value="company_desc">Empresa Z→A</option>
+            <option value="owner_asc">Owner A→Z</option>
+            <option value="owner_desc">Owner Z→A</option>
+          </select>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar empresa u owner..." className="w-64 rounded-md border border-border bg-card pl-8 pr-3 py-2 text-xs" />
+          </div>
         </div>
       </div>
 
@@ -207,7 +235,7 @@ function AdminUsuarios() {
             return (
               <div key={key} className="rounded-xl border border-border bg-card overflow-hidden">
                 {/* Account header (owner) */}
-                <AccountHeader owner={g.owner} role={role} accountName={accountName} managersCount={g.managers.length} isOpen={isOpen} onToggle={toggle} canExpand={canExpand} onReset={onReset} onToggleActive={onToggle} onDelete={onDelete} />
+                <AccountHeader owner={g.owner} role={role} accountName={accountName} managersCount={g.managers.length} isOpen={isOpen} onToggle={toggle} canExpand={canExpand} onReset={onReset} onToggleActive={onToggle} onDelete={onDelete} onAddResponsable={head?.account_id && (role === "empresa" || role === "sponsor") ? () => setInvitePreset({ accountId: head.account_id!, accountType: role as "empresa" | "sponsor", accountName }) : undefined} />
                 {/* Managers */}
                 {isOpen && g.managers.length > 0 && (
                   <ul className="divide-y divide-border border-t border-border bg-muted/10">
@@ -272,7 +300,7 @@ function AdminUsuarios() {
   );
 }
 
-function AccountHeader({ owner, role, accountName, managersCount, isOpen, onToggle, canExpand, onReset, onToggleActive, onDelete }: { owner: Profile | null; role: string | undefined; accountName: string; managersCount: number; isOpen: boolean; onToggle: () => void; canExpand: boolean; onReset: (id: string) => void; onToggleActive: (p: Profile) => void; onDelete: (p: Profile) => void }) {
+function AccountHeader({ owner, role, accountName, managersCount, isOpen, onToggle, canExpand, onReset, onToggleActive, onDelete, onAddResponsable }: { owner: Profile | null; role: string | undefined; accountName: string; managersCount: number; isOpen: boolean; onToggle: () => void; canExpand: boolean; onReset: (id: string) => void; onToggleActive: (p: Profile) => void; onDelete: (p: Profile) => void; onAddResponsable?: () => void }) {
   const Icon = role === "sponsor" ? Sparkles : Building2;
   const company = owner?.company;
   return (
@@ -308,6 +336,15 @@ function AccountHeader({ owner, role, accountName, managersCount, isOpen, onTogg
         )}
       </div>
       <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">Owner</span>
+      {onAddResponsable && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onAddResponsable(); }}
+          title="Añadir responsable a esta cuenta"
+          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[10px] font-bold text-uppercase-wide hover:bg-muted"
+        >
+          <UserPlus className="h-3.5 w-3.5" /> Responsable
+        </button>
+      )}
       {owner && (
         <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
           <span className={`text-[10px] font-bold text-uppercase-wide ${owner.is_active ? "text-success" : "text-muted-foreground"}`}>{owner.is_active ? "Activo" : "Inactivo"}</span>

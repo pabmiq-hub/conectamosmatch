@@ -6,19 +6,20 @@ import { toast } from "sonner";
 
 type AccountType = "empresa" | "sponsor";
 
-export function InviteResponsableModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+export function InviteResponsableModal({ onClose, onCreated, preset }: { onClose: () => void; onCreated: () => void; preset?: { accountId: string; accountType: AccountType; accountName?: string } }) {
   const invite = useServerFn(inviteResponsable);
   const fetchAccounts = useServerFn(listAccounts);
   const [accounts, setAccounts] = useState<{ empresas: { id: string; name: string }[]; sponsors: { id: string; name: string }[] }>({ empresas: [], sponsors: [] });
-  const [accountType, setAccountType] = useState<AccountType>("empresa");
-  const [accountId, setAccountId] = useState("");
+  const [accountType, setAccountType] = useState<AccountType>(preset?.accountType ?? "empresa");
+  const [accountId, setAccountId] = useState(preset?.accountId ?? "");
   const [full_name, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
+  const locked = !!preset;
 
-  useEffect(() => { fetchAccounts().then(setAccounts).catch(() => {}); }, []);
+  useEffect(() => { if (!locked) fetchAccounts().then(setAccounts).catch(() => {}); }, []);
 
   function genPassword() {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
@@ -55,15 +56,19 @@ export function InviteResponsableModal({ onClose, onCreated }: { onClose: () => 
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-2">
             {(["empresa","sponsor"] as AccountType[]).map((t) => (
-              <button key={t} onClick={() => { setAccountType(t); setAccountId(""); }} className={`rounded-md border px-3 py-2 text-xs font-bold text-uppercase-wide ${accountType === t ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"}`}>{t}</button>
+              <button key={t} disabled={locked} onClick={() => { setAccountType(t); setAccountId(""); }} className={`rounded-md border px-3 py-2 text-xs font-bold text-uppercase-wide ${accountType === t ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"} ${locked ? "opacity-60 cursor-not-allowed" : ""}`}>{t}</button>
             ))}
           </div>
           <div>
             <label className="text-xs text-uppercase-wide text-muted-foreground">Cuenta *</label>
-            <select value={accountId} onChange={(e) => setAccountId(e.target.value)} className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
-              <option value="">Selecciona…</option>
-              {list.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-            </select>
+            {locked ? (
+              <div className="mt-1 w-full rounded-md border border-border bg-muted px-3 py-2 text-sm">{preset?.accountName ?? "Cuenta seleccionada"}</div>
+            ) : (
+              <select value={accountId} onChange={(e) => setAccountId(e.target.value)} className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
+                <option value="">Selecciona…</option>
+                {list.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
+            )}
           </div>
           <div className="grid md:grid-cols-2 gap-4">
             <Field label="Nombre completo *" value={full_name} onChange={setFullName} />
