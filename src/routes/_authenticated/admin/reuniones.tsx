@@ -78,7 +78,7 @@ function AdminReuniones() {
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-[10px] text-uppercase-wide text-muted-foreground"><tr>
-              <th className="px-4 py-3 text-left">Empresa</th><th className="px-4 py-3 text-left">Solución</th><th className="px-4 py-3 text-left">Hora</th><th className="px-4 py-3 text-left">Sala</th><th className="px-4 py-3 text-left">Estado</th><th />
+              <th className="px-4 py-3 text-left">Empresa</th><th className="px-4 py-3 text-left">Solución</th><th className="px-4 py-3 text-left">Hora</th><th className="px-4 py-3 text-left">Mesa</th><th className="px-4 py-3 text-left">Estado</th><th />
             </tr></thead>
             <tbody>
               {rows.map((r) => (
@@ -96,7 +96,7 @@ function AdminReuniones() {
                   <td className="px-4 py-3">
                     <input defaultValue={r.room ?? ""} onBlur={async (e) => {
                       if (e.target.value === (r.room ?? "")) return;
-                      try { await upd({ data: { id: r.id, patch: { room: e.target.value || null } } }); toast.success("Sala actualizada"); load(); }
+                      try { await upd({ data: { id: r.id, patch: { room: e.target.value || null } } }); toast.success("Mesa actualizada"); load(); }
                       catch (err: any) { toast.error(err?.message ?? "Error"); }
                     }} className="w-24 rounded-md border border-border bg-input px-2 py-1 text-xs" />
                   </td>
