@@ -250,22 +250,22 @@ function AdminUsuarios() {
             return (
               <div key={key} className="rounded-xl border border-border bg-card overflow-hidden">
                 {/* Account header (owner) */}
-                <AccountHeader owner={g.owner} role={role} accountName={accountName} managersCount={g.managers.length} isOpen={isOpen} onToggle={toggle} canExpand={canExpand} onReset={onReset} onToggleActive={onToggle} onDelete={onDelete} onView={(p) => setViewing({ id: p.id, label: p.company?.company_name ?? p.full_name ?? p.email ?? "Usuario" })} onAddResponsable={head?.account_id && (role === "empresa" || role === "sponsor") ? () => setInvitePreset({ accountId: head.account_id!, accountType: role as "empresa" | "sponsor", accountName }) : undefined} />
+                <AccountHeader owner={g.owner} role={role} accountName={accountName} managersCount={g.managers.length} isOpen={isOpen} onToggle={toggle} canExpand={canExpand} onReset={onReset} onToggleActive={onToggle} onDelete={onDelete} onView={(p) => setViewing({ id: p.id, label: p.company?.company_name ?? p.full_name ?? p.email ?? "Usuario" })} onEdit={(p) => setEditing(p.id)} onAddResponsable={head?.account_id && (role === "empresa" || role === "sponsor") ? () => setInvitePreset({ accountId: head.account_id!, accountType: role as "empresa" | "sponsor", accountName }) : undefined} />
                 {/* Managers */}
                 {isOpen && g.managers.length > 0 && (
                   <ul className="divide-y divide-border border-t border-border bg-muted/10">
                     {g.managers.map((m) => (
-                      <li key={m.id} className="flex items-center gap-3 px-4 py-2.5 pl-10 text-sm">
+                      <li key={m.id} onClick={() => setViewing({ id: m.id, label: m.full_name ?? m.email ?? "Responsable" })} className="flex items-center gap-3 px-4 py-2.5 pl-10 text-sm cursor-pointer hover:bg-muted/30 transition-colors">
                         <CornerDownRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                         <div className="min-w-0 flex-1">
-                          <div className="font-medium text-xs truncate cursor-pointer hover:text-primary" onClick={() => setViewing({ id: m.id, label: m.full_name ?? m.email ?? "Responsable" })}>{m.full_name ?? m.email}</div>
+                          <div className="font-medium text-xs truncate">{m.full_name ?? m.email}</div>
                           <div className="text-[11px] text-muted-foreground truncate">
                             {m.email} · <span className="font-bold">Responsable de {accountName}</span>
                           </div>
                         </div>
                         <span className="rounded-full bg-muted px-2 py-0.5 text-[9px] font-bold text-uppercase-wide text-muted-foreground">Responsable</span>
                         <span className={`text-[10px] font-bold text-uppercase-wide ${m.is_active ? "text-success" : "text-muted-foreground"}`}>{m.is_active ? "Activo" : "Inactivo"}</span>
-                        <RowActions p={m} onReset={onReset} onToggle={onToggle} onDelete={onDelete} onView={() => setViewing({ id: m.id, label: m.full_name ?? m.email ?? "Responsable" })} />
+                        <RowActions p={m} onReset={onReset} onToggle={onToggle} onDelete={onDelete} onView={() => setViewing({ id: m.id, label: m.full_name ?? m.email ?? "Responsable" })} onEdit={() => setEditing(m.id)} />
                       </li>
                     ))}
                   </ul>
