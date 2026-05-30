@@ -43,9 +43,31 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
         sponsorship_category: account?.sponsorship_category ?? "",
         sponsorship_level: account?.sponsorship_level ?? "BASIC",
       });
+      setScrapeUrl(account?.website ?? "");
       setLoading(false);
     }).catch((e: any) => { toast.error(e?.message ?? "Error"); onClose(); });
   }, [userId]);
+
+  async function runScrape() {
+    if (!scrapeUrl.trim() || role === "super_admin") return;
+    setScraping(true);
+    try {
+      const { data } = await scrape({ data: { url: scrapeUrl, kind: role as "empresa" | "sponsor" } });
+      setF((p: any) => ({
+        ...p,
+        company_name: p.company_name || data.company_name || "",
+        sector: p.sector || data.sector || "",
+        website: p.website || data.website || "",
+        linkedin_url: p.linkedin_url || data.linkedin_url || "",
+        location_city: p.location_city || data.location_city || "",
+        tagline: p.tagline || data.tagline || "",
+        description: p.description || data.description || "",
+      }));
+      toast.success("Datos autocompletados — revísalos antes de guardar");
+    } catch (e: any) {
+      toast.error(e?.message ?? "No se pudo extraer la web");
+    } finally { setScraping(false); }
+  }
 
   async function submit() {
     setBusy(true);
