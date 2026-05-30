@@ -328,7 +328,7 @@ function AccountHeader({ owner, role, accountName, managersCount, isOpen, onTogg
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-display font-bold text-sm truncate">{accountName}</span>
+          <span className="font-display font-bold text-sm truncate cursor-pointer hover:text-primary" onClick={(e) => { e.stopPropagation(); onView(owner); }}>{accountName}</span>
           <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[9px] font-bold text-uppercase-wide">{role}</span>
           {company?.is_verified && <span className="text-[9px] text-success">✓ Verificada</span>}
           {company?.sponsorship_level && <LevelBadge level={company.sponsorship_level} />}
@@ -340,7 +340,7 @@ function AccountHeader({ owner, role, accountName, managersCount, isOpen, onTogg
         </div>
         {owner ? (
           <div className="text-[11px] text-muted-foreground truncate">
-            Owner: <span className="font-bold text-foreground">{owner.full_name ?? owner.email}</span> · {owner.email}
+            Owner: <span className="font-bold text-foreground cursor-pointer hover:text-primary" onClick={(e) => { e.stopPropagation(); onView(owner); }}>{owner.full_name ?? owner.email}</span> · {owner.email}
             {company?.sector ? ` · ${company.sector}` : ""}
           </div>
         ) : (
