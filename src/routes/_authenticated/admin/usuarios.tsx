@@ -4,13 +4,14 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { LevelBadge } from "@/components/brand/LevelBadge";
-import { Users, Building2, Sparkles, Plus, Search, Trash2, KeyRound, Power, Upload, UserPlus, Inbox, Check, X, CornerDownRight, Shield, ChevronRight, BarChart3 } from "lucide-react";
+import { Users, Building2, Sparkles, Plus, Search, Trash2, KeyRound, Power, Upload, UserPlus, Inbox, Check, X, CornerDownRight, Shield, ChevronRight, BarChart3, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { NewUserModal } from "@/components/admin/NewUserModal";
 import { ImportUsersModal } from "@/components/admin/ImportUsersModal";
 import { InviteResponsableModal } from "@/components/admin/InviteResponsableModal";
 import { ApproveRequestModal } from "@/components/admin/ApproveRequestModal";
 import { UserActivityDrawer } from "@/components/admin/UserActivityDrawer";
+import { EditUserModal } from "@/components/admin/EditUserModal";
 import { BulkUsersModal } from "@/components/admin/BulkUsersModal";
 import { deleteUserAccount, resetUserPassword, setUserActive } from "@/lib/admin-users.functions";
 import { listAllRequests, rejectRequest, type ResponsableRequest } from "@/lib/responsable-requests.functions";
@@ -44,6 +45,7 @@ function AdminUsuarios() {
   const [requests, setRequests] = useState<ResponsableRequest[]>([]);
   const [approving, setApproving] = useState<ResponsableRequest | null>(null);
   const [viewing, setViewing] = useState<{ id: string; label: string } | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
   const [bulkMode, setBulkMode] = useState<"delete" | "passwords" | null>(null);
   const resetPwd = useServerFn(resetUserPassword);
   const setActive = useServerFn(setUserActive);
@@ -170,6 +172,7 @@ function AdminUsuarios() {
       {invitePreset && <InviteResponsableModal preset={invitePreset} onClose={() => setInvitePreset(null)} onCreated={load} />}
       {approving && <ApproveRequestModal req={approving} onClose={() => setApproving(null)} onDone={load} />}
       {viewing && <UserActivityDrawer userId={viewing.id} userLabel={viewing.label} onClose={() => setViewing(null)} onChanged={load} />}
+      {editing && <EditUserModal userId={editing} onClose={() => setEditing(null)} onSaved={load} />}
       {bulkMode && <BulkUsersModal mode={bulkMode} onClose={() => setBulkMode(null)} onDone={load} />}
 
       {/* Pending requests panel */}
@@ -247,22 +250,22 @@ function AdminUsuarios() {
             return (
               <div key={key} className="rounded-xl border border-border bg-card overflow-hidden">
                 {/* Account header (owner) */}
-                <AccountHeader owner={g.owner} role={role} accountName={accountName} managersCount={g.managers.length} isOpen={isOpen} onToggle={toggle} canExpand={canExpand} onReset={onReset} onToggleActive={onToggle} onDelete={onDelete} onView={(p) => setViewing({ id: p.id, label: p.company?.company_name ?? p.full_name ?? p.email ?? "Usuario" })} onAddResponsable={head?.account_id && (role === "empresa" || role === "sponsor") ? () => setInvitePreset({ accountId: head.account_id!, accountType: role as "empresa" | "sponsor", accountName }) : undefined} />
+                <AccountHeader owner={g.owner} role={role} accountName={accountName} managersCount={g.managers.length} isOpen={isOpen} onToggle={toggle} canExpand={canExpand} onReset={onReset} onToggleActive={onToggle} onDelete={onDelete} onView={(p) => setViewing({ id: p.id, label: p.company?.company_name ?? p.full_name ?? p.email ?? "Usuario" })} onEdit={(p) => setEditing(p.id)} onAddResponsable={head?.account_id && (role === "empresa" || role === "sponsor") ? () => setInvitePreset({ accountId: head.account_id!, accountType: role as "empresa" | "sponsor", accountName }) : undefined} />
                 {/* Managers */}
                 {isOpen && g.managers.length > 0 && (
                   <ul className="divide-y divide-border border-t border-border bg-muted/10">
                     {g.managers.map((m) => (
-                      <li key={m.id} className="flex items-center gap-3 px-4 py-2.5 pl-10 text-sm">
+                      <li key={m.id} onClick={() => setViewing({ id: m.id, label: m.full_name ?? m.email ?? "Responsable" })} className="flex items-center gap-3 px-4 py-2.5 pl-10 text-sm cursor-pointer hover:bg-muted/30 transition-colors">
                         <CornerDownRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                         <div className="min-w-0 flex-1">
-                          <div className="font-medium text-xs truncate cursor-pointer hover:text-primary" onClick={() => setViewing({ id: m.id, label: m.full_name ?? m.email ?? "Responsable" })}>{m.full_name ?? m.email}</div>
+                          <div className="font-medium text-xs truncate">{m.full_name ?? m.email}</div>
                           <div className="text-[11px] text-muted-foreground truncate">
                             {m.email} · <span className="font-bold">Responsable de {accountName}</span>
                           </div>
                         </div>
                         <span className="rounded-full bg-muted px-2 py-0.5 text-[9px] font-bold text-uppercase-wide text-muted-foreground">Responsable</span>
                         <span className={`text-[10px] font-bold text-uppercase-wide ${m.is_active ? "text-success" : "text-muted-foreground"}`}>{m.is_active ? "Activo" : "Inactivo"}</span>
-                        <RowActions p={m} onReset={onReset} onToggle={onToggle} onDelete={onDelete} onView={() => setViewing({ id: m.id, label: m.full_name ?? m.email ?? "Responsable" })} />
+                        <RowActions p={m} onReset={onReset} onToggle={onToggle} onDelete={onDelete} onView={() => setViewing({ id: m.id, label: m.full_name ?? m.email ?? "Responsable" })} onEdit={() => setEditing(m.id)} />
                       </li>
                     ))}
                   </ul>
@@ -276,14 +279,14 @@ function AdminUsuarios() {
               <div className="border-b border-border bg-muted/30 px-4 py-2 text-[10px] font-bold text-uppercase-wide text-muted-foreground flex items-center gap-2"><Shield className="h-3.5 w-3.5" /> Super administradores</div>
               <ul className="divide-y divide-border">
                 {grouped.admins.map((p) => (
-                  <li key={p.id} className="flex items-center gap-3 px-4 py-3 text-sm">
+                  <li key={p.id} onClick={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Admin" })} className="flex items-center gap-3 px-4 py-3 text-sm cursor-pointer hover:bg-muted/30 transition-colors">
                     <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center"><Shield className="h-4 w-4 text-primary" /></div>
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-xs truncate cursor-pointer hover:text-primary" onClick={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Admin" })}>{p.full_name ?? p.email}</div>
+                      <div className="font-medium text-xs truncate">{p.full_name ?? p.email}</div>
                       <div className="text-[11px] text-muted-foreground truncate">{p.email}</div>
                     </div>
                     <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">Super Admin</span>
-                    <RowActions p={p} onReset={onReset} onToggle={onToggle} onDelete={onDelete} onView={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Admin" })} />
+                    <RowActions p={p} onReset={onReset} onToggle={onToggle} onDelete={onDelete} onView={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Admin" })} onEdit={() => setEditing(p.id)} />
                   </li>
                 ))}
               </ul>
@@ -295,12 +298,12 @@ function AdminUsuarios() {
               <div className="border-b border-border bg-muted/30 px-4 py-2 text-[10px] font-bold text-uppercase-wide text-muted-foreground">Sin cuenta asociada</div>
               <ul className="divide-y divide-border">
                 {grouped.orphans.map((p) => (
-                  <li key={p.id} className="flex items-center gap-3 px-4 py-3 text-sm">
+                  <li key={p.id} onClick={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Usuario" })} className="flex items-center gap-3 px-4 py-3 text-sm cursor-pointer hover:bg-muted/30 transition-colors">
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-xs truncate cursor-pointer hover:text-primary" onClick={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Usuario" })}>{p.full_name ?? p.email}</div>
+                      <div className="font-medium text-xs truncate">{p.full_name ?? p.email}</div>
                       <div className="text-[11px] text-muted-foreground truncate">{p.email} · rol {p.role}</div>
                     </div>
-                    <RowActions p={p} onReset={onReset} onToggle={onToggle} onDelete={onDelete} onView={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Usuario" })} />
+                    <RowActions p={p} onReset={onReset} onToggle={onToggle} onDelete={onDelete} onView={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Usuario" })} onEdit={() => setEditing(p.id)} />
                   </li>
                 ))}
               </ul>
@@ -312,23 +315,30 @@ function AdminUsuarios() {
   );
 }
 
-function AccountHeader({ owner, role, accountName, managersCount, isOpen, onToggle, canExpand, onReset, onToggleActive, onDelete, onAddResponsable, onView }: { owner: Profile | null; role: string | undefined; accountName: string; managersCount: number; isOpen: boolean; onToggle: () => void; canExpand: boolean; onReset: (id: string) => void; onToggleActive: (p: Profile) => void; onDelete: (p: Profile) => void; onAddResponsable?: () => void; onView: (p: Profile) => void }) {
+function AccountHeader({ owner, role, accountName, managersCount, isOpen, onToggle, canExpand, onReset, onToggleActive, onDelete, onAddResponsable, onView, onEdit }: { owner: Profile | null; role: string | undefined; accountName: string; managersCount: number; isOpen: boolean; onToggle: () => void; canExpand: boolean; onReset: (id: string) => void; onToggleActive: (p: Profile) => void; onDelete: (p: Profile) => void; onAddResponsable?: () => void; onView: (p: Profile) => void; onEdit: (p: Profile) => void }) {
   const Icon = role === "sponsor" ? Sparkles : Building2;
   const company = owner?.company;
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-3 bg-muted/20 ${canExpand ? "cursor-pointer hover:bg-muted/40 transition-colors" : ""}`}
-      onClick={canExpand ? onToggle : undefined}
-      role={canExpand ? "button" : undefined}
-      aria-expanded={canExpand ? isOpen : undefined}
+      className={`flex items-center gap-3 px-4 py-3 bg-muted/20 ${owner ? "cursor-pointer hover:bg-muted/40 transition-colors" : ""}`}
+      onClick={owner ? () => onView(owner) : undefined}
+      role={owner ? "button" : undefined}
     >
-      <ChevronRight className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${isOpen ? "rotate-90" : ""} ${canExpand ? "" : "opacity-30"}`} />
+      <button
+        onClick={(e) => { e.stopPropagation(); if (canExpand) onToggle(); }}
+        disabled={!canExpand}
+        title={canExpand ? (isOpen ? "Contraer" : "Expandir responsables") : undefined}
+        className={`p-1 rounded hover:bg-muted ${canExpand ? "" : "opacity-30 cursor-default"}`}
+        aria-expanded={canExpand ? isOpen : undefined}
+      >
+        <ChevronRight className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`} />
+      </button>
       <div className="h-10 w-10 rounded-md bg-card border border-border overflow-hidden flex items-center justify-center shrink-0">
         {company?.logo_url ? <img src={company.logo_url} className="max-h-full max-w-full" alt="" /> : <Icon className="h-5 w-5 text-muted-foreground" />}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-display font-bold text-sm truncate cursor-pointer hover:text-primary" onClick={(e) => { e.stopPropagation(); if (owner) onView(owner); }}>{accountName}</span>
+          <span className="font-display font-bold text-sm truncate">{accountName}</span>
           <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[9px] font-bold text-uppercase-wide">{role}</span>
           {company?.is_verified && <span className="text-[9px] text-success">✓ Verificada</span>}
           {company?.sponsorship_level && <LevelBadge level={company.sponsorship_level} />}
@@ -340,7 +350,7 @@ function AccountHeader({ owner, role, accountName, managersCount, isOpen, onTogg
         </div>
         {owner ? (
           <div className="text-[11px] text-muted-foreground truncate">
-            Owner: <span className="font-bold text-foreground cursor-pointer hover:text-primary" onClick={(e) => { e.stopPropagation(); onView(owner); }}>{owner.full_name ?? owner.email}</span> · {owner.email}
+            Owner: <span className="font-bold text-foreground">{owner.full_name ?? owner.email}</span> · {owner.email}
             {company?.sector ? ` · ${company.sector}` : ""}
           </div>
         ) : (
@@ -348,15 +358,6 @@ function AccountHeader({ owner, role, accountName, managersCount, isOpen, onTogg
         )}
       </div>
       <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">Owner</span>
-      {owner && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onView(owner); }}
-          title="Ver actividad"
-          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[10px] font-bold text-uppercase-wide hover:bg-muted"
-        >
-          <BarChart3 className="h-3.5 w-3.5" /> Actividad
-        </button>
-      )}
       {onAddResponsable && (
         <button
           onClick={(e) => { e.stopPropagation(); onAddResponsable(); }}
@@ -369,17 +370,18 @@ function AccountHeader({ owner, role, accountName, managersCount, isOpen, onTogg
       {owner && (
         <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
           <span className={`text-[10px] font-bold text-uppercase-wide ${owner.is_active ? "text-success" : "text-muted-foreground"}`}>{owner.is_active ? "Activo" : "Inactivo"}</span>
-          <RowActions p={owner} onReset={onReset} onToggle={onToggleActive} onDelete={onDelete} onView={() => onView(owner)} />
+          <RowActions p={owner} onReset={onReset} onToggle={onToggleActive} onDelete={onDelete} onView={() => onView(owner)} onEdit={() => onEdit(owner)} />
         </div>
       )}
     </div>
   );
 }
 
-function RowActions({ p, onReset, onToggle, onDelete, onView }: { p: Profile; onReset: (id: string) => void; onToggle: (p: Profile) => void; onDelete: (p: Profile) => void; onView?: () => void }) {
+function RowActions({ p, onReset, onToggle, onDelete, onView, onEdit }: { p: Profile; onReset: (id: string) => void; onToggle: (p: Profile) => void; onDelete: (p: Profile) => void; onView?: () => void; onEdit?: () => void }) {
   return (
-    <div className="inline-flex items-center gap-1 shrink-0">
+    <div className="inline-flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
       {onView && <button title="Ver actividad" className="p-1.5 text-muted-foreground hover:text-primary" onClick={onView}><BarChart3 className="h-4 w-4" /></button>}
+      {onEdit && <button title="Editar datos" className="p-1.5 text-muted-foreground hover:text-primary" onClick={onEdit}><Pencil className="h-4 w-4" /></button>}
       <button title="Resetear contraseña" className="p-1.5 text-muted-foreground hover:text-foreground" onClick={() => onReset(p.id)}><KeyRound className="h-4 w-4" /></button>
       <button title={p.is_active ? "Desactivar" : "Activar"} className="p-1.5 text-muted-foreground hover:text-foreground" onClick={() => onToggle(p)}><Power className="h-4 w-4" /></button>
       <button title="Eliminar" className="p-1.5 text-muted-foreground hover:text-destructive" onClick={() => onDelete(p)}><Trash2 className="h-4 w-4" /></button>
