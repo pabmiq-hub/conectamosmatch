@@ -43,6 +43,27 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
     set("password", p + "!2");
   }
 
+  async function runScrape() {
+    if (!scrapeUrl.trim() || !role) return;
+    setScraping(true);
+    try {
+      const { data } = await scrape({ data: { url: scrapeUrl, kind: role } });
+      setF((p) => ({
+        ...p,
+        company_name: p.company_name || data.company_name || "",
+        sector: p.sector || data.sector || "",
+        website: p.website || data.website || "",
+        linkedin_url: p.linkedin_url || data.linkedin_url || "",
+        location_city: p.location_city || data.location_city || "",
+        tagline: p.tagline || data.tagline || "",
+        description: p.description || data.description || "",
+      }));
+      toast.success("Datos autocompletados — revísalos antes de guardar");
+    } catch (e: any) {
+      toast.error(e?.message ?? "No se pudo extraer la web");
+    } finally { setScraping(false); }
+  }
+
   async function submit() {
     if (!role) return;
     setLoading(true);
