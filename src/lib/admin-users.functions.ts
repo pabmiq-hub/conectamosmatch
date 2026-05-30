@@ -444,3 +444,465 @@ export const exportAllUsers = createServerFn({ method: "POST" })
     });
     return { rows };
   });
+
+// =====================================================================
+// ============ Grouped Excel import (multi-responsable) ===============
+// =====================================================================
+
+function normalizeName(s: string) {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\b(s\.?l\.?|s\.?a\.?|s\.?l\.?u\.?|inc\.?|ltd\.?|llc|corp\.?|gmbh|sas|bv)\b/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function emailDomain(email: string) {
+  const at = email.indexOf("@");
+  return at > -1 ? email.slice(at + 1).toLowerCase().trim() : "";
+}
+
+const GENERIC_DOMAINS = new Set([
+  "gmail.com","hotmail.com","outlook.com","yahoo.com","yahoo.es","icloud.com",
+  "live.com","msn.com","aol.com","protonmail.com","proton.me","gmx.com","gmx.es",
+  "me.com","mac.com","fastmail.com","zoho.com","mail.com",
+]);
+
+export const analyzeExcelGroups = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ rows: z.array(z.record(z.string(), z.unknown())).min(1).max(500) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+
+    type Parsed = {
+      idx: number;
+      raw: Record<string, unknown>;
+      ok: boolean;
+      error?: string;
+      row?: z.infer<typeof bulkRowSchema>;
+      normalized_company?: string;
+      domain?: string;
+    };
+
+    const parsed: Parsed[] = data.rows.map((raw, idx) => {
+      try {
+        const row = bulkRowSchema.parse(raw);
+        return {
+          idx, raw, ok: true, row,
+          normalized_company: normalizeName(row.company_name),
+          domain: emailDomain(row.email),
+        };
+      } catch (e: any) {
+        return { idx, raw, ok: false, error: e?.message ?? "Fila inválida" };
+      }
+    });
+
+    type Group = {
+      id: string;
+      account_type: "empresa" | "sponsor";
+      company_name: string;
+      normalized: string;
+      members: Parsed[];
+    };
+    const groups: Group[] = [];
+
+    function findGroup(p: Parsed): Group | undefined {
+      const type = p.row!.account_type ?? "empresa";
+      for (const g of groups) {
+        if (g.account_type !== type) continue;
+        if (g.normalized && g.normalized === p.normalized_company) return g;
+        if (p.domain && !GENERIC_DOMAINS.has(p.domain)) {
+          if (g.members.some((m) => m.domain === p.domain)) return g;
+        }
+      }
+      return undefined;
+    }
+
+    for (const p of parsed) {
+      if (!p.ok) continue;
+      const type = p.row!.account_type ?? "empresa";
+      const existing = findGroup(p);
+      if (existing) {
+        existing.members.push(p);
+      } else {
+        groups.push({
+          id: `g${groups.length + 1}`,
+          account_type: type,
+          company_name: p.row!.company_name,
+          normalized: p.normalized_company ?? "",
+          members: [p],
+        });
+      }
+    }
+
+    const out_groups = groups.map((g) => ({
+      id: g.id,
+      account_type: g.account_type,
+      suggested_company_name: g.company_name,
+      members: g.members.map((m, i) => ({
+        idx: m.idx,
+        full_name: m.row!.full_name,
+        email: m.row!.email,
+        phone: m.row!.phone,
+        suggested_admin: i === 0,
+      })),
+      account_fields: {
+        sector: g.members[0].row!.sector,
+        website: g.members[0].row!.website,
+        linkedin_url: g.members[0].row!.linkedin_url,
+        tagline: g.members[0].row!.tagline,
+        description: g.members[0].row!.description,
+        company_size: g.members[0].row!.company_size,
+        location_city: g.members[0].row!.location_city,
+        sponsorship_category: g.members[0].row!.sponsorship_category,
+        sponsorship_level: g.members[0].row!.sponsorship_level,
+      },
+    }));
+
+    const errors = parsed.filter((p) => !p.ok).map((p) => ({
+      idx: p.idx,
+      email: String((p.raw as any).email ?? "(?)"),
+      error: p.error ?? "Error",
+    }));
+
+    const rows_by_idx: Record<string, z.infer<typeof bulkRowSchema>> = {};
+    for (const p of parsed) if (p.ok && p.row) rows_by_idx[String(p.idx)] = p.row;
+
+    return { groups: out_groups, errors, rows_by_idx };
+  });
+
+const confirmedGroupSchema = z.object({
+  account_type: z.enum(["empresa", "sponsor"]),
+  company_name: z.string().min(1).max(200),
+  admin_idx: z.number().int().nonnegative(),
+  member_idxs: z.array(z.number().int().nonnegative()).min(1),
+  account_fields: z.object({
+    sector: z.string().optional().default(""),
+    website: z.string().optional().default(""),
+    linkedin_url: z.string().optional().default(""),
+    tagline: z.string().optional().default(""),
+    description: z.string().optional().default(""),
+    company_size: z.enum(["1-10", "11-50", "51-200", "201-500", "500+"]).optional(),
+    location_city: z.string().optional().default(""),
+    sponsorship_category: z.string().optional().default(""),
+    sponsorship_level: z.enum(["GOLD","PREMIUM","BASIC","PLATINUM","SILVER","BRONZE"]).optional(),
+  }),
+});
+
+export const confirmGroupedImport = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({
+      groups: z.array(confirmedGroupSchema).min(1).max(200),
+      rows_by_idx: z.record(z.string(), z.any()),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+
+    const created_accounts: { account_id: string; company_name: string; members: { email: string; role: string }[] }[] = [];
+    const failed: { email: string; error: string }[] = [];
+
+    for (const g of data.groups) {
+      try {
+        let accountId: string;
+        if (g.account_type === "empresa") {
+          const { data: prof, error: e } = await supabaseAdmin
+            .from("empresa_profiles")
+            .insert({
+              company_name: g.company_name,
+              sector: g.account_fields.sector ?? "",
+              website: g.account_fields.website ?? "",
+              linkedin_url: g.account_fields.linkedin_url ?? "",
+              tagline: g.account_fields.tagline ?? "",
+              description: g.account_fields.description ?? "",
+              company_size: g.account_fields.company_size,
+              location_city: g.account_fields.location_city ?? "",
+            })
+            .select("id")
+            .single();
+          if (e) throw new Error(e.message);
+          accountId = prof.id;
+        } else {
+          const { data: prof, error: e } = await supabaseAdmin
+            .from("sponsor_profiles")
+            .insert({
+              company_name: g.company_name,
+              sector: g.account_fields.sector ?? "",
+              website: g.account_fields.website ?? "",
+              linkedin_url: g.account_fields.linkedin_url ?? "",
+              tagline: g.account_fields.tagline ?? "",
+              description: g.account_fields.description ?? "",
+              sponsorship_category: g.account_fields.sponsorship_category ?? "",
+              sponsorship_level: (g.account_fields.sponsorship_level as any) ?? "BRONZE",
+            })
+            .select("id")
+            .single();
+          if (e) throw new Error(e.message);
+          accountId = prof.id;
+        }
+
+        const members: { email: string; role: string }[] = [];
+        let ownerSetUserId: string | null = null;
+        for (const idx of g.member_idxs) {
+          const raw = data.rows_by_idx[String(idx)];
+          const r = bulkRowSchema.parse(raw);
+          try {
+            const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+              email: r.email,
+              password: r.password,
+              email_confirm: true,
+              user_metadata: { full_name: r.full_name, role: g.account_type },
+            });
+            if (error || !created.user) throw new Error(error?.message ?? "No se pudo crear usuario");
+            const userId = created.user.id;
+
+            const isAdmin = idx === g.admin_idx;
+            const account_role = isAdmin ? "owner" : "manager";
+            if (isAdmin) ownerSetUserId = userId;
+
+            await supabaseAdmin.from("profiles").upsert({
+              id: userId,
+              email: r.email,
+              full_name: r.full_name,
+              phone: r.phone,
+              role: g.account_type,
+              account_id: accountId,
+              account_role,
+            });
+
+            members.push({ email: r.email, role: account_role });
+          } catch (e: any) {
+            failed.push({ email: r.email, error: e?.message ?? "Error" });
+          }
+        }
+
+        if (ownerSetUserId) {
+          if (g.account_type === "empresa") {
+            await supabaseAdmin.from("empresa_profiles").update({ user_id: ownerSetUserId }).eq("id", accountId);
+          } else {
+            await supabaseAdmin.from("sponsor_profiles").update({ user_id: ownerSetUserId }).eq("id", accountId);
+          }
+        }
+
+        created_accounts.push({ account_id: accountId, company_name: g.company_name, members });
+      } catch (e: any) {
+        failed.push({ email: g.company_name, error: e?.message ?? "Error creando cuenta" });
+      }
+    }
+
+    return { created_accounts, failed };
+  });
+
+// =====================================================================
+// ============ Responsable management (super admin) ===================
+// =====================================================================
+
+export const transferAccountAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ newAdminUserId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+    const { data: target } = await supabaseAdmin
+      .from("profiles")
+      .select("id, role, account_id")
+      .eq("id", data.newAdminUserId)
+      .maybeSingle();
+    if (!target?.account_id) throw new Response("El usuario no pertenece a una cuenta", { status: 400 });
+
+    await supabaseAdmin
+      .from("profiles")
+      .update({ account_role: "manager" })
+      .eq("account_id", target.account_id)
+      .eq("account_role", "owner");
+
+    await supabaseAdmin
+      .from("profiles")
+      .update({ account_role: "owner" })
+      .eq("id", data.newAdminUserId);
+
+    const table = target.role === "empresa" ? "empresa_profiles" : "sponsor_profiles";
+    await supabaseAdmin.from(table).update({ user_id: data.newAdminUserId }).eq("id", target.account_id);
+
+    return { ok: true };
+  });
+
+export const moveResponsableToAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({
+      userId: z.string().uuid(),
+      targetAccountId: z.string().uuid(),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+
+    const { data: prof } = await supabaseAdmin
+      .from("profiles")
+      .select("id, role, account_id, account_role")
+      .eq("id", data.userId)
+      .maybeSingle();
+    if (!prof) throw new Response("Usuario no encontrado", { status: 404 });
+
+    const table = prof.role === "empresa" ? "empresa_profiles" : "sponsor_profiles";
+    const { data: target } = await supabaseAdmin
+      .from(table)
+      .select("id, user_id")
+      .eq("id", data.targetAccountId)
+      .maybeSingle();
+    if (!target) throw new Response("Cuenta destino no encontrada", { status: 404 });
+
+    if (prof.account_role === "owner" && prof.account_id) {
+      const { count } = await supabaseAdmin
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("account_id", prof.account_id);
+      if ((count ?? 0) <= 1) {
+        throw new Response(
+          "No puedes mover al único miembro de una cuenta. Elimina la cuenta antes o añade otro responsable.",
+          { status: 400 },
+        );
+      }
+      const { data: replacement } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("account_id", prof.account_id)
+        .neq("id", data.userId)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (replacement) {
+        await supabaseAdmin.from("profiles").update({ account_role: "owner" }).eq("id", replacement.id);
+        await supabaseAdmin.from(table).update({ user_id: replacement.id }).eq("id", prof.account_id);
+      }
+    }
+
+    await supabaseAdmin
+      .from("profiles")
+      .update({ account_id: data.targetAccountId, account_role: "manager" })
+      .eq("id", data.userId);
+
+    return { ok: true };
+  });
+
+export const removeResponsableFromAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ userId: z.string().uuid(), deleteUser: z.boolean().default(true) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+    if (data.userId === context.userId) {
+      throw new Response("No puedes eliminarte a ti mismo", { status: 400 });
+    }
+    const { data: prof } = await supabaseAdmin
+      .from("profiles")
+      .select("id, role, account_id, account_role")
+      .eq("id", data.userId)
+      .maybeSingle();
+    if (!prof) throw new Response("Usuario no encontrado", { status: 404 });
+
+    if (prof.account_role === "owner" && prof.account_id) {
+      const { data: replacement } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("account_id", prof.account_id)
+        .neq("id", data.userId)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (replacement) {
+        await supabaseAdmin.from("profiles").update({ account_role: "owner" }).eq("id", replacement.id);
+        const table = prof.role === "empresa" ? "empresa_profiles" : "sponsor_profiles";
+        await supabaseAdmin.from(table).update({ user_id: replacement.id }).eq("id", prof.account_id);
+      }
+    }
+
+    if (data.deleteUser) {
+      const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+      if (error) throw new Response(error.message, { status: 400 });
+    } else {
+      await supabaseAdmin
+        .from("profiles")
+        .update({ account_id: null, account_role: "manager" })
+        .eq("id", data.userId);
+    }
+    return { ok: true };
+  });
+
+// =====================================================================
+// ============ Sponsor → Empresa account-level likes ==================
+// =====================================================================
+
+export const listEmpresaResponsables = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ empresaUserId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: target } = await supabase
+      .from("profiles")
+      .select("account_id")
+      .eq("id", data.empresaUserId)
+      .maybeSingle();
+    if (!target?.account_id) {
+      const { data: solo } = await supabase
+        .from("profiles")
+        .select("id, full_name, email, account_role")
+        .eq("id", data.empresaUserId)
+        .maybeSingle();
+      const myLikesSolo = solo
+        ? await supabase.from("likes").select("to_user_id").eq("from_user_id", userId).eq("to_user_id", solo.id)
+        : { data: [] as any[] };
+      return { responsables: solo ? [solo] : [], myExistingLikes: (myLikesSolo.data ?? []).map((l: any) => l.to_user_id) };
+    }
+    const { data: members } = await supabase
+      .from("profiles")
+      .select("id, full_name, email, account_role")
+      .eq("account_id", target.account_id)
+      .eq("is_active", true);
+    const ids = (members ?? []).map((m: any) => m.id);
+    if (!ids.length) return { responsables: [], myExistingLikes: [] as string[] };
+    const { data: myLikes } = await supabase
+      .from("likes")
+      .select("to_user_id")
+      .eq("from_user_id", userId)
+      .in("to_user_id", ids);
+    return {
+      responsables: members ?? [],
+      myExistingLikes: (myLikes ?? []).map((l: any) => l.to_user_id),
+    };
+  });
+
+export const likeEmpresaAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({
+      responsableIds: z.array(z.string().uuid()).min(1).max(50),
+      eventId: z.string().uuid().nullable(),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const rows = data.responsableIds.map((toId) => ({
+      from_user_id: userId,
+      to_user_id: toId,
+      event_id: data.eventId,
+    }));
+    let inserted = 0;
+    for (const row of rows) {
+      const { error } = await supabase.from("likes").insert(row);
+      if (!error) inserted++;
+      // Silently ignore duplicates/conflicts
+    }
+    return { ok: true, count: inserted };
+  });
+
