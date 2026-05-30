@@ -379,10 +379,11 @@ function AccountHeader({ owner, role, accountName, managersCount, isOpen, onTogg
   );
 }
 
-function RowActions({ p, onReset, onToggle, onDelete, onView }: { p: Profile; onReset: (id: string) => void; onToggle: (p: Profile) => void; onDelete: (p: Profile) => void; onView?: () => void }) {
+function RowActions({ p, onReset, onToggle, onDelete, onView, onEdit }: { p: Profile; onReset: (id: string) => void; onToggle: (p: Profile) => void; onDelete: (p: Profile) => void; onView?: () => void; onEdit?: () => void }) {
   return (
-    <div className="inline-flex items-center gap-1 shrink-0">
+    <div className="inline-flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
       {onView && <button title="Ver actividad" className="p-1.5 text-muted-foreground hover:text-primary" onClick={onView}><BarChart3 className="h-4 w-4" /></button>}
+      {onEdit && <button title="Editar datos" className="p-1.5 text-muted-foreground hover:text-primary" onClick={onEdit}><Pencil className="h-4 w-4" /></button>}
       <button title="Resetear contraseña" className="p-1.5 text-muted-foreground hover:text-foreground" onClick={() => onReset(p.id)}><KeyRound className="h-4 w-4" /></button>
       <button title={p.is_active ? "Desactivar" : "Activar"} className="p-1.5 text-muted-foreground hover:text-foreground" onClick={() => onToggle(p)}><Power className="h-4 w-4" /></button>
       <button title="Eliminar" className="p-1.5 text-muted-foreground hover:text-destructive" onClick={() => onDelete(p)}><Trash2 className="h-4 w-4" /></button>
