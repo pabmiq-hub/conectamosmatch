@@ -297,7 +297,7 @@ function AdminUsuarios() {
                 {grouped.orphans.map((p) => (
                   <li key={p.id} className="flex items-center gap-3 px-4 py-3 text-sm">
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-xs truncate">{p.full_name ?? p.email}</div>
+                      <div className="font-medium text-xs truncate cursor-pointer hover:text-primary" onClick={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Usuario" })}>{p.full_name ?? p.email}</div>
                       <div className="text-[11px] text-muted-foreground truncate">{p.email} · rol {p.role}</div>
                     </div>
                     <RowActions p={p} onReset={onReset} onToggle={onToggle} onDelete={onDelete} onView={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Usuario" })} />
