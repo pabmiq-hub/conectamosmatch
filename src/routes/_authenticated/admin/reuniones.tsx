@@ -2,10 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
-import { ClipboardList, Wand2, Trash2 } from "lucide-react";
+import { ClipboardList, Wand2, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { listEvents } from "@/lib/admin-events.functions";
 import { listMeetings, autoAssignSlots, updateMeeting, deleteMeeting } from "@/lib/admin-meetings.functions";
+import { CreateMeetingModal } from "@/components/admin/CreateMeetingModal";
 
 export const Route = createFileRoute("/_authenticated/admin/reuniones")({
   component: AdminReuniones,
@@ -21,6 +22,7 @@ function AdminReuniones() {
   const [eventId, setEventId] = useState<string>("");
   const [rows, setRows] = useState<any[]>([]);
   const [busy, setBusy] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -53,10 +55,17 @@ function AdminReuniones() {
   return (
     <div className="space-y-6">
       <PageHeader title="Reuniones 1to1" subtitle="Asignación automática y manual de speed-meetings" right={
-        <button onClick={runAuto} disabled={busy || !eventId} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide disabled:opacity-50">
-          <Wand2 className="h-4 w-4" /> {busy ? "Asignando…" : "Auto-asignar slots"}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button onClick={() => setShowCreate(true)} className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide">
+            <Plus className="h-4 w-4" /> Crear reunión
+          </button>
+          <button onClick={runAuto} disabled={busy || !eventId} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide disabled:opacity-50">
+            <Wand2 className="h-4 w-4" /> {busy ? "Asignando…" : "Auto-asignar slots"}
+          </button>
+        </div>
       } />
+
+      {showCreate && <CreateMeetingModal eventId={eventId || null} onClose={() => setShowCreate(false)} onCreated={load} />}
 
       <div className="flex flex-wrap items-center gap-3">
         <label className="text-xs text-uppercase-wide text-muted-foreground">Evento</label>
