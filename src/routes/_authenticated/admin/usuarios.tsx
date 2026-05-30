@@ -320,18 +320,25 @@ function AccountHeader({ owner, role, accountName, managersCount, isOpen, onTogg
   const company = owner?.company;
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-3 bg-muted/20 ${canExpand ? "cursor-pointer hover:bg-muted/40 transition-colors" : ""}`}
-      onClick={canExpand ? onToggle : undefined}
-      role={canExpand ? "button" : undefined}
-      aria-expanded={canExpand ? isOpen : undefined}
+      className={`flex items-center gap-3 px-4 py-3 bg-muted/20 ${owner ? "cursor-pointer hover:bg-muted/40 transition-colors" : ""}`}
+      onClick={owner ? () => onView(owner) : undefined}
+      role={owner ? "button" : undefined}
     >
-      <ChevronRight className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${isOpen ? "rotate-90" : ""} ${canExpand ? "" : "opacity-30"}`} />
+      <button
+        onClick={(e) => { e.stopPropagation(); if (canExpand) onToggle(); }}
+        disabled={!canExpand}
+        title={canExpand ? (isOpen ? "Contraer" : "Expandir responsables") : undefined}
+        className={`p-1 rounded hover:bg-muted ${canExpand ? "" : "opacity-30 cursor-default"}`}
+        aria-expanded={canExpand ? isOpen : undefined}
+      >
+        <ChevronRight className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`} />
+      </button>
       <div className="h-10 w-10 rounded-md bg-card border border-border overflow-hidden flex items-center justify-center shrink-0">
         {company?.logo_url ? <img src={company.logo_url} className="max-h-full max-w-full" alt="" /> : <Icon className="h-5 w-5 text-muted-foreground" />}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-display font-bold text-sm truncate cursor-pointer hover:text-primary" onClick={(e) => { e.stopPropagation(); if (owner) onView(owner); }}>{accountName}</span>
+          <span className="font-display font-bold text-sm truncate">{accountName}</span>
           <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[9px] font-bold text-uppercase-wide">{role}</span>
           {company?.is_verified && <span className="text-[9px] text-success">✓ Verificada</span>}
           {company?.sponsorship_level && <LevelBadge level={company.sponsorship_level} />}
@@ -343,7 +350,7 @@ function AccountHeader({ owner, role, accountName, managersCount, isOpen, onTogg
         </div>
         {owner ? (
           <div className="text-[11px] text-muted-foreground truncate">
-            Owner: <span className="font-bold text-foreground cursor-pointer hover:text-primary" onClick={(e) => { e.stopPropagation(); onView(owner); }}>{owner.full_name ?? owner.email}</span> · {owner.email}
+            Owner: <span className="font-bold text-foreground">{owner.full_name ?? owner.email}</span> · {owner.email}
             {company?.sector ? ` · ${company.sector}` : ""}
           </div>
         ) : (
@@ -351,15 +358,6 @@ function AccountHeader({ owner, role, accountName, managersCount, isOpen, onTogg
         )}
       </div>
       <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">Owner</span>
-      {owner && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onView(owner); }}
-          title="Ver actividad"
-          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[10px] font-bold text-uppercase-wide hover:bg-muted"
-        >
-          <BarChart3 className="h-3.5 w-3.5" /> Actividad
-        </button>
-      )}
       {onAddResponsable && (
         <button
           onClick={(e) => { e.stopPropagation(); onAddResponsable(); }}
@@ -372,7 +370,7 @@ function AccountHeader({ owner, role, accountName, managersCount, isOpen, onTogg
       {owner && (
         <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
           <span className={`text-[10px] font-bold text-uppercase-wide ${owner.is_active ? "text-success" : "text-muted-foreground"}`}>{owner.is_active ? "Activo" : "Inactivo"}</span>
-          <RowActions p={owner} onReset={onReset} onToggle={onToggleActive} onDelete={onDelete} onView={() => onView(owner)} />
+          <RowActions p={owner} onReset={onReset} onToggle={onToggleActive} onDelete={onDelete} onView={() => onView(owner)} onEdit={() => onEdit(owner)} />
         </div>
       )}
     </div>
