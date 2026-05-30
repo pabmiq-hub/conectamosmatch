@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { signOut, type AppRole } from "@/lib/auth";
-import { LayoutDashboard, User, Search, Users, Heart, Calendar, Megaphone, ClipboardList, LogOut, Settings, Building2, UsersRound } from "lucide-react";
+import { LayoutDashboard, User, Search, Users, Heart, Calendar, Megaphone, ClipboardList, LogOut, Settings, Building2, UsersRound, BookmarkCheck } from "lucide-react";
 
 export interface NavItem {
   to: string;
@@ -22,6 +22,7 @@ const navByRole: Record<AppRole, NavItem[]> = {
     { to: "/empresa/mi-ficha", label: "Mi Ficha", icon: User },
     { to: "/empresa/ver-sponsors", label: "Ver Soluciones", icon: Search },
     { to: "/empresa/ver-empresas", label: "Ver Empresas", icon: Building2 },
+    { to: "/empresa/mis-selecciones", label: "Mis Selecciones", icon: BookmarkCheck },
     { to: "/empresa/mis-matches", label: "Mis Matches", icon: Heart },
     { to: "/empresa/reuniones-1to1", label: "Reuniones 1to1", icon: ClipboardList },
     { to: "/empresa/equipo", label: "Mi Equipo", icon: UsersRound },
@@ -32,6 +33,7 @@ const navByRole: Record<AppRole, NavItem[]> = {
     { to: "/sponsor/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { to: "/sponsor/mi-ficha", label: "Mi Ficha", icon: User },
     { to: "/sponsor/ver-empresas", label: "Ver Empresas", icon: Search },
+    { to: "/sponsor/mis-selecciones", label: "Mis Selecciones", icon: BookmarkCheck },
     { to: "/sponsor/mis-matches", label: "Mis Matches", icon: Heart },
     { to: "/sponsor/reuniones-1to1", label: "Reuniones 1to1", icon: ClipboardList },
     { to: "/sponsor/equipo", label: "Mi Equipo", icon: UsersRound },
