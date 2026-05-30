@@ -11,6 +11,7 @@ import { ImportUsersModal } from "@/components/admin/ImportUsersModal";
 import { InviteResponsableModal } from "@/components/admin/InviteResponsableModal";
 import { ApproveRequestModal } from "@/components/admin/ApproveRequestModal";
 import { UserActivityDrawer } from "@/components/admin/UserActivityDrawer";
+import { BulkUsersModal } from "@/components/admin/BulkUsersModal";
 import { deleteUserAccount, resetUserPassword, setUserActive } from "@/lib/admin-users.functions";
 import { listAllRequests, rejectRequest, type ResponsableRequest } from "@/lib/responsable-requests.functions";
 
