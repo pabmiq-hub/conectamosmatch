@@ -315,7 +315,7 @@ function AdminUsuarios() {
   );
 }
 
-function AccountHeader({ owner, role, accountName, managersCount, isOpen, onToggle, canExpand, onReset, onToggleActive, onDelete, onAddResponsable, onView }: { owner: Profile | null; role: string | undefined; accountName: string; managersCount: number; isOpen: boolean; onToggle: () => void; canExpand: boolean; onReset: (id: string) => void; onToggleActive: (p: Profile) => void; onDelete: (p: Profile) => void; onAddResponsable?: () => void; onView: (p: Profile) => void }) {
+function AccountHeader({ owner, role, accountName, managersCount, isOpen, onToggle, canExpand, onReset, onToggleActive, onDelete, onAddResponsable, onView, onEdit }: { owner: Profile | null; role: string | undefined; accountName: string; managersCount: number; isOpen: boolean; onToggle: () => void; canExpand: boolean; onReset: (id: string) => void; onToggleActive: (p: Profile) => void; onDelete: (p: Profile) => void; onAddResponsable?: () => void; onView: (p: Profile) => void; onEdit: (p: Profile) => void }) {
   const Icon = role === "sponsor" ? Sparkles : Building2;
   const company = owner?.company;
   return (
