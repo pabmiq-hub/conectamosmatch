@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { X, Pencil } from "lucide-react";
+import { X, Pencil, Wand2, Loader2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { getUserForEdit, updateUserProfile } from "@/lib/admin-users.functions";
+import { scrapeProfileFromUrl } from "@/lib/scrape-profile.functions";
 import { toast } from "sonner";
 
 export function EditUserModal({ userId, onClose, onSaved }: { userId: string; onClose: () => void; onSaved?: () => void }) {
