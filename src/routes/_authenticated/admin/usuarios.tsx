@@ -255,7 +255,7 @@ function AdminUsuarios() {
                       <li key={m.id} className="flex items-center gap-3 px-4 py-2.5 pl-10 text-sm">
                         <CornerDownRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                         <div className="min-w-0 flex-1">
-                          <div className="font-medium text-xs truncate">{m.full_name ?? m.email}</div>
+                          <div className="font-medium text-xs truncate cursor-pointer hover:text-primary" onClick={() => setViewing({ id: m.id, label: m.full_name ?? m.email ?? "Responsable" })}>{m.full_name ?? m.email}</div>
                           <div className="text-[11px] text-muted-foreground truncate">
                             {m.email} · <span className="font-bold">Responsable de {accountName}</span>
                           </div>
@@ -279,7 +279,7 @@ function AdminUsuarios() {
                   <li key={p.id} className="flex items-center gap-3 px-4 py-3 text-sm">
                     <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center"><Shield className="h-4 w-4 text-primary" /></div>
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-xs truncate">{p.full_name ?? p.email}</div>
+                      <div className="font-medium text-xs truncate cursor-pointer hover:text-primary" onClick={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Admin" })}>{p.full_name ?? p.email}</div>
                       <div className="text-[11px] text-muted-foreground truncate">{p.email}</div>
                     </div>
                     <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">Super Admin</span>
@@ -297,7 +297,7 @@ function AdminUsuarios() {
                 {grouped.orphans.map((p) => (
                   <li key={p.id} className="flex items-center gap-3 px-4 py-3 text-sm">
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-xs truncate">{p.full_name ?? p.email}</div>
+                      <div className="font-medium text-xs truncate cursor-pointer hover:text-primary" onClick={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Usuario" })}>{p.full_name ?? p.email}</div>
                       <div className="text-[11px] text-muted-foreground truncate">{p.email} · rol {p.role}</div>
                     </div>
                     <RowActions p={p} onReset={onReset} onToggle={onToggle} onDelete={onDelete} onView={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Usuario" })} />
@@ -328,7 +328,7 @@ function AccountHeader({ owner, role, accountName, managersCount, isOpen, onTogg
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-display font-bold text-sm truncate">{accountName}</span>
+          <span className="font-display font-bold text-sm truncate cursor-pointer hover:text-primary" onClick={(e) => { e.stopPropagation(); if (owner) onView(owner); }}>{accountName}</span>
           <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[9px] font-bold text-uppercase-wide">{role}</span>
           {company?.is_verified && <span className="text-[9px] text-success">✓ Verificada</span>}
           {company?.sponsorship_level && <LevelBadge level={company.sponsorship_level} />}
@@ -340,7 +340,7 @@ function AccountHeader({ owner, role, accountName, managersCount, isOpen, onTogg
         </div>
         {owner ? (
           <div className="text-[11px] text-muted-foreground truncate">
-            Owner: <span className="font-bold text-foreground">{owner.full_name ?? owner.email}</span> · {owner.email}
+            Owner: <span className="font-bold text-foreground cursor-pointer hover:text-primary" onClick={(e) => { e.stopPropagation(); onView(owner); }}>{owner.full_name ?? owner.email}</span> · {owner.email}
             {company?.sector ? ` · ${company.sector}` : ""}
           </div>
         ) : (
