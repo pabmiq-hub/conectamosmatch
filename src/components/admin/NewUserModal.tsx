@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Building2, Sparkles, X, Copy, Check } from "lucide-react";
+import { Building2, Sparkles, X, Copy, Check, Wand2, Loader2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { createUserAccount } from "@/lib/admin-users.functions";
+import { scrapeProfileFromUrl } from "@/lib/scrape-profile.functions";
 import { toast } from "sonner";
 
 type Role = "empresa" | "sponsor";
