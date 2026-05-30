@@ -23,7 +23,7 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
     sector: "",
     company_size: "11-50" as "1-10" | "11-50" | "51-200" | "201-500" | "500+",
     sponsorship_category: "",
-    sponsorship_level: "BRONZE" as "PLATINUM" | "GOLD" | "SILVER" | "BRONZE",
+    sponsorship_level: "BRONZE" as "GOLD" | "PREMIUM" | "BASIC" | "PLATINUM" | "SILVER" | "BRONZE",
     website: "",
     linkedin_url: "",
     location_city: "",
@@ -145,7 +145,7 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
               ) : (
                 <>
                   <Field label="Categoría de patrocinio" value={f.sponsorship_category} onChange={(v) => set("sponsorship_category", v)} />
-                  <Select label="Nivel *" value={f.sponsorship_level} onChange={(v) => set("sponsorship_level", v)} options={["PLATINUM","GOLD","SILVER","BRONZE"]} />
+                  <Select label="Nivel *" value={f.sponsorship_level} onChange={(v) => set("sponsorship_level", v)} options={["GOLD","PREMIUM","BASIC","PLATINUM","SILVER","BRONZE"]} />
                 </>
               )}
               <Field label="Website" value={f.website} onChange={(v) => set("website", v)} placeholder="https://…" />
