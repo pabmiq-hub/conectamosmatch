@@ -79,6 +79,20 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
     } finally { setScraping(false); }
   }
 
+  async function runPromote() {
+    if (!accountId || accountRole === "owner") return;
+    if (!confirm(`¿Hacer admin de "${accountName || "esta cuenta"}" a ${f.full_name || f.email}? El admin actual pasará a ser responsable.`)) return;
+    setPromoting(true);
+    try {
+      await promote({ data: { newAdminUserId: userId } });
+      setAccountRole("owner");
+      toast.success("Usuario promovido a admin de la cuenta");
+      onSaved?.();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Error al promover");
+    } finally { setPromoting(false); }
+  }
+
   async function submit() {
     setBusy(true);
     try {
