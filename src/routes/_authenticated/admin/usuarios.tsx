@@ -255,7 +255,7 @@ function AdminUsuarios() {
                       <li key={m.id} className="flex items-center gap-3 px-4 py-2.5 pl-10 text-sm">
                         <CornerDownRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                         <div className="min-w-0 flex-1">
-                          <div className="font-medium text-xs truncate">{m.full_name ?? m.email}</div>
+                          <div className="font-medium text-xs truncate cursor-pointer hover:text-primary" onClick={() => setViewing({ id: m.id, label: m.full_name ?? m.email ?? "Responsable" })}>{m.full_name ?? m.email}</div>
                           <div className="text-[11px] text-muted-foreground truncate">
                             {m.email} · <span className="font-bold">Responsable de {accountName}</span>
                           </div>
