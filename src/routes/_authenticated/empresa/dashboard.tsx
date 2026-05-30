@@ -52,7 +52,7 @@ function EmpresaDashboard() {
 
       <div className="flex justify-center">
         <Link to="/empresa/ver-sponsors" className="inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90 text-uppercase-wide">
-          <Search className="h-4 w-4" /> Explorar sponsors
+          <Search className="h-4 w-4" /> Explorar soluciones
         </Link>
       </div>
 

@@ -47,7 +47,7 @@ function MiFichaSponsor() {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <PageHeader title="Mi ficha" subtitle="Datos visibles para empresas y otros sponsors" right={
+      <PageHeader title="Mi ficha" subtitle="Datos visibles para empresas y otras soluciones" right={
         <div className="flex items-center gap-3">
           <LevelBadge level={level} />
           <button onClick={save} disabled={busy} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide disabled:opacity-50">

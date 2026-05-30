@@ -156,7 +156,7 @@ export function EventModal({ event, onClose, onSaved }: { event: any | null; onC
           <Section title="Capacidad y selección">
             <div className="grid md:grid-cols-3 gap-4">
               <Field label="Máx. empresas" type="number" value={f.max_empresas} onChange={(v) => set("max_empresas", v)} />
-              <Field label="Máx. sponsors" type="number" value={f.max_sponsors} onChange={(v) => set("max_sponsors", v)} />
+              <Field label="Máx. soluciones" type="number" value={f.max_sponsors} onChange={(v) => set("max_sponsors", v)} />
               <div>
                 <Label>Likes máx. por participante</Label>
                 <input type="number" min={1} max={500} value={f.max_likes_per_user} onChange={(e) => set("max_likes_per_user", parseInt(e.target.value) || 20)} className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm" />

@@ -85,7 +85,7 @@ function AdminLoginPage() {
           </form>
 
           <div className="mt-6 text-center text-xs text-muted-foreground">
-            ¿Eres empresa o sponsor?{" "}
+            ¿Eres empresa o solución?{" "}
             <Link to="/login" className="text-primary font-bold hover:underline">Inicia sesión aquí</Link>
           </div>
         </div>

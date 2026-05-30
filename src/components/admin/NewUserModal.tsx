@@ -110,7 +110,7 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
           <div className="grid gap-4 md:grid-cols-2">
             {([
               { r: "empresa" as Role, icon: Building2, t: "Empresa" },
-              { r: "sponsor" as Role, icon: Sparkles, t: "Sponsor" },
+              { r: "sponsor" as Role, icon: Sparkles, t: "Solución" },
             ]).map(({ r, icon: Icon, t }) => (
               <button key={r} onClick={() => { setRole(r); setStep(2); }} className="text-left rounded-xl border border-border bg-background p-5 hover:border-primary transition">
                 <Icon className="h-6 w-6 text-primary" />

@@ -26,7 +26,7 @@ function AdminDashboard() {
       <h1 className="font-display text-3xl font-bold text-uppercase-wide">Panel de administración</h1>
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard icon={Building2} value={s.empresas} label="Empresas registradas" accent to="/admin/usuarios" />
-        <StatCard icon={Sparkles} value={s.sponsors} label="Sponsors registrados" accent to="/admin/usuarios" />
+        <StatCard icon={Sparkles} value={s.sponsors} label="Soluciones registradas" accent to="/admin/usuarios" />
         <StatCard icon={Heart} value={s.matches} label="Matches mutuos" accent to="/admin/matches" />
         <StatCard icon={Calendar} value={s.events} label="Próximos eventos" accent to="/admin/eventos" />
       </div>

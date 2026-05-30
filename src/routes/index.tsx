@@ -6,7 +6,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "CONECTAMOS MATCH — Conectamos talento con oportunidad" },
-      { name: "description", content: "Plataforma B2B de matchmaking que conecta empresas y sponsors a través de eventos curados." },
+      { name: "description", content: "Plataforma B2B de matchmaking que conecta empresas y soluciones a través de eventos curados." },
     ],
   }),
   component: Landing,
@@ -49,7 +49,7 @@ function Landing() {
                 Conectamos a personas con los <span className="text-brand-gradient">mismos retos</span> e inquietudes.
               </h1>
               <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-                Matchmaking B2B curado entre empresas y sponsors. Eventos online y presenciales
+                Matchmaking B2B curado entre empresas y soluciones. Eventos online y presenciales
                 donde C-Levels conectan, conversan y descubren soluciones reales.
               </p>
               <div className="mt-10 flex flex-wrap items-center gap-3">
@@ -84,10 +84,10 @@ function Landing() {
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   {[
-                    { t: "Northwave", s: "Platinum Sponsor" },
-                    { t: "Lumen Cloud", s: "Gold Sponsor" },
-                    { t: "Ironbyte", s: "Silver Sponsor" },
-                    { t: "Verde IT", s: "Bronze Sponsor" },
+                    { t: "Northwave", s: "Solución Platinum" },
+                    { t: "Lumen Cloud", s: "Solución Gold" },
+                    { t: "Ironbyte", s: "Solución Silver" },
+                    { t: "Verde IT", s: "Solución Bronze" },
                   ].map((c) => (
                     <div key={c.t} className="rounded-xl border border-border p-3">
                       <div className="h-8 w-8 rounded-lg bg-brand-gradient opacity-80" />
@@ -114,12 +114,12 @@ function Landing() {
               </h2>
               <p className="mt-4 text-muted-foreground">
                 Nos encargamos de absolutamente todo: organizamos, filtramos invitados y preparamos
-                un conjunto de sponsors escogidos para cada ocasión.
+                un conjunto de soluciones escogidos para cada ocasión.
               </p>
             </div>
             <div className="mt-12 grid gap-6 md:grid-cols-3">
               {[
-                { icon: Users, n: "01", t: "Crea tu ficha", d: "Empresa o sponsor — completa tu perfil con descripción, sector y categorías." },
+                { icon: Users, n: "01", t: "Crea tu ficha", d: "Empresa o solución — completa tu perfil con descripción, sector y categorías." },
                 { icon: Heart, n: "02", t: "Da like y matchea", d: "Explora perfiles y dale like. Si hay reciprocidad, se crea un match automático." },
                 { icon: Calendar, n: "03", t: "Reúnete 1:1", d: "El equipo asigna reuniones uno a uno entre matches dentro del evento." },
               ].map(({ icon: Icon, n, t, d }) => (
@@ -164,7 +164,7 @@ function Landing() {
                   ¿Listo para tu próximo match?
                 </h2>
                 <p className="mt-2 text-white/80 max-w-xl">
-                  Únete a la red de C-Levels y sponsors que están construyendo el próximo gran negocio.
+                  Únete a la red de C-Levels y soluciones que están construyendo el próximo gran negocio.
                 </p>
               </div>
               <div className="flex gap-3">
@@ -172,7 +172,7 @@ function Landing() {
                   <Building2 className="h-4 w-4" /> Soy Empresa
                 </a>
                 <a href="mailto:hola@conectamos.club?subject=Soy%20Sponsor" className="inline-flex items-center gap-2 rounded-full border border-white/30 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10">
-                  <Sparkles className="h-4 w-4" /> Soy Sponsor
+                  <Sparkles className="h-4 w-4" /> Soy Solución
                 </a>
               </div>
             </div>
