@@ -1,30 +1,32 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PartnerCard } from "@/components/dashboard/PartnerCard";
 import { ActionButton, LikeButton, Eye } from "@/components/dashboard/ActionButtons";
 import { PartnerDetailModal, type PartnerDetail } from "@/components/dashboard/PartnerDetailModal";
+import { Search } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/empresa/ver-sponsors")({
   component: VerSponsors,
 });
 
+const MIN_REQUIRED = 12;
+
 function VerSponsors() {
   const [me, setMe] = useState<string | null>(null);
   const [eventId, setEventId] = useState<string | null>(null);
-  const [cap, setCap] = useState<number>(20);
   const [items, setItems] = useState<any[]>([]);
   const [likedSet, setLikedSet] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<PartnerDetail | null>(null);
+  const [q, setQ] = useState("");
 
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setMe(user.id);
-      const { data: ev } = await supabase.from("events").select("id, max_likes_per_user").in("status", ["published","ongoing"]).order("event_date").limit(1).maybeSingle();
+      const { data: ev } = await supabase.from("events").select("id").in("status", ["published","ongoing"]).order("event_date").limit(1).maybeSingle();
       setEventId(ev?.id ?? null);
-      setCap(ev?.max_likes_per_user ?? 20);
       const { data: sp } = await supabase.from("sponsor_profiles").select("user_id, company_name, description, logo_url, sector, sponsorship_level, website, location_city, responsables");
       setItems(sp ?? []);
       const myLikes = ev?.id
@@ -35,19 +37,30 @@ function VerSponsors() {
     })();
   }, []);
 
-  const reachedCap = likedSet.size >= cap;
+  const filtered = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    if (!term) return items;
+    return items.filter((s) => `${s.company_name ?? ""} ${s.sector ?? ""} ${s.location_city ?? ""}`.toLowerCase().includes(term));
+  }, [items, q]);
+
+  const reachedMin = likedSet.size >= MIN_REQUIRED;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-2xl font-bold text-uppercase-wide">Sponsors disponibles</h1>
-        <span className={`rounded-full border px-3 py-1 text-xs font-bold text-uppercase-wide ${reachedCap ? "border-destructive text-destructive" : "border-border"}`}>
-          {likedSet.size} / {cap} seleccionados
+        <span className={`rounded-full border px-3 py-1 text-xs font-bold text-uppercase-wide ${reachedMin ? "border-success text-success" : "border-border"}`}>
+          {likedSet.size} / {MIN_REQUIRED} mínimo {reachedMin && "✓"}
         </span>
       </div>
 
+      <div className="relative max-w-md">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar sponsor por nombre, sector o ciudad…" className="w-full rounded-md border border-border bg-card pl-9 pr-3 py-2 text-sm" />
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {items.map((s) => (
+        {filtered.map((s) => (
           <PartnerCard
             key={s.user_id}
             name={s.company_name}
@@ -58,13 +71,12 @@ function VerSponsors() {
             actions={
               <>
                 <ActionButton icon={Eye} label="Ver" onClick={() => setSelected(s)} />
-                
-                {me && <LikeButton fromUserId={me} toUserId={s.user_id} eventId={eventId} alreadyLiked={likedSet.has(s.user_id)} partnerName={s.company_name} disabled={reachedCap && !likedSet.has(s.user_id)} />}
+                {me && <LikeButton fromUserId={me} toUserId={s.user_id} eventId={eventId} alreadyLiked={likedSet.has(s.user_id)} partnerName={s.company_name} />}
               </>
             }
           />
         ))}
-        {items.length === 0 && <div className="col-span-full text-center text-sm text-muted-foreground py-12">Aún no hay sponsors registrados.</div>}
+        {filtered.length === 0 && <div className="col-span-full text-center text-sm text-muted-foreground py-12">No hay sponsors que coincidan con tu búsqueda.</div>}
       </div>
       <PartnerDetailModal open={!!selected} onClose={() => setSelected(null)} partner={selected} />
     </div>

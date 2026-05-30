@@ -83,3 +83,49 @@ export const deleteMeeting = createServerFn({ method: "POST" })
     if (error) throw new Response(error.message, { status: 400 });
     return { ok: true };
   });
+
+export const createMeeting = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({
+      event_id: z.string().uuid().optional().nullable(),
+      empresa_user_id: z.string().uuid(),
+      sponsor_user_id: z.string().uuid(),
+      scheduled_time: z.string().optional().nullable(),
+      room: z.string().max(120).optional().nullable(),
+      duration_minutes: z.number().int().min(5).max(180).optional(),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+    const { data: m, error } = await supabaseAdmin
+      .from("meetings_1to1")
+      .insert({
+        event_id: data.event_id ?? null,
+        empresa_user_id: data.empresa_user_id,
+        sponsor_user_id: data.sponsor_user_id,
+        scheduled_time: data.scheduled_time ?? null,
+        room: data.room ?? null,
+        duration_minutes: data.duration_minutes ?? 30,
+        status: data.scheduled_time ? "confirmed" : "pending",
+        assigned_by: context.userId,
+      })
+      .select()
+      .single();
+    if (error) throw new Response(error.message, { status: 400 });
+    return { meeting: m };
+  });
+
+export const listAllParticipants = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertSuperAdmin(context.userId);
+    const [{ data: emps }, { data: sps }] = await Promise.all([
+      supabaseAdmin.from("empresa_profiles").select("user_id, company_name").order("company_name"),
+      supabaseAdmin.from("sponsor_profiles").select("user_id, company_name").order("company_name"),
+    ]);
+    return {
+      empresas: (emps ?? []).filter((e: any) => e.user_id).map((e: any) => ({ user_id: e.user_id, name: e.company_name })),
+      sponsors: (sps ?? []).filter((s: any) => s.user_id).map((s: any) => ({ user_id: s.user_id, name: s.company_name })),
+    };
+  });

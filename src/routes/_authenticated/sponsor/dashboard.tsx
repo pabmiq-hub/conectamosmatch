@@ -60,8 +60,8 @@ function SponsorDashboard() {
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
-        <StatCard icon={Heart} value={stats.matches} label="Matches mutuos" accent />
-        <StatCard icon={Calendar} value={stats.meetings} label="1to1 agendadas" accent />
+        <StatCard icon={Heart} value={stats.matches} label="Matches mutuos" accent to="/sponsor/mis-matches" />
+        <StatCard icon={Calendar} value={stats.meetings} label="1to1 agendadas" accent to="/sponsor/reuniones-1to1" />
       </div>
 
       <div className="flex justify-center">

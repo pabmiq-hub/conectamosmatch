@@ -198,6 +198,54 @@ const optStr = z.preprocess(
   (v) => (v === undefined || v === null ? "" : String(v)),
   z.string().optional().default(""),
 );
+
+// ---- User activity (admin drill-down) ----
+export const getUserActivity = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ userId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+    const userId = data.userId;
+    const [
+      { data: profile },
+      { data: likesOut },
+      { data: likesIn },
+      { data: matches },
+      { data: meetings },
+    ] = await Promise.all([
+      supabaseAdmin.from("profiles").select("id, full_name, email, role, account_id, account_role").eq("id", userId).maybeSingle(),
+      supabaseAdmin.from("likes").select("to_user_id, created_at, event_id").eq("from_user_id", userId).order("created_at", { ascending: false }),
+      supabaseAdmin.from("likes").select("from_user_id, created_at, event_id").eq("to_user_id", userId).order("created_at", { ascending: false }),
+      supabaseAdmin.from("matches").select("*").or(`empresa_user_id.eq.${userId},sponsor_user_id.eq.${userId}`).order("created_at", { ascending: false }),
+      supabaseAdmin.from("meetings_1to1").select("*").or(`empresa_user_id.eq.${userId},sponsor_user_id.eq.${userId}`).order("scheduled_time", { ascending: true, nullsFirst: false }),
+    ]);
+
+    const allUserIds = new Set<string>();
+    (likesOut ?? []).forEach((l: any) => l.to_user_id && allUserIds.add(l.to_user_id));
+    (likesIn ?? []).forEach((l: any) => l.from_user_id && allUserIds.add(l.from_user_id));
+    (matches ?? []).forEach((m: any) => { m.empresa_user_id && allUserIds.add(m.empresa_user_id); m.sponsor_user_id && allUserIds.add(m.sponsor_user_id); });
+    (meetings ?? []).forEach((m: any) => { m.empresa_user_id && allUserIds.add(m.empresa_user_id); m.sponsor_user_id && allUserIds.add(m.sponsor_user_id); });
+    const idArr = Array.from(allUserIds);
+    const [{ data: emps }, { data: sps }] = await Promise.all([
+      supabaseAdmin.from("empresa_profiles").select("user_id, company_name").in("user_id", idArr.length ? idArr : ["00000000-0000-0000-0000-000000000000"]),
+      supabaseAdmin.from("sponsor_profiles").select("user_id, company_name").in("user_id", idArr.length ? idArr : ["00000000-0000-0000-0000-000000000000"]),
+    ]);
+    const nameMap = new Map<string, { name: string; kind: "empresa" | "sponsor" }>();
+    (emps ?? []).forEach((e: any) => nameMap.set(e.user_id, { name: e.company_name, kind: "empresa" }));
+    (sps ?? []).forEach((s: any) => nameMap.set(s.user_id, { name: s.company_name, kind: "sponsor" }));
+    const nameOf = (id?: string | null) => (id ? nameMap.get(id)?.name ?? "—" : "—");
+    const kindOf = (id?: string | null) => (id ? nameMap.get(id)?.kind ?? null : null);
+
+    return {
+      profile,
+      likesOut: (likesOut ?? []).map((l: any) => ({ ...l, target_name: nameOf(l.to_user_id), target_kind: kindOf(l.to_user_id) })),
+      likesIn: (likesIn ?? []).map((l: any) => ({ ...l, source_name: nameOf(l.from_user_id), source_kind: kindOf(l.from_user_id) })),
+      matches: (matches ?? []).map((m: any) => ({ ...m, empresa_name: nameOf(m.empresa_user_id), sponsor_name: nameOf(m.sponsor_user_id) })),
+      meetings: (meetings ?? []).map((m: any) => ({ ...m, empresa_name: nameOf(m.empresa_user_id), sponsor_name: nameOf(m.sponsor_user_id) })),
+    };
+  });
+
+
 const accountTypeSchema = z.preprocess((v) => {
   const s = typeof v === "string" ? v.trim().toLowerCase() : v;
   if (s === "sponsor" || s === "patrocinador") return "sponsor";

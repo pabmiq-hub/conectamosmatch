@@ -4,12 +4,13 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { LevelBadge } from "@/components/brand/LevelBadge";
-import { Users, Building2, Sparkles, Plus, Search, Trash2, KeyRound, Power, Upload, UserPlus, Inbox, Check, X, CornerDownRight, Shield, ChevronRight } from "lucide-react";
+import { Users, Building2, Sparkles, Plus, Search, Trash2, KeyRound, Power, Upload, UserPlus, Inbox, Check, X, CornerDownRight, Shield, ChevronRight, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { NewUserModal } from "@/components/admin/NewUserModal";
 import { ImportUsersModal } from "@/components/admin/ImportUsersModal";
 import { InviteResponsableModal } from "@/components/admin/InviteResponsableModal";
 import { ApproveRequestModal } from "@/components/admin/ApproveRequestModal";
+import { UserActivityDrawer } from "@/components/admin/UserActivityDrawer";
 import { deleteUserAccount, resetUserPassword, setUserActive } from "@/lib/admin-users.functions";
 import { listAllRequests, rejectRequest, type ResponsableRequest } from "@/lib/responsable-requests.functions";
 
@@ -41,6 +42,7 @@ function AdminUsuarios() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [requests, setRequests] = useState<ResponsableRequest[]>([]);
   const [approving, setApproving] = useState<ResponsableRequest | null>(null);
+  const [viewing, setViewing] = useState<{ id: string; label: string } | null>(null);
   const resetPwd = useServerFn(resetUserPassword);
   const setActive = useServerFn(setUserActive);
   const delAccount = useServerFn(deleteUserAccount);
@@ -159,6 +161,7 @@ function AdminUsuarios() {
       {showInvite && <InviteResponsableModal onClose={() => setShowInvite(false)} onCreated={load} />}
       {invitePreset && <InviteResponsableModal preset={invitePreset} onClose={() => setInvitePreset(null)} onCreated={load} />}
       {approving && <ApproveRequestModal req={approving} onClose={() => setApproving(null)} onDone={load} />}
+      {viewing && <UserActivityDrawer userId={viewing.id} userLabel={viewing.label} onClose={() => setViewing(null)} />}
 
       {/* Pending requests panel */}
       {pendingRequests.length > 0 && (
@@ -235,7 +238,7 @@ function AdminUsuarios() {
             return (
               <div key={key} className="rounded-xl border border-border bg-card overflow-hidden">
                 {/* Account header (owner) */}
-                <AccountHeader owner={g.owner} role={role} accountName={accountName} managersCount={g.managers.length} isOpen={isOpen} onToggle={toggle} canExpand={canExpand} onReset={onReset} onToggleActive={onToggle} onDelete={onDelete} onAddResponsable={head?.account_id && (role === "empresa" || role === "sponsor") ? () => setInvitePreset({ accountId: head.account_id!, accountType: role as "empresa" | "sponsor", accountName }) : undefined} />
+                <AccountHeader owner={g.owner} role={role} accountName={accountName} managersCount={g.managers.length} isOpen={isOpen} onToggle={toggle} canExpand={canExpand} onReset={onReset} onToggleActive={onToggle} onDelete={onDelete} onView={(p) => setViewing({ id: p.id, label: p.company?.company_name ?? p.full_name ?? p.email ?? "Usuario" })} onAddResponsable={head?.account_id && (role === "empresa" || role === "sponsor") ? () => setInvitePreset({ accountId: head.account_id!, accountType: role as "empresa" | "sponsor", accountName }) : undefined} />
                 {/* Managers */}
                 {isOpen && g.managers.length > 0 && (
                   <ul className="divide-y divide-border border-t border-border bg-muted/10">
@@ -250,7 +253,7 @@ function AdminUsuarios() {
                         </div>
                         <span className="rounded-full bg-muted px-2 py-0.5 text-[9px] font-bold text-uppercase-wide text-muted-foreground">Responsable</span>
                         <span className={`text-[10px] font-bold text-uppercase-wide ${m.is_active ? "text-success" : "text-muted-foreground"}`}>{m.is_active ? "Activo" : "Inactivo"}</span>
-                        <RowActions p={m} onReset={onReset} onToggle={onToggle} onDelete={onDelete} />
+                        <RowActions p={m} onReset={onReset} onToggle={onToggle} onDelete={onDelete} onView={() => setViewing({ id: m.id, label: m.full_name ?? m.email ?? "Responsable" })} />
                       </li>
                     ))}
                   </ul>
@@ -271,7 +274,7 @@ function AdminUsuarios() {
                       <div className="text-[11px] text-muted-foreground truncate">{p.email}</div>
                     </div>
                     <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">Super Admin</span>
-                    <RowActions p={p} onReset={onReset} onToggle={onToggle} onDelete={onDelete} />
+                    <RowActions p={p} onReset={onReset} onToggle={onToggle} onDelete={onDelete} onView={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Admin" })} />
                   </li>
                 ))}
               </ul>
@@ -288,7 +291,7 @@ function AdminUsuarios() {
                       <div className="font-medium text-xs truncate">{p.full_name ?? p.email}</div>
                       <div className="text-[11px] text-muted-foreground truncate">{p.email} · rol {p.role}</div>
                     </div>
-                    <RowActions p={p} onReset={onReset} onToggle={onToggle} onDelete={onDelete} />
+                    <RowActions p={p} onReset={onReset} onToggle={onToggle} onDelete={onDelete} onView={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Usuario" })} />
                   </li>
                 ))}
               </ul>
@@ -300,7 +303,7 @@ function AdminUsuarios() {
   );
 }
 
-function AccountHeader({ owner, role, accountName, managersCount, isOpen, onToggle, canExpand, onReset, onToggleActive, onDelete, onAddResponsable }: { owner: Profile | null; role: string | undefined; accountName: string; managersCount: number; isOpen: boolean; onToggle: () => void; canExpand: boolean; onReset: (id: string) => void; onToggleActive: (p: Profile) => void; onDelete: (p: Profile) => void; onAddResponsable?: () => void }) {
+function AccountHeader({ owner, role, accountName, managersCount, isOpen, onToggle, canExpand, onReset, onToggleActive, onDelete, onAddResponsable, onView }: { owner: Profile | null; role: string | undefined; accountName: string; managersCount: number; isOpen: boolean; onToggle: () => void; canExpand: boolean; onReset: (id: string) => void; onToggleActive: (p: Profile) => void; onDelete: (p: Profile) => void; onAddResponsable?: () => void; onView: (p: Profile) => void }) {
   const Icon = role === "sponsor" ? Sparkles : Building2;
   const company = owner?.company;
   return (
@@ -336,6 +339,15 @@ function AccountHeader({ owner, role, accountName, managersCount, isOpen, onTogg
         )}
       </div>
       <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">Owner</span>
+      {owner && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onView(owner); }}
+          title="Ver actividad"
+          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[10px] font-bold text-uppercase-wide hover:bg-muted"
+        >
+          <BarChart3 className="h-3.5 w-3.5" /> Actividad
+        </button>
+      )}
       {onAddResponsable && (
         <button
           onClick={(e) => { e.stopPropagation(); onAddResponsable(); }}
@@ -348,16 +360,17 @@ function AccountHeader({ owner, role, accountName, managersCount, isOpen, onTogg
       {owner && (
         <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
           <span className={`text-[10px] font-bold text-uppercase-wide ${owner.is_active ? "text-success" : "text-muted-foreground"}`}>{owner.is_active ? "Activo" : "Inactivo"}</span>
-          <RowActions p={owner} onReset={onReset} onToggle={onToggleActive} onDelete={onDelete} />
+          <RowActions p={owner} onReset={onReset} onToggle={onToggleActive} onDelete={onDelete} onView={() => onView(owner)} />
         </div>
       )}
     </div>
   );
 }
 
-function RowActions({ p, onReset, onToggle, onDelete }: { p: Profile; onReset: (id: string) => void; onToggle: (p: Profile) => void; onDelete: (p: Profile) => void }) {
+function RowActions({ p, onReset, onToggle, onDelete, onView }: { p: Profile; onReset: (id: string) => void; onToggle: (p: Profile) => void; onDelete: (p: Profile) => void; onView?: () => void }) {
   return (
     <div className="inline-flex items-center gap-1 shrink-0">
+      {onView && <button title="Ver actividad" className="p-1.5 text-muted-foreground hover:text-primary" onClick={onView}><BarChart3 className="h-4 w-4" /></button>}
       <button title="Resetear contraseña" className="p-1.5 text-muted-foreground hover:text-foreground" onClick={() => onReset(p.id)}><KeyRound className="h-4 w-4" /></button>
       <button title={p.is_active ? "Desactivar" : "Activar"} className="p-1.5 text-muted-foreground hover:text-foreground" onClick={() => onToggle(p)}><Power className="h-4 w-4" /></button>
       <button title="Eliminar" className="p-1.5 text-muted-foreground hover:text-destructive" onClick={() => onDelete(p)}><Trash2 className="h-4 w-4" /></button>

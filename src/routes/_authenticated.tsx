@@ -73,8 +73,8 @@ function AuthLayout() {
     <div className="min-h-screen flex bg-background">
       <Sidebar role={profile.role} companyName={companyName} />
       <div className="flex-1 flex flex-col min-w-0">
-        <Topbar userName={profile.full_name ?? profile.email} title={profile.role === "super_admin" ? "Panel de administración" : ""} />
-        <main className="flex-1 p-6 md:p-8">
+        <Topbar userName={profile.full_name ?? profile.email} role={profile.role} companyName={companyName} title={profile.role === "super_admin" ? "Panel de administración" : ""} />
+        <main className="flex-1 p-4 md:p-8">
           <Outlet />
         </main>
       </div>
