@@ -21,7 +21,7 @@ const eventSchema = z.object({
   max_sponsors: z.number().int().min(0).optional().nullable(),
   rooms: z.array(z.string().min(1).max(100)).min(1).default(["Sala A"]),
   meetings_per_user: z.number().int().min(1).max(50).default(8),
-  slot_duration_minutes: z.number().int().min(5).max(180).default(30),
+  slot_duration_minutes: z.number().int().min(5).max(180).default(15),
   meetings_start_at: z.string().optional().nullable(),
   meetings_end_at: z.string().optional().nullable(),
   max_likes_per_user: z.number().int().min(1).max(500).default(20),

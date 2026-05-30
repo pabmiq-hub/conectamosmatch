@@ -37,11 +37,11 @@ function AdminMatches() {
           {events.map((e) => <option key={e.id} value={e.id}>{e.title}</option>)}
         </select>
       </div>
-      {rows.length === 0 ? <EmptyState icon={Heart} title="Sin matches" hint="Aparecerán cuando empresa y sponsor se den like mutuamente" /> : (
+      {rows.length === 0 ? <EmptyState icon={Heart} title="Sin matches" hint="Aparecerán cuando empresa y solución se den like mutuamente" /> : (
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-[10px] text-uppercase-wide text-muted-foreground"><tr>
-              <th className="px-4 py-3 text-left">Empresa</th><th /><th className="px-4 py-3 text-left">Sponsor</th><th className="px-4 py-3 text-left">Estado</th><th className="px-4 py-3 text-left">Fecha</th><th />
+              <th className="px-4 py-3 text-left">Empresa</th><th /><th className="px-4 py-3 text-left">Solución</th><th className="px-4 py-3 text-left">Estado</th><th className="px-4 py-3 text-left">Fecha</th><th />
             </tr></thead>
             <tbody>
               {rows.map((r) => (

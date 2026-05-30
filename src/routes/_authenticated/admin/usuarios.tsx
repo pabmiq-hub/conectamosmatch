@@ -142,7 +142,7 @@ function AdminUsuarios() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Usuarios" subtitle="Gestión de cuentas (empresas/sponsors), sus responsables y administradores" right={
+      <PageHeader title="Usuarios" subtitle="Gestión de cuentas (empresas/soluciones), sus responsables y administradores" right={
         <div className="flex gap-2">
           <button className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide" onClick={() => setShowImport(true)}>
             <Upload className="h-4 w-4" /> Importar Excel
@@ -197,7 +197,7 @@ function AdminUsuarios() {
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        {([["all","Todos",Users],["empresa","Empresas",Building2],["sponsor","Sponsors",Sparkles],["admin","Admins",Shield]] as const).map(([k, label, Icon]) => (
+        {([["all","Todos",Users],["empresa","Empresas",Building2],["sponsor","Soluciones",Sparkles],["admin","Admins",Shield]] as const).map(([k, label, Icon]) => (
           <button key={k} onClick={() => setTab(k)} className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold text-uppercase-wide ${tab === k ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"}`}>
             <Icon className="h-3.5 w-3.5" /> {label}
           </button>

@@ -45,14 +45,14 @@ function EmpresaDashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard icon={Bookmark} value={`${stats.likes} / 12 mín.`} label="Sponsors seleccionados" hint={stats.likes >= 12 ? "✓ Mínimo alcanzado" : `Te faltan ${12 - stats.likes} para llegar al mínimo`} accent to="/empresa/ver-sponsors" />
+        <StatCard icon={Bookmark} value={`${stats.likes} / 12 mín.`} label="Soluciones seleccionadas" hint={stats.likes >= 12 ? "✓ Mínimo alcanzado" : `Te faltan ${12 - stats.likes} para llegar al mínimo`} accent to="/empresa/ver-sponsors" />
         <StatCard icon={Heart} value={stats.matches} label="Matches mutuos" accent to="/empresa/mis-matches" />
         <StatCard icon={Calendar} value={stats.meetings} label="1to1 agendadas" accent to="/empresa/reuniones-1to1" />
       </div>
 
       <div className="flex justify-center">
         <Link to="/empresa/ver-sponsors" className="inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90 text-uppercase-wide">
-          <Search className="h-4 w-4" /> Explorar sponsors
+          <Search className="h-4 w-4" /> Explorar soluciones
         </Link>
       </div>
 

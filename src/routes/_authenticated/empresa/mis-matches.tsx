@@ -28,8 +28,8 @@ function MisMatchesEmpresa() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Mis matches" subtitle="Sponsors con los que has hecho match mutuo" />
-      {items.length === 0 ? <EmptyState icon={Heart} title="Aún no tienes matches" hint="Da like a sponsors desde 'Ver Sponsors' para empezar" /> : (
+      <PageHeader title="Mis matches" subtitle="Soluciones con las que has hecho match mutuo" />
+      {items.length === 0 ? <EmptyState icon={Heart} title="Aún no tienes matches" hint="Da like a soluciones desde 'Ver Soluciones' para empezar" /> : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {items.map((s) => (
             <PartnerCard key={s.user_id} name={s.company_name} description={s.description} logoUrl={s.logo_url} sector={s.sector} level={s.sponsorship_level}

@@ -51,7 +51,7 @@ function AuthLayout() {
         setCompanyName(e?.company_name ?? prof?.full_name ?? "Empresa");
       } else if (role === "sponsor") {
         const { data: s } = await supabase.from("sponsor_profiles").select("company_name").eq("user_id", session.user.id).maybeSingle();
-        setCompanyName(s?.company_name ?? prof?.full_name ?? "Sponsor");
+        setCompanyName(s?.company_name ?? prof?.full_name ?? "Solución");
       } else {
         setCompanyName("Super Admin");
       }

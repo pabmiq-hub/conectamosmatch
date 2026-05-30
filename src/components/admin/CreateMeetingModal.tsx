@@ -17,7 +17,7 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
   useEffect(() => { list().then(setParts).catch(() => setParts({ empresas: [], sponsors: [] })); }, []);
 
   async function submit() {
-    if (!empresa || !sponsor) return toast.error("Elige empresa y sponsor");
+    if (!empresa || !sponsor) return toast.error("Elige empresa y solución");
     setBusy(true);
     try {
       await create({ data: {
@@ -41,7 +41,7 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
           <h2 className="font-display text-lg font-bold text-uppercase-wide">Crear reunión 1to1</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
         </div>
-        <p className="text-[11px] text-muted-foreground mb-4">Puedes asignar una reunión entre cualquier empresa y sponsor, aunque no exista match entre ambos.</p>
+        <p className="text-[11px] text-muted-foreground mb-4">Puedes asignar una reunión entre cualquier empresa y solución, aunque no exista match entre ambos.</p>
 
         <div className="space-y-4">
           <Field label="Empresa *">
@@ -50,9 +50,9 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
               {parts?.empresas.map((e) => <option key={e.user_id} value={e.user_id}>{e.name}</option>)}
             </select>
           </Field>
-          <Field label="Sponsor *">
+          <Field label="Solución *">
             <select value={sponsor} onChange={(e) => setSponsor(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
-              <option value="">— Selecciona sponsor —</option>
+              <option value="">— Selecciona solución —</option>
               {parts?.sponsors.map((s) => <option key={s.user_id} value={s.user_id}>{s.name}</option>)}
             </select>
           </Field>

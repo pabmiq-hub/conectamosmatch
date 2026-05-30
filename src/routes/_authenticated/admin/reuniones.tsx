@@ -74,11 +74,11 @@ function AdminReuniones() {
         </select>
       </div>
 
-      {rows.length === 0 ? <EmptyState icon={ClipboardList} title="Sin reuniones" hint="Aparecerán cuando empresas y sponsors hagan match" /> : (
+      {rows.length === 0 ? <EmptyState icon={ClipboardList} title="Sin reuniones" hint="Aparecerán cuando empresas y soluciones hagan match" /> : (
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-[10px] text-uppercase-wide text-muted-foreground"><tr>
-              <th className="px-4 py-3 text-left">Empresa</th><th className="px-4 py-3 text-left">Sponsor</th><th className="px-4 py-3 text-left">Hora</th><th className="px-4 py-3 text-left">Sala</th><th className="px-4 py-3 text-left">Estado</th><th />
+              <th className="px-4 py-3 text-left">Empresa</th><th className="px-4 py-3 text-left">Solución</th><th className="px-4 py-3 text-left">Hora</th><th className="px-4 py-3 text-left">Sala</th><th className="px-4 py-3 text-left">Estado</th><th />
             </tr></thead>
             <tbody>
               {rows.map((r) => (

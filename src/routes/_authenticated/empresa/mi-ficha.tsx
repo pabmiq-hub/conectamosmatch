@@ -51,7 +51,7 @@ function MiFichaEmpresa() {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <PageHeader title="Mi ficha" subtitle="Datos visibles para sponsors y otras empresas" right={
+      <PageHeader title="Mi ficha" subtitle="Datos visibles para soluciones y otras empresas" right={
         <button onClick={save} disabled={busy} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide disabled:opacity-50">
           <Save className="h-3 w-3" /> Guardar
         </button>

@@ -36,7 +36,7 @@ export const requestResponsable = createServerFn({ method: "POST" })
       .select("account_id, account_role, role")
       .eq("id", userId)
       .maybeSingle();
-    if (!me?.account_id) throw new Error("Tu cuenta no está asociada a una empresa/sponsor");
+    if (!me?.account_id) throw new Error("Tu cuenta no está asociada a una empresa/solución");
     if (me.account_role !== "owner") throw new Error("Solo el owner puede solicitar responsables");
     if (me.role !== "empresa" && me.role !== "sponsor") throw new Error("Cuenta inválida");
 

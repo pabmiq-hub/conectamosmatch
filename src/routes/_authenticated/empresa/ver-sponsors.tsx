@@ -48,7 +48,7 @@ function VerSponsors() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-2xl font-bold text-uppercase-wide">Sponsors disponibles</h1>
+        <h1 className="font-display text-2xl font-bold text-uppercase-wide">Soluciones disponibles</h1>
         <span className={`rounded-full border px-3 py-1 text-xs font-bold text-uppercase-wide ${reachedMin ? "border-success text-success" : "border-border"}`}>
           {likedSet.size} / {MIN_REQUIRED} mínimo {reachedMin && "✓"}
         </span>
@@ -56,7 +56,7 @@ function VerSponsors() {
 
       <div className="relative max-w-md">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar sponsor por nombre, sector o ciudad…" className="w-full rounded-md border border-border bg-card pl-9 pr-3 py-2 text-sm" />
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar solución por nombre, sector o ciudad…" className="w-full rounded-md border border-border bg-card pl-9 pr-3 py-2 text-sm" />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -76,7 +76,7 @@ function VerSponsors() {
             }
           />
         ))}
-        {filtered.length === 0 && <div className="col-span-full text-center text-sm text-muted-foreground py-12">No hay sponsors que coincidan con tu búsqueda.</div>}
+        {filtered.length === 0 && <div className="col-span-full text-center text-sm text-muted-foreground py-12">No hay soluciones que coincidan con tu búsqueda.</div>}
       </div>
       <PartnerDetailModal open={!!selected} onClose={() => setSelected(null)} partner={selected} />
     </div>

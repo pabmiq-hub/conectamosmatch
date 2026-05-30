@@ -27,7 +27,7 @@ export function EventModal({ event, onClose, onSaved }: { event: any | null; onC
     max_sponsors: "",
     rooms: ["Sala A"] as string[],
     meetings_per_user: 8,
-    slot_duration_minutes: 30,
+    slot_duration_minutes: 15,
     meetings_start_at: "",
     meetings_end_at: "",
     max_likes_per_user: 20,
@@ -53,7 +53,7 @@ export function EventModal({ event, onClose, onSaved }: { event: any | null; onC
         max_sponsors: event.max_sponsors?.toString() ?? "",
         rooms: event.rooms?.length ? event.rooms : ["Sala A"],
         meetings_per_user: event.meetings_per_user ?? 8,
-        slot_duration_minutes: event.slot_duration_minutes ?? 30,
+        slot_duration_minutes: event.slot_duration_minutes ?? 15,
         meetings_start_at: event.meetings_start_at ? new Date(event.meetings_start_at).toISOString().slice(0, 16) : "",
         meetings_end_at: event.meetings_end_at ? new Date(event.meetings_end_at).toISOString().slice(0, 16) : "",
         max_likes_per_user: event.max_likes_per_user ?? 20,
@@ -156,7 +156,7 @@ export function EventModal({ event, onClose, onSaved }: { event: any | null; onC
           <Section title="Capacidad y selección">
             <div className="grid md:grid-cols-3 gap-4">
               <Field label="Máx. empresas" type="number" value={f.max_empresas} onChange={(v) => set("max_empresas", v)} />
-              <Field label="Máx. sponsors" type="number" value={f.max_sponsors} onChange={(v) => set("max_sponsors", v)} />
+              <Field label="Máx. soluciones" type="number" value={f.max_sponsors} onChange={(v) => set("max_sponsors", v)} />
               <div>
                 <Label>Likes máx. por participante</Label>
                 <input type="number" min={1} max={500} value={f.max_likes_per_user} onChange={(e) => set("max_likes_per_user", parseInt(e.target.value) || 20)} className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm" />
@@ -172,7 +172,7 @@ export function EventModal({ event, onClose, onSaved }: { event: any | null; onC
               </div>
               <div>
                 <Label>Duración del slot (min)</Label>
-                <input type="number" min={5} max={180} value={f.slot_duration_minutes} onChange={(e) => set("slot_duration_minutes", parseInt(e.target.value) || 30)} className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm" />
+                <input type="number" min={5} max={180} value={f.slot_duration_minutes} onChange={(e) => set("slot_duration_minutes", parseInt(e.target.value) || 15)} className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm" />
               </div>
               <Field label="Inicio ventana reuniones" type="datetime-local" value={f.meetings_start_at} onChange={(v) => set("meetings_start_at", v)} />
               <Field label="Fin ventana reuniones" type="datetime-local" value={f.meetings_end_at} onChange={(v) => set("meetings_end_at", v)} />
