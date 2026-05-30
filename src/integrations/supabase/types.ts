@@ -799,7 +799,13 @@ export type Database = {
         | "approved"
         | "rejected"
         | "cancelled"
-      sponsor_level_t: "PLATINUM" | "GOLD" | "SILVER" | "BRONZE"
+      sponsor_level_t:
+        | "PLATINUM"
+        | "GOLD"
+        | "SILVER"
+        | "BRONZE"
+        | "PREMIUM"
+        | "BASIC"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -962,7 +968,14 @@ export const Constants = {
         "rejected",
         "cancelled",
       ],
-      sponsor_level_t: ["PLATINUM", "GOLD", "SILVER", "BRONZE"],
+      sponsor_level_t: [
+        "PLATINUM",
+        "GOLD",
+        "SILVER",
+        "BRONZE",
+        "PREMIUM",
+        "BASIC",
+      ],
     },
   },
 } as const

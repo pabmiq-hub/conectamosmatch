@@ -19,7 +19,7 @@ const sponsorSchema = z.object({
   company_name: z.string().min(1).max(200),
   sector: z.string().max(120).optional().default(""),
   sponsorship_category: z.string().max(120).optional().default(""),
-  sponsorship_level: z.enum(["PLATINUM", "GOLD", "SILVER", "BRONZE"]).default("BRONZE"),
+  sponsorship_level: z.enum(["GOLD","PREMIUM","BASIC","PLATINUM","SILVER","BRONZE"]).default("BRONZE"),
   website: z.string().max(300).optional().default(""),
   linkedin_url: z.string().max(300).optional().default(""),
   tagline: z.string().max(300).optional().default(""),
@@ -277,7 +277,7 @@ const bulkRowSchema = z.object({
   location_city: optStr,
   // sponsor
   sponsorship_category: optStr,
-  sponsorship_level: z.enum(["PLATINUM", "GOLD", "SILVER", "BRONZE"]).optional(),
+  sponsorship_level: z.enum(["GOLD","PREMIUM","BASIC","PLATINUM","SILVER","BRONZE"]).optional(),
 });
 
 

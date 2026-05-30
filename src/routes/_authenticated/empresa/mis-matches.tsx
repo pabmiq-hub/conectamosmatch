@@ -26,18 +26,32 @@ function MisMatchesEmpresa() {
     })();
   }, []);
 
+  const rank = (lvl?: string | null) => {
+    const u = String(lvl ?? "").toUpperCase();
+    if (u === "GOLD") return 0;
+    if (u === "PREMIUM") return 1;
+    if (u === "BASIC") return 2;
+    return 3;
+  };
+  const sorted = [...items].sort((a, b) => {
+    const dr = rank(a.sponsorship_level) - rank(b.sponsorship_level);
+    if (dr !== 0) return dr;
+    return (a.company_name ?? "").localeCompare(b.company_name ?? "", "es", { sensitivity: "base" });
+  });
+
   return (
     <div className="space-y-6">
       <PageHeader title="Mis matches" subtitle="Soluciones con las que has hecho match mutuo" />
-      {items.length === 0 ? <EmptyState icon={Heart} title="Aún no tienes matches" hint="Da like a soluciones desde 'Ver Soluciones' para empezar" /> : (
+      {sorted.length === 0 ? <EmptyState icon={Heart} title="Aún no tienes matches" hint="Da like a soluciones desde 'Ver Soluciones' para empezar" /> : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {items.map((s) => (
-            <PartnerCard key={s.user_id} name={s.company_name} description={s.description} logoUrl={s.logo_url} sector={s.sector} level={s.sponsorship_level}
+          {sorted.map((s) => (
+            <PartnerCard key={s.user_id} name={s.company_name} description={s.description} logoUrl={s.logo_url} sector={s.sector}
+              recommended={String(s.sponsorship_level ?? "").toUpperCase() === "GOLD"}
               actions={<ActionButton icon={Eye} label="Ver" onClick={() => setSelected(s)} />} />
           ))}
         </div>
       )}
-      <PartnerDetailModal open={!!selected} onClose={() => setSelected(null)} partner={selected} />
+      <PartnerDetailModal open={!!selected} onClose={() => setSelected(null)} partner={selected} hideLevel recommended={String((selected as any)?.sponsorship_level ?? "").toUpperCase() === "GOLD"} />
     </div>
   );
 }

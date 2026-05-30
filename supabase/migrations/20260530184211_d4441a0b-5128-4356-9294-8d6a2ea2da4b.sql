@@ -1,0 +1,2 @@
+ALTER TYPE public.sponsor_level_t ADD VALUE IF NOT EXISTS 'PREMIUM';
+ALTER TYPE public.sponsor_level_t ADD VALUE IF NOT EXISTS 'BASIC';

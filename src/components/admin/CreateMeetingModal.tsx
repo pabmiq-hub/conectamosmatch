@@ -60,8 +60,8 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
             <Field label="Hora (opcional)">
               <input type="datetime-local" value={time} onChange={(e) => setTime(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm" />
             </Field>
-            <Field label="Sala (opcional)">
-              <input value={room} onChange={(e) => setRoom(e.target.value)} placeholder="Sala A" className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm" />
+            <Field label="Mesa (opcional)">
+              <input value={room} onChange={(e) => setRoom(e.target.value)} placeholder="Mesa 1" className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm" />
             </Field>
           </div>
         </div>
