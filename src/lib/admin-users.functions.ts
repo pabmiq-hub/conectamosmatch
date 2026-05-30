@@ -981,7 +981,7 @@ export const updateUserProfile = createServerFn({ method: "POST" })
           if (data.account.sponsorship_level !== undefined) patch.sponsorship_level = data.account.sponsorship_level;
         }
         if (Object.keys(patch).length) {
-          await supabaseAdmin.from(table).update(patch).eq("id", prof.account_id);
+          await (supabaseAdmin.from(table) as any).update(patch).eq("id", prof.account_id);
         }
       }
     }
