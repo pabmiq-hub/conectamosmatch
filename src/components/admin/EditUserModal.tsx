@@ -155,6 +155,39 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
 
             {hasAccount && role !== "super_admin" && (
               <section>
+                <h3 className="text-[11px] font-bold text-uppercase-wide text-muted-foreground mb-2">Pertenencia a la cuenta</h3>
+                <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    {accountRole === "owner" ? (
+                      <><Crown className="h-4 w-4 text-primary" /><span className="font-bold">Admin</span> de <span className="font-bold">{accountName || "esta cuenta"}</span></>
+                    ) : (
+                      <><ShieldCheck className="h-4 w-4 text-muted-foreground" /><span className="font-bold">Responsable</span> de <span className="font-bold">{accountName || "esta cuenta"}</span></>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {accountRole !== "owner" && (
+                      <button type="button" onClick={runPromote} disabled={promoting}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-xs font-bold text-primary text-uppercase-wide hover:bg-primary/20 disabled:opacity-50">
+                        {promoting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Crown className="h-3.5 w-3.5" />}
+                        Hacer admin de esta cuenta
+                      </button>
+                    )}
+                    <button type="button" onClick={() => setMoving(true)}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs font-bold text-uppercase-wide hover:bg-muted">
+                      <ArrowRightLeft className="h-3.5 w-3.5" /> Mover a otra cuenta
+                    </button>
+                  </div>
+                  {accountRole === "owner" && (
+                    <p className="text-[10px] text-muted-foreground">Para mover este admin a otra cuenta, primero promueve a otro miembro como admin (o quedará automáticamente promovido el siguiente miembro al mover).</p>
+                  )}
+                </div>
+              </section>
+            )}
+
+
+
+            {hasAccount && role !== "super_admin" && (
+              <section>
                 <h3 className="text-[11px] font-bold text-uppercase-wide text-muted-foreground mb-2">Datos de la cuenta ({role})</h3>
                 <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 mb-3">
                   <div className="flex items-center gap-2 text-[11px] font-bold text-uppercase-wide text-primary mb-2">
