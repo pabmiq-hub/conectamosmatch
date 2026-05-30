@@ -1,4 +1,4 @@
-type Level = "PLATINUM" | "GOLD" | "SILVER" | "BRONZE";
+type Level = "PLATINUM" | "GOLD" | "SILVER" | "BRONZE" | "PREMIUM" | "BASIC";
 
 export function LevelBadge({ level }: { level: Level | string | null | undefined }) {
   if (!level) return null;
@@ -8,6 +8,8 @@ export function LevelBadge({ level }: { level: Level | string | null | undefined
     GOLD: "bg-gold text-black",
     SILVER: "bg-silver text-white",
     BRONZE: "bg-bronze text-white",
+    PREMIUM: "bg-primary text-primary-foreground",
+    BASIC: "bg-muted text-foreground",
   };
   return (
     <span
