@@ -39,8 +39,19 @@ function VerSponsors() {
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
-    if (!term) return items;
-    return items.filter((s) => `${s.company_name ?? ""} ${s.sector ?? ""} ${s.location_city ?? ""}`.toLowerCase().includes(term));
+    const base = !term ? items : items.filter((s) => `${s.company_name ?? ""} ${s.sector ?? ""} ${s.location_city ?? ""}`.toLowerCase().includes(term));
+    const rank = (lvl?: string | null) => {
+      const u = String(lvl ?? "").toUpperCase();
+      if (u === "GOLD") return 0;
+      if (u === "PREMIUM") return 1;
+      if (u === "BASIC") return 2;
+      return 3;
+    };
+    return [...base].sort((a, b) => {
+      const dr = rank(a.sponsorship_level) - rank(b.sponsorship_level);
+      if (dr !== 0) return dr;
+      return (a.company_name ?? "").localeCompare(b.company_name ?? "", "es", { sensitivity: "base" });
+    });
   }, [items, q]);
 
   const reachedMin = likedSet.size >= MIN_REQUIRED;
@@ -67,7 +78,7 @@ function VerSponsors() {
             description={s.description}
             logoUrl={s.logo_url}
             sector={s.sector}
-            level={s.sponsorship_level}
+            recommended={String(s.sponsorship_level ?? "").toUpperCase() === "GOLD"}
             actions={
               <>
                 <ActionButton icon={Eye} label="Ver" onClick={() => setSelected(s)} />
