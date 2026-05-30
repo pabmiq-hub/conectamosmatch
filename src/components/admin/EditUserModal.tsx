@@ -237,6 +237,15 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
           </div>
         )}
       </div>
+      {moving && role !== "super_admin" && (
+        <MoveToAccountModal
+          userId={userId}
+          userLabel={f.full_name || f.email}
+          currentRole={role as "empresa" | "sponsor"}
+          onClose={() => setMoving(false)}
+          onDone={() => { setMoving(false); onSaved?.(); onClose(); }}
+        />
+      )}
     </div>
   );
 }
