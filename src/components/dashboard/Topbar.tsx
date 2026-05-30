@@ -17,7 +17,7 @@ const navByRole: Record<AppRole, { to: string; label: string; icon: typeof Layou
   empresa: [
     { to: "/empresa/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { to: "/empresa/mi-ficha", label: "Mi Ficha", icon: User },
-    { to: "/empresa/ver-sponsors", label: "Ver Sponsors", icon: Search },
+    { to: "/empresa/ver-sponsors", label: "Ver Soluciones", icon: Search },
     { to: "/empresa/ver-empresas", label: "Ver Empresas", icon: Building2 },
     { to: "/empresa/mis-matches", label: "Mis Matches", icon: Heart },
     { to: "/empresa/reuniones-1to1", label: "Reuniones 1to1", icon: ClipboardList },
