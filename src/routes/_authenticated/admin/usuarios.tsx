@@ -279,7 +279,7 @@ function AdminUsuarios() {
                   <li key={p.id} className="flex items-center gap-3 px-4 py-3 text-sm">
                     <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center"><Shield className="h-4 w-4 text-primary" /></div>
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-xs truncate">{p.full_name ?? p.email}</div>
+                      <div className="font-medium text-xs truncate cursor-pointer hover:text-primary" onClick={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Admin" })}>{p.full_name ?? p.email}</div>
                       <div className="text-[11px] text-muted-foreground truncate">{p.email}</div>
                     </div>
                     <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">Super Admin</span>
