@@ -335,3 +335,112 @@ export const bulkImportUsers = createServerFn({ method: "POST" })
     }
     return { ok, failed };
   });
+
+// ---- Bulk operations ----
+
+function generatePassword(len = 12) {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+  const sym = "!@#$%&*";
+  let out = "";
+  for (let i = 0; i < len - 1; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  out += sym[Math.floor(Math.random() * sym.length)];
+  return out;
+}
+
+export const bulkDeleteUsers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ exceptIds: z.array(z.string().uuid()).default([]) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+    const except = new Set<string>([context.userId, ...data.exceptIds]); // never self
+    const { data: profs } = await supabaseAdmin
+      .from("profiles")
+      .select("id, role, account_role");
+    const targets = (profs ?? []).filter(
+      (p: any) => p.role !== "super_admin" && !except.has(p.id),
+    );
+    let deleted = 0;
+    const failed: { userId: string; error: string }[] = [];
+    for (const p of targets as any[]) {
+      try {
+        if (p.account_role === "owner") {
+          await supabaseAdmin.from("empresa_profiles").delete().eq("user_id", p.id);
+          await supabaseAdmin.from("sponsor_profiles").delete().eq("user_id", p.id);
+        }
+        const { error } = await supabaseAdmin.auth.admin.deleteUser(p.id);
+        if (error) throw new Error(error.message);
+        deleted++;
+      } catch (e: any) {
+        failed.push({ userId: p.id, error: e?.message ?? "Error" });
+      }
+    }
+    return { deleted, failed, total: targets.length };
+  });
+
+export const bulkResetPasswords = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ exceptIds: z.array(z.string().uuid()).default([]) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+    const except = new Set<string>([context.userId, ...data.exceptIds]);
+    const { data: profs } = await supabaseAdmin
+      .from("profiles")
+      .select("id, email, full_name, phone, role, account_id");
+    const targets = (profs ?? []).filter(
+      (p: any) => p.role !== "super_admin" && !except.has(p.id),
+    );
+    const results: { userId: string; email: string; full_name: string; role: string; password: string; ok: boolean; error?: string }[] = [];
+    for (const p of targets as any[]) {
+      const password = generatePassword(12);
+      try {
+        const { error } = await supabaseAdmin.auth.admin.updateUserById(p.id, { password });
+        if (error) throw new Error(error.message);
+        results.push({ userId: p.id, email: p.email ?? "", full_name: p.full_name ?? "", role: p.role, password, ok: true });
+      } catch (e: any) {
+        results.push({ userId: p.id, email: p.email ?? "", full_name: p.full_name ?? "", role: p.role, password: "", ok: false, error: e?.message });
+      }
+    }
+    return { results };
+  });
+
+export const exportAllUsers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertSuperAdmin(context.userId);
+    const [{ data: profs }, { data: emps }, { data: sps }] = await Promise.all([
+      supabaseAdmin.from("profiles").select("id, email, full_name, phone, role, account_id, account_role, is_active, created_at").order("created_at", { ascending: false }),
+      supabaseAdmin.from("empresa_profiles").select("*"),
+      supabaseAdmin.from("sponsor_profiles").select("*"),
+    ]);
+    const empById = new Map((emps ?? []).map((e: any) => [e.id, e]));
+    const spById = new Map((sps ?? []).map((s: any) => [s.id, s]));
+    const rows = (profs ?? []).map((p: any) => {
+      const company: any = p.role === "empresa" ? empById.get(p.account_id) : p.role === "sponsor" ? spById.get(p.account_id) : null;
+      return {
+        user_id: p.id,
+        email: p.email ?? "",
+        full_name: p.full_name ?? "",
+        phone: p.phone ?? "",
+        role: p.role,
+        account_role: p.account_role ?? "",
+        is_active: p.is_active,
+        created_at: p.created_at,
+        company_name: company?.company_name ?? "",
+        sector: company?.sector ?? "",
+        website: company?.website ?? "",
+        linkedin_url: company?.linkedin_url ?? "",
+        tagline: company?.tagline ?? "",
+        description: company?.description ?? "",
+        company_size: company?.company_size ?? "",
+        location_city: company?.location_city ?? "",
+        sponsorship_level: company?.sponsorship_level ?? "",
+        sponsorship_category: company?.sponsorship_category ?? "",
+        categories: Array.isArray(company?.categories) ? company.categories.join(" | ") : "",
+      };
+    });
+    return { rows };
+  });
