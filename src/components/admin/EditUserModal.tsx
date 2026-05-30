@@ -8,8 +8,11 @@ import { toast } from "sonner";
 export function EditUserModal({ userId, onClose, onSaved }: { userId: string; onClose: () => void; onSaved?: () => void }) {
   const fetchUser = useServerFn(getUserForEdit);
   const save = useServerFn(updateUserProfile);
+  const scrape = useServerFn(scrapeProfileFromUrl);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [scraping, setScraping] = useState(false);
+  const [scrapeUrl, setScrapeUrl] = useState("");
   const [role, setRole] = useState<"empresa" | "sponsor" | "super_admin">("empresa");
   const [hasAccount, setHasAccount] = useState(false);
   const [f, setF] = useState<any>({
