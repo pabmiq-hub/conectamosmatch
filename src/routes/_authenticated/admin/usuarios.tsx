@@ -172,6 +172,7 @@ function AdminUsuarios() {
       {invitePreset && <InviteResponsableModal preset={invitePreset} onClose={() => setInvitePreset(null)} onCreated={load} />}
       {approving && <ApproveRequestModal req={approving} onClose={() => setApproving(null)} onDone={load} />}
       {viewing && <UserActivityDrawer userId={viewing.id} userLabel={viewing.label} onClose={() => setViewing(null)} onChanged={load} />}
+      {editing && <EditUserModal userId={editing} onClose={() => setEditing(null)} onSaved={load} />}
       {bulkMode && <BulkUsersModal mode={bulkMode} onClose={() => setBulkMode(null)} onDone={load} />}
 
       {/* Pending requests panel */}
