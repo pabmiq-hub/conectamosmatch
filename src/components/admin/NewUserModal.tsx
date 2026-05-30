@@ -9,9 +9,12 @@ type Role = "empresa" | "sponsor";
 
 export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const create = useServerFn(createUserAccount);
+  const scrape = useServerFn(scrapeProfileFromUrl);
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [role, setRole] = useState<Role | null>(null);
   const [loading, setLoading] = useState(false);
+  const [scrapeUrl, setScrapeUrl] = useState("");
+  const [scraping, setScraping] = useState(false);
   const [created, setCreated] = useState<{ email: string; password: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
