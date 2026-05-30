@@ -34,6 +34,9 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
     fetchUser({ data: { userId } }).then(({ profile, account }) => {
       setRole(profile.role);
       setHasAccount(!!account);
+      setAccountRole((profile.account_role as any) ?? null);
+      setAccountId(profile.account_id ?? null);
+      setAccountName(account?.company_name ?? "");
       setF({
         full_name: profile.full_name ?? "",
         email: profile.email ?? "",
