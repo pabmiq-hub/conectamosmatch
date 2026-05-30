@@ -14,8 +14,13 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [scraping, setScraping] = useState(false);
+  const [promoting, setPromoting] = useState(false);
+  const [moving, setMoving] = useState(false);
   const [scrapeUrl, setScrapeUrl] = useState("");
   const [role, setRole] = useState<"empresa" | "sponsor" | "super_admin">("empresa");
+  const [accountRole, setAccountRole] = useState<"owner" | "manager" | null>(null);
+  const [accountId, setAccountId] = useState<string | null>(null);
+  const [accountName, setAccountName] = useState<string>("");
   const [hasAccount, setHasAccount] = useState(false);
   const [f, setF] = useState<any>({
     full_name: "", email: "", phone: "", is_active: true,
