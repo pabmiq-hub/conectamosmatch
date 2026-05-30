@@ -45,9 +45,9 @@ function EmpresaDashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard icon={Bookmark} value={`${stats.likes} / 20 máx.`} label="Sponsors seleccionados" hint="El límite es tu cuota de selecciones" accent />
-        <StatCard icon={Heart} value={stats.matches} label="Matches mutuos" accent />
-        <StatCard icon={Calendar} value={stats.meetings} label="1to1 agendadas" accent />
+        <StatCard icon={Bookmark} value={`${stats.likes} / 12 mín.`} label="Sponsors seleccionados" hint={stats.likes >= 12 ? "✓ Mínimo alcanzado" : `Te faltan ${12 - stats.likes} para llegar al mínimo`} accent to="/empresa/ver-sponsors" />
+        <StatCard icon={Heart} value={stats.matches} label="Matches mutuos" accent to="/empresa/mis-matches" />
+        <StatCard icon={Calendar} value={stats.meetings} label="1to1 agendadas" accent to="/empresa/reuniones-1to1" />
       </div>
 
       <div className="flex justify-center">
