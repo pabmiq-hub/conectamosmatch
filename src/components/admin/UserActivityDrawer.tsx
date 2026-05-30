@@ -1,0 +1,131 @@
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { X, Heart, Sparkles, Calendar, ClipboardList, Building2, ArrowRight, ArrowLeft } from "lucide-react";
+import { getUserActivity } from "@/lib/admin-users.functions";
+
+export function UserActivityDrawer({ userId, userLabel, onClose }: { userId: string; userLabel: string; onClose: () => void }) {
+  const fetchActivity = useServerFn(getUserActivity);
+  const [data, setData] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<"likes" | "matches" | "meetings">("likes");
+
+  useEffect(() => {
+    setLoading(true);
+    fetchActivity({ data: { userId } }).then((d) => { setData(d); setLoading(false); }).catch(() => setLoading(false));
+  }, [userId]);
+
+  return (
+    <div className="fixed inset-0 z-50">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <aside className="absolute right-0 top-0 bottom-0 w-full max-w-2xl bg-card border-l border-border flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <div className="min-w-0">
+            <div className="font-display text-base font-bold text-uppercase-wide truncate">{userLabel}</div>
+            <div className="text-[11px] text-muted-foreground">Actividad del usuario</div>
+          </div>
+          <button onClick={onClose} className="p-1 text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
+        </div>
+
+        {loading ? (
+          <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">Cargando…</div>
+        ) : !data ? (
+          <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">No se pudo cargar la actividad.</div>
+        ) : (
+          <>
+            <div className="flex border-b border-border px-2">
+              {([
+                ["likes", `Selecciones (${(data.likesOut?.length ?? 0) + (data.likesIn?.length ?? 0)})`, Heart],
+                ["matches", `Matches (${data.matches?.length ?? 0})`, Sparkles],
+                ["meetings", `1to1 (${data.meetings?.length ?? 0})`, ClipboardList],
+              ] as const).map(([k, label, Icon]) => (
+                <button key={k} onClick={() => setTab(k)} className={`inline-flex items-center gap-2 px-4 py-3 text-[11px] font-bold text-uppercase-wide border-b-2 transition-colors ${tab === k ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+                  <Icon className="h-3.5 w-3.5" /> {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5 space-y-6">
+              {tab === "likes" && (
+                <>
+                  <Section title="Ha seleccionado" icon={ArrowRight} count={data.likesOut?.length ?? 0}>
+                    {(data.likesOut ?? []).map((l: any, i: number) => (
+                      <Row key={i} kind={l.target_kind} name={l.target_name} date={l.created_at} />
+                    ))}
+                    {data.likesOut?.length === 0 && <Empty text="Aún no ha seleccionado a nadie" />}
+                  </Section>
+                  <Section title="Le han seleccionado" icon={ArrowLeft} count={data.likesIn?.length ?? 0}>
+                    {(data.likesIn ?? []).map((l: any, i: number) => (
+                      <Row key={i} kind={l.source_kind} name={l.source_name} date={l.created_at} />
+                    ))}
+                    {data.likesIn?.length === 0 && <Empty text="Nadie le ha seleccionado todavía" />}
+                  </Section>
+                </>
+              )}
+
+              {tab === "matches" && (
+                <Section title="Matches mutuos" icon={Sparkles} count={data.matches?.length ?? 0}>
+                  {(data.matches ?? []).map((m: any) => (
+                    <div key={m.id} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 py-2.5">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <span className="text-xs font-medium truncate">{m.empresa_name}</span>
+                        <Heart className="h-3 w-3 text-primary shrink-0" />
+                        <Sparkles className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <span className="text-xs font-medium truncate">{m.sponsor_name}</span>
+                      </div>
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold text-uppercase-wide ${m.status === "mutual" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>{m.status}</span>
+                    </div>
+                  ))}
+                  {data.matches?.length === 0 && <Empty text="Sin matches todavía" />}
+                </Section>
+              )}
+
+              {tab === "meetings" && (
+                <Section title="Reuniones 1to1" icon={Calendar} count={data.meetings?.length ?? 0}>
+                  {(data.meetings ?? []).map((m: any) => (
+                    <div key={m.id} className="rounded-lg border border-border bg-background px-3 py-2.5">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="text-xs font-medium truncate">{m.empresa_name} <span className="text-muted-foreground">×</span> {m.sponsor_name}</div>
+                        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[9px] font-bold text-uppercase-wide text-muted-foreground">{m.status}</span>
+                      </div>
+                      <div className="mt-1 text-[11px] text-muted-foreground">
+                        {m.scheduled_time ? new Date(m.scheduled_time).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" }) : "Sin hora"} · {m.room ?? "sin sala"} · {m.duration_minutes ?? 30} min
+                      </div>
+                    </div>
+                  ))}
+                  {data.meetings?.length === 0 && <Empty text="Sin reuniones agendadas" />}
+                </Section>
+              )}
+            </div>
+          </>
+        )}
+      </aside>
+    </div>
+  );
+}
+
+function Section({ title, icon: Icon, count, children }: { title: string; icon: any; count: number; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-2 text-[11px] font-bold text-uppercase-wide text-muted-foreground">
+        <Icon className="h-3.5 w-3.5" /> {title} <span className="text-foreground">({count})</span>
+      </div>
+      <div className="space-y-2">{children}</div>
+    </div>
+  );
+}
+function Row({ kind, name, date }: { kind: "empresa" | "sponsor" | null; name: string; date: string }) {
+  const Icon = kind === "sponsor" ? Sparkles : Building2;
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 py-2">
+      <div className="flex items-center gap-2 min-w-0">
+        <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        <span className="text-xs font-medium truncate">{name}</span>
+      </div>
+      <span className="text-[10px] text-muted-foreground shrink-0">{new Date(date).toLocaleDateString("es-ES")}</span>
+    </div>
+  );
+}
+function Empty({ text }: { text: string }) {
+  return <div className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-[11px] text-muted-foreground">{text}</div>;
+}
