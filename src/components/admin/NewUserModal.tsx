@@ -1,16 +1,20 @@
 import { useState } from "react";
-import { Building2, Sparkles, X, Copy, Check } from "lucide-react";
+import { Building2, Sparkles, X, Copy, Check, Wand2, Loader2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { createUserAccount } from "@/lib/admin-users.functions";
+import { scrapeProfileFromUrl } from "@/lib/scrape-profile.functions";
 import { toast } from "sonner";
 
 type Role = "empresa" | "sponsor";
 
 export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const create = useServerFn(createUserAccount);
+  const scrape = useServerFn(scrapeProfileFromUrl);
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [role, setRole] = useState<Role | null>(null);
   const [loading, setLoading] = useState(false);
+  const [scrapeUrl, setScrapeUrl] = useState("");
+  const [scraping, setScraping] = useState(false);
   const [created, setCreated] = useState<{ email: string; password: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -37,6 +41,27 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
     let p = "";
     for (let i = 0; i < 12; i++) p += chars[Math.floor(Math.random() * chars.length)];
     set("password", p + "!2");
+  }
+
+  async function runScrape() {
+    if (!scrapeUrl.trim() || !role) return;
+    setScraping(true);
+    try {
+      const { data } = await scrape({ data: { url: scrapeUrl, kind: role } });
+      setF((p) => ({
+        ...p,
+        company_name: p.company_name || data.company_name || "",
+        sector: p.sector || data.sector || "",
+        website: p.website || data.website || "",
+        linkedin_url: p.linkedin_url || data.linkedin_url || "",
+        location_city: p.location_city || data.location_city || "",
+        tagline: p.tagline || data.tagline || "",
+        description: p.description || data.description || "",
+      }));
+      toast.success("Datos autocompletados — revísalos antes de guardar");
+    } catch (e: any) {
+      toast.error(e?.message ?? "No se pudo extraer la web");
+    } finally { setScraping(false); }
   }
 
   async function submit() {
@@ -137,6 +162,20 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
           </div>
         ) : step === 3 ? (
           <div className="space-y-4">
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+              <div className="flex items-center gap-2 text-[11px] font-bold text-uppercase-wide text-primary mb-2">
+                <Wand2 className="h-3.5 w-3.5" /> Autocompletar desde web
+              </div>
+              <div className="flex gap-2">
+                <input value={scrapeUrl} onChange={(e) => setScrapeUrl(e.target.value)} placeholder="empresa.com o https://…"
+                  className="flex-1 rounded-md border border-border bg-input px-3 py-2 text-sm" />
+                <button type="button" onClick={runScrape} disabled={scraping || !scrapeUrl.trim()}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide disabled:opacity-50">
+                  {scraping ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Extrayendo…</> : <><Wand2 className="h-3.5 w-3.5" /> Extraer</>}
+                </button>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1.5">Solo rellena los campos vacíos. Revisa siempre los datos antes de guardar.</p>
+            </div>
             <div className="grid md:grid-cols-2 gap-4">
               <Field label="Nombre de empresa *" value={f.company_name} onChange={(v) => set("company_name", v)} />
               <Field label="Sector" value={f.sector} onChange={(v) => set("sector", v)} placeholder="Tech, Health, Retail..." />
