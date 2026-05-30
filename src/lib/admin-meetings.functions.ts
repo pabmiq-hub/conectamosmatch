@@ -106,7 +106,7 @@ export const createMeeting = createServerFn({ method: "POST" })
         sponsor_user_id: data.sponsor_user_id,
         scheduled_time: data.scheduled_time ?? null,
         room: data.room ?? null,
-        duration_minutes: data.duration_minutes ?? 30,
+        duration_minutes: data.duration_minutes ?? 15,
         status: data.scheduled_time ? "confirmed" : "pending",
         assigned_by: context.userId,
       })

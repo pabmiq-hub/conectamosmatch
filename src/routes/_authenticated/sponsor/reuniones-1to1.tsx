@@ -31,7 +31,7 @@ function ReunionesSponsor() {
               <div className="font-medium text-sm">Reunión 1to1</div>
               <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground mt-1">
                 <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{r.room ?? "Por asignar"}</span>
-                <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{r.duration_minutes ?? 30} min</span>
+                <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{r.duration_minutes ?? 15} min</span>
               </div>
             </div>
             <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-bold text-uppercase-wide">{r.status}</span>

@@ -89,7 +89,7 @@ export function UserActivityDrawer({ userId, userLabel, onClose }: { userId: str
                         <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[9px] font-bold text-uppercase-wide text-muted-foreground">{m.status}</span>
                       </div>
                       <div className="mt-1 text-[11px] text-muted-foreground">
-                        {m.scheduled_time ? new Date(m.scheduled_time).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" }) : "Sin hora"} · {m.room ?? "sin sala"} · {m.duration_minutes ?? 30} min
+                        {m.scheduled_time ? new Date(m.scheduled_time).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" }) : "Sin hora"} · {m.room ?? "sin sala"} · {m.duration_minutes ?? 15} min
                       </div>
                     </div>
                   ))}
