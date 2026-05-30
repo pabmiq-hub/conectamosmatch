@@ -18,9 +18,11 @@ interface Props {
   open: boolean;
   onClose: () => void;
   partner: PartnerDetail | null;
+  hideLevel?: boolean;
+  recommended?: boolean;
 }
 
-export function PartnerDetailModal({ open, onClose, partner }: Props) {
+export function PartnerDetailModal({ open, onClose, partner, hideLevel, recommended }: Props) {
   if (!open || !partner) return null;
   const responsables = (partner.responsables ?? []).filter((r) => r?.full_name);
 
@@ -40,7 +42,8 @@ export function PartnerDetailModal({ open, onClose, partner }: Props) {
               <h2 className="font-display text-2xl font-bold text-uppercase-wide">{partner.company_name}</h2>
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 {partner.sector && <span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-uppercase-wide text-muted-foreground">{partner.sector}</span>}
-                {partner.sponsorship_level && <LevelBadge level={partner.sponsorship_level} />}
+                {!hideLevel && partner.sponsorship_level && <LevelBadge level={partner.sponsorship_level} />}
+                {recommended && <span className="inline-flex items-center gap-1 rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-bold text-uppercase-wide text-black">Solución recomendada</span>}
                 {partner.website && (
                   <a href={partner.website} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-uppercase-wide font-bold text-primary hover:underline">
                     <Globe className="h-3 w-3" /> {partner.website.replace(/^https?:\/\//, "")}
