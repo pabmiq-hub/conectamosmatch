@@ -666,9 +666,7 @@ export type Database = {
           responsables: Json
           sector: string | null
           sponsorship_category: string | null
-          sponsorship_level:
-            | Database["public"]["Enums"]["sponsor_level_t"]
-            | null
+          sponsorship_level: string | null
           tagline: string | null
           target_audience: string | null
           twitter_url: string | null
@@ -693,9 +691,7 @@ export type Database = {
           responsables?: Json
           sector?: string | null
           sponsorship_category?: string | null
-          sponsorship_level?:
-            | Database["public"]["Enums"]["sponsor_level_t"]
-            | null
+          sponsorship_level?: string | null
           tagline?: string | null
           target_audience?: string | null
           twitter_url?: string | null
@@ -720,9 +716,7 @@ export type Database = {
           responsables?: Json
           sector?: string | null
           sponsorship_category?: string | null
-          sponsorship_level?:
-            | Database["public"]["Enums"]["sponsor_level_t"]
-            | null
+          sponsorship_level?: string | null
           tagline?: string | null
           target_audience?: string | null
           twitter_url?: string | null
@@ -799,13 +793,6 @@ export type Database = {
         | "approved"
         | "rejected"
         | "cancelled"
-      sponsor_level_t:
-        | "PLATINUM"
-        | "GOLD"
-        | "SILVER"
-        | "BRONZE"
-        | "PREMIUM"
-        | "BASIC"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -967,14 +954,6 @@ export const Constants = {
         "approved",
         "rejected",
         "cancelled",
-      ],
-      sponsor_level_t: [
-        "PLATINUM",
-        "GOLD",
-        "SILVER",
-        "BRONZE",
-        "PREMIUM",
-        "BASIC",
       ],
     },
   },
