@@ -1,30 +1,82 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { X, Heart, Sparkles, Calendar, ClipboardList, Building2, ArrowRight, ArrowLeft } from "lucide-react";
-import { getUserActivity } from "@/lib/admin-users.functions";
+import { X, Heart, Sparkles, Calendar, ClipboardList, Building2, ArrowRight, ArrowLeft, Pencil, Shield, ArrowRightLeft, UserPlus } from "lucide-react";
+import { getUserActivity, transferAccountAdmin } from "@/lib/admin-users.functions";
+import { toast } from "sonner";
+import { EditUserModal } from "./EditUserModal";
+import { MoveToAccountModal } from "./MoveToAccountModal";
+import { InviteResponsableModal } from "./InviteResponsableModal";
 
-export function UserActivityDrawer({ userId, userLabel, onClose }: { userId: string; userLabel: string; onClose: () => void }) {
+export function UserActivityDrawer({ userId, userLabel, onClose, onChanged }: { userId: string; userLabel: string; onClose: () => void; onChanged?: () => void }) {
   const fetchActivity = useServerFn(getUserActivity);
+  const makeAdmin = useServerFn(transferAccountAdmin);
   const [data, setData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"likes" | "matches" | "meetings">("likes");
+  const [editing, setEditing] = useState(false);
+  const [moving, setMoving] = useState(false);
+  const [inviting, setInviting] = useState(false);
 
   useEffect(() => {
     setLoading(true);
     fetchActivity({ data: { userId } }).then((d) => { setData(d); setLoading(false); }).catch(() => setLoading(false));
   }, [userId]);
 
+  const profile = data?.profile;
+  const isAccountUser = profile && (profile.role === "empresa" || profile.role === "sponsor") && profile.account_id;
+  const isManager = isAccountUser && profile.account_role !== "owner";
+
+  async function doMakeAdmin() {
+    if (!window.confirm(`¿Convertir a ${userLabel} en admin de la cuenta? El admin actual pasará a ser responsable.`)) return;
+    try {
+      await makeAdmin({ data: { newAdminUserId: userId } });
+      toast.success("Admin transferido");
+      onChanged?.();
+      onClose();
+    } catch (e: any) { toast.error(e?.message ?? "Error"); }
+  }
+
+
   return (
     <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <aside className="absolute right-0 top-0 bottom-0 w-full max-w-2xl bg-card border-l border-border flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <div className="min-w-0">
+        <div className="flex items-start justify-between gap-2 px-5 py-4 border-b border-border">
+          <div className="min-w-0 flex-1">
             <div className="font-display text-base font-bold text-uppercase-wide truncate">{userLabel}</div>
-            <div className="text-[11px] text-muted-foreground">Actividad del usuario</div>
+            <div className="text-[11px] text-muted-foreground">Actividad del usuario {profile?.account_role && <span>· {profile.account_role}</span>}</div>
           </div>
-          <button onClick={onClose} className="p-1 text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
+          <div className="flex items-center gap-1 shrink-0">
+            <button onClick={() => setEditing(true)} title="Editar datos" className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-[10px] font-bold text-uppercase-wide hover:bg-muted">
+              <Pencil className="h-3.5 w-3.5" /> Editar
+            </button>
+            {isManager && (
+              <button onClick={doMakeAdmin} title="Convertir en admin" className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-[10px] font-bold text-uppercase-wide hover:bg-muted">
+                <Shield className="h-3.5 w-3.5" /> Hacer admin
+              </button>
+            )}
+            {isAccountUser && (
+              <button onClick={() => setMoving(true)} title="Mover a otra cuenta" className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-[10px] font-bold text-uppercase-wide hover:bg-muted">
+                <ArrowRightLeft className="h-3.5 w-3.5" /> Mover
+              </button>
+            )}
+            {isAccountUser && (
+              <button onClick={() => setInviting(true)} title="Añadir responsable a esta cuenta" className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-[10px] font-bold text-uppercase-wide hover:bg-muted">
+                <UserPlus className="h-3.5 w-3.5" /> + Resp.
+              </button>
+            )}
+            <button onClick={onClose} className="p-1 text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
+          </div>
         </div>
+
+        {editing && <EditUserModal userId={userId} onClose={() => setEditing(false)} onSaved={() => { onChanged?.(); }} />}
+        {moving && profile && (
+          <MoveToAccountModal userId={userId} userLabel={userLabel} currentRole={profile.role} onClose={() => setMoving(false)} onDone={() => { onChanged?.(); onClose(); }} />
+        )}
+        {inviting && profile?.account_id && (
+          <InviteResponsableModal preset={{ accountId: profile.account_id, accountType: profile.role, accountName: userLabel }} onClose={() => setInviting(false)} onCreated={() => { onChanged?.(); }} />
+        )}
+
 
         {loading ? (
           <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">Cargando…</div>

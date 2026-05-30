@@ -906,3 +906,108 @@ export const likeEmpresaAccount = createServerFn({ method: "POST" })
     return { ok: true, count: inserted };
   });
 
+// =====================================================================
+// ============ Edit user + account (super admin) ======================
+// =====================================================================
+
+const editUserSchema = z.object({
+  userId: z.string().uuid(),
+  // profile
+  full_name: z.string().min(1).max(200),
+  email: z.string().email().max(200),
+  phone: z.string().max(40).optional().default(""),
+  is_active: z.boolean().optional(),
+  // account fields (apply only if the user is owner of an account)
+  account: z
+    .object({
+      company_name: z.string().max(200).optional(),
+      sector: z.string().max(120).optional(),
+      website: z.string().max(300).optional(),
+      linkedin_url: z.string().max(300).optional(),
+      tagline: z.string().max(300).optional(),
+      description: z.string().max(2000).optional(),
+      location_city: z.string().max(120).optional(),
+      company_size: z.enum(["1-10", "11-50", "51-200", "201-500", "500+"]).optional(),
+      sponsorship_category: z.string().max(120).optional(),
+      sponsorship_level: z.enum(["GOLD", "PREMIUM", "BASIC", "STARTUP"]).optional(),
+    })
+    .optional(),
+});
+
+export const updateUserProfile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => editUserSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+
+    const { data: prof } = await supabaseAdmin
+      .from("profiles")
+      .select("id, email, role, account_id, account_role")
+      .eq("id", data.userId)
+      .maybeSingle();
+    if (!prof) throw new Response("Usuario no encontrado", { status: 404 });
+
+    // Update auth email if changed
+    if (data.email && data.email !== prof.email) {
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, { email: data.email });
+      if (error) throw new Response(error.message, { status: 400 });
+    }
+
+    await supabaseAdmin
+      .from("profiles")
+      .update({
+        full_name: data.full_name,
+        email: data.email,
+        phone: data.phone,
+        ...(typeof data.is_active === "boolean" ? { is_active: data.is_active } : {}),
+      })
+      .eq("id", data.userId);
+
+    if (data.account && prof.account_id) {
+      const table = prof.role === "empresa" ? "empresa_profiles" : prof.role === "sponsor" ? "sponsor_profiles" : null;
+      if (table) {
+        const patch: Record<string, any> = {};
+        if (data.account.company_name !== undefined) patch.company_name = data.account.company_name;
+        if (data.account.sector !== undefined) patch.sector = data.account.sector;
+        if (data.account.website !== undefined) patch.website = data.account.website;
+        if (data.account.linkedin_url !== undefined) patch.linkedin_url = data.account.linkedin_url;
+        if (data.account.tagline !== undefined) patch.tagline = data.account.tagline;
+        if (data.account.description !== undefined) patch.description = data.account.description;
+        if (table === "empresa_profiles") {
+          if (data.account.location_city !== undefined) patch.location_city = data.account.location_city;
+          if (data.account.company_size !== undefined) patch.company_size = data.account.company_size;
+        } else {
+          if (data.account.sponsorship_category !== undefined) patch.sponsorship_category = data.account.sponsorship_category;
+          if (data.account.sponsorship_level !== undefined) patch.sponsorship_level = data.account.sponsorship_level;
+        }
+        if (Object.keys(patch).length) {
+          await (supabaseAdmin.from(table) as any).update(patch).eq("id", prof.account_id);
+        }
+      }
+    }
+    return { ok: true };
+  });
+
+export const getUserForEdit = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ userId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+    const { data: prof } = await supabaseAdmin
+      .from("profiles")
+      .select("id, email, full_name, phone, role, account_id, account_role, is_active")
+      .eq("id", data.userId)
+      .maybeSingle();
+    if (!prof) throw new Response("Usuario no encontrado", { status: 404 });
+    let account: any = null;
+    if (prof.account_id && prof.role === "empresa") {
+      const { data: e } = await supabaseAdmin.from("empresa_profiles").select("*").eq("id", prof.account_id).maybeSingle();
+      account = e;
+    } else if (prof.account_id && prof.role === "sponsor") {
+      const { data: s } = await supabaseAdmin.from("sponsor_profiles").select("*").eq("id", prof.account_id).maybeSingle();
+      account = s;
+    }
+    return { profile: prof, account };
+  });
+
+

@@ -390,28 +390,34 @@ export type Database = {
       matches: {
         Row: {
           created_at: string | null
+          empresa_account_id: string | null
           empresa_user_id: string | null
           event_id: string | null
           id: string
           matched_at: string | null
+          sponsor_account_id: string | null
           sponsor_user_id: string | null
           status: Database["public"]["Enums"]["match_status_t"] | null
         }
         Insert: {
           created_at?: string | null
+          empresa_account_id?: string | null
           empresa_user_id?: string | null
           event_id?: string | null
           id?: string
           matched_at?: string | null
+          sponsor_account_id?: string | null
           sponsor_user_id?: string | null
           status?: Database["public"]["Enums"]["match_status_t"] | null
         }
         Update: {
           created_at?: string | null
+          empresa_account_id?: string | null
           empresa_user_id?: string | null
           event_id?: string | null
           id?: string
           matched_at?: string | null
+          sponsor_account_id?: string | null
           sponsor_user_id?: string | null
           status?: Database["public"]["Enums"]["match_status_t"] | null
         }
@@ -444,6 +450,7 @@ export type Database = {
           assigned_by: string | null
           created_at: string | null
           duration_minutes: number | null
+          empresa_account_id: string | null
           empresa_user_id: string | null
           event_id: string | null
           id: string
@@ -451,6 +458,7 @@ export type Database = {
           notes: string | null
           room: string | null
           scheduled_time: string | null
+          sponsor_account_id: string | null
           sponsor_user_id: string | null
           status: Database["public"]["Enums"]["meeting_status_t"] | null
         }
@@ -458,6 +466,7 @@ export type Database = {
           assigned_by?: string | null
           created_at?: string | null
           duration_minutes?: number | null
+          empresa_account_id?: string | null
           empresa_user_id?: string | null
           event_id?: string | null
           id?: string
@@ -465,6 +474,7 @@ export type Database = {
           notes?: string | null
           room?: string | null
           scheduled_time?: string | null
+          sponsor_account_id?: string | null
           sponsor_user_id?: string | null
           status?: Database["public"]["Enums"]["meeting_status_t"] | null
         }
@@ -472,6 +482,7 @@ export type Database = {
           assigned_by?: string | null
           created_at?: string | null
           duration_minutes?: number | null
+          empresa_account_id?: string | null
           empresa_user_id?: string | null
           event_id?: string | null
           id?: string
@@ -479,6 +490,7 @@ export type Database = {
           notes?: string | null
           room?: string | null
           scheduled_time?: string | null
+          sponsor_account_id?: string | null
           sponsor_user_id?: string | null
           status?: Database["public"]["Enums"]["meeting_status_t"] | null
         }
