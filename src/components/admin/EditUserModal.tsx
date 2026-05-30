@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
-import { X, Pencil, Wand2, Loader2 } from "lucide-react";
+import { X, Pencil, Wand2, Loader2, Crown, ArrowRightLeft, ShieldCheck } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { getUserForEdit, updateUserProfile } from "@/lib/admin-users.functions";
+import { getUserForEdit, updateUserProfile, transferAccountAdmin } from "@/lib/admin-users.functions";
 import { scrapeProfileFromUrl } from "@/lib/scrape-profile.functions";
+import { MoveToAccountModal } from "@/components/admin/MoveToAccountModal";
 import { toast } from "sonner";
 
 export function EditUserModal({ userId, onClose, onSaved }: { userId: string; onClose: () => void; onSaved?: () => void }) {
   const fetchUser = useServerFn(getUserForEdit);
   const save = useServerFn(updateUserProfile);
   const scrape = useServerFn(scrapeProfileFromUrl);
+  const promote = useServerFn(transferAccountAdmin);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [scraping, setScraping] = useState(false);
