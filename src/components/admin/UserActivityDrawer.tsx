@@ -1,18 +1,41 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { X, Heart, Sparkles, Calendar, ClipboardList, Building2, ArrowRight, ArrowLeft } from "lucide-react";
-import { getUserActivity } from "@/lib/admin-users.functions";
+import { X, Heart, Sparkles, Calendar, ClipboardList, Building2, ArrowRight, ArrowLeft, Pencil, Shield, ArrowRightLeft, UserPlus } from "lucide-react";
+import { getUserActivity, transferAccountAdmin } from "@/lib/admin-users.functions";
+import { toast } from "sonner";
+import { EditUserModal } from "./EditUserModal";
+import { MoveToAccountModal } from "./MoveToAccountModal";
+import { InviteResponsableModal } from "./InviteResponsableModal";
 
-export function UserActivityDrawer({ userId, userLabel, onClose }: { userId: string; userLabel: string; onClose: () => void }) {
+export function UserActivityDrawer({ userId, userLabel, onClose, onChanged }: { userId: string; userLabel: string; onClose: () => void; onChanged?: () => void }) {
   const fetchActivity = useServerFn(getUserActivity);
+  const makeAdmin = useServerFn(transferAccountAdmin);
   const [data, setData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"likes" | "matches" | "meetings">("likes");
+  const [editing, setEditing] = useState(false);
+  const [moving, setMoving] = useState(false);
+  const [inviting, setInviting] = useState(false);
 
   useEffect(() => {
     setLoading(true);
     fetchActivity({ data: { userId } }).then((d) => { setData(d); setLoading(false); }).catch(() => setLoading(false));
   }, [userId]);
+
+  const profile = data?.profile;
+  const isAccountUser = profile && (profile.role === "empresa" || profile.role === "sponsor") && profile.account_id;
+  const isManager = isAccountUser && profile.account_role !== "owner";
+
+  async function doMakeAdmin() {
+    if (!window.confirm(`¿Convertir a ${userLabel} en admin de la cuenta? El admin actual pasará a ser responsable.`)) return;
+    try {
+      await makeAdmin({ data: { newAdminUserId: userId } });
+      toast.success("Admin transferido");
+      onChanged?.();
+      onClose();
+    } catch (e: any) { toast.error(e?.message ?? "Error"); }
+  }
+
 
   return (
     <div className="fixed inset-0 z-50">
