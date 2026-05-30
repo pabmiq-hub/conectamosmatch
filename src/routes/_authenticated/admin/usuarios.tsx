@@ -4,12 +4,13 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { LevelBadge } from "@/components/brand/LevelBadge";
-import { Users, Building2, Sparkles, Plus, Search, Trash2, KeyRound, Power, Upload, UserPlus, Inbox, Check, X, CornerDownRight, Shield, ChevronRight } from "lucide-react";
+import { Users, Building2, Sparkles, Plus, Search, Trash2, KeyRound, Power, Upload, UserPlus, Inbox, Check, X, CornerDownRight, Shield, ChevronRight, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { NewUserModal } from "@/components/admin/NewUserModal";
 import { ImportUsersModal } from "@/components/admin/ImportUsersModal";
 import { InviteResponsableModal } from "@/components/admin/InviteResponsableModal";
 import { ApproveRequestModal } from "@/components/admin/ApproveRequestModal";
+import { UserActivityDrawer } from "@/components/admin/UserActivityDrawer";
 import { deleteUserAccount, resetUserPassword, setUserActive } from "@/lib/admin-users.functions";
 import { listAllRequests, rejectRequest, type ResponsableRequest } from "@/lib/responsable-requests.functions";
 
@@ -41,6 +42,7 @@ function AdminUsuarios() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [requests, setRequests] = useState<ResponsableRequest[]>([]);
   const [approving, setApproving] = useState<ResponsableRequest | null>(null);
+  const [viewing, setViewing] = useState<{ id: string; label: string } | null>(null);
   const resetPwd = useServerFn(resetUserPassword);
   const setActive = useServerFn(setUserActive);
   const delAccount = useServerFn(deleteUserAccount);
@@ -159,6 +161,7 @@ function AdminUsuarios() {
       {showInvite && <InviteResponsableModal onClose={() => setShowInvite(false)} onCreated={load} />}
       {invitePreset && <InviteResponsableModal preset={invitePreset} onClose={() => setInvitePreset(null)} onCreated={load} />}
       {approving && <ApproveRequestModal req={approving} onClose={() => setApproving(null)} onDone={load} />}
+      {viewing && <UserActivityDrawer userId={viewing.id} userLabel={viewing.label} onClose={() => setViewing(null)} />}
 
       {/* Pending requests panel */}
       {pendingRequests.length > 0 && (
