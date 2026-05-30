@@ -145,7 +145,13 @@ function AdminUsuarios() {
   return (
     <div className="space-y-6">
       <PageHeader title="Usuarios" subtitle="Gestión de cuentas (empresas/soluciones), sus responsables y administradores" right={
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <button className="inline-flex items-center gap-2 rounded-md border border-destructive/40 text-destructive px-3 py-2 text-xs font-bold text-uppercase-wide hover:bg-destructive/10" onClick={() => setBulkMode("delete")}>
+            <Trash2 className="h-4 w-4" /> Borrar masivamente
+          </button>
+          <button className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide" onClick={() => setBulkMode("passwords")}>
+            <KeyRound className="h-4 w-4" /> Contraseñas + Excel
+          </button>
           <button className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide" onClick={() => setShowImport(true)}>
             <Upload className="h-4 w-4" /> Importar Excel
           </button>
@@ -164,6 +170,7 @@ function AdminUsuarios() {
       {invitePreset && <InviteResponsableModal preset={invitePreset} onClose={() => setInvitePreset(null)} onCreated={load} />}
       {approving && <ApproveRequestModal req={approving} onClose={() => setApproving(null)} onDone={load} />}
       {viewing && <UserActivityDrawer userId={viewing.id} userLabel={viewing.label} onClose={() => setViewing(null)} />}
+      {bulkMode && <BulkUsersModal mode={bulkMode} onClose={() => setBulkMode(null)} onDone={load} />}
 
       {/* Pending requests panel */}
       {pendingRequests.length > 0 && (
