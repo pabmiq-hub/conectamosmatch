@@ -45,6 +45,7 @@ function AdminUsuarios() {
   const [requests, setRequests] = useState<ResponsableRequest[]>([]);
   const [approving, setApproving] = useState<ResponsableRequest | null>(null);
   const [viewing, setViewing] = useState<{ id: string; label: string } | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
   const [bulkMode, setBulkMode] = useState<"delete" | "passwords" | null>(null);
   const resetPwd = useServerFn(resetUserPassword);
   const setActive = useServerFn(setUserActive);
