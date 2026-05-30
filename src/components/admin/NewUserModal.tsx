@@ -162,6 +162,20 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
           </div>
         ) : step === 3 ? (
           <div className="space-y-4">
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+              <div className="flex items-center gap-2 text-[11px] font-bold text-uppercase-wide text-primary mb-2">
+                <Wand2 className="h-3.5 w-3.5" /> Autocompletar desde web
+              </div>
+              <div className="flex gap-2">
+                <input value={scrapeUrl} onChange={(e) => setScrapeUrl(e.target.value)} placeholder="empresa.com o https://…"
+                  className="flex-1 rounded-md border border-border bg-input px-3 py-2 text-sm" />
+                <button type="button" onClick={runScrape} disabled={scraping || !scrapeUrl.trim()}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide disabled:opacity-50">
+                  {scraping ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Extrayendo…</> : <><Wand2 className="h-3.5 w-3.5" /> Extraer</>}
+                </button>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1.5">Solo rellena los campos vacíos. Revisa siempre los datos antes de guardar.</p>
+            </div>
             <div className="grid md:grid-cols-2 gap-4">
               <Field label="Nombre de empresa *" value={f.company_name} onChange={(v) => set("company_name", v)} />
               <Field label="Sector" value={f.sector} onChange={(v) => set("sector", v)} placeholder="Tech, Health, Retail..." />
