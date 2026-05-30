@@ -48,7 +48,7 @@ export function Sidebar({ role, companyName }: { role: AppRole; companyName: str
   const roleBadge = role === "super_admin" ? "ADMIN" : role === "sponsor" ? "SPONSOR" : "EMPRESA";
 
   return (
-    <aside className="hidden md:flex w-[200px] shrink-0 flex-col bg-sidebar border-r border-sidebar-border min-h-screen">
+    <aside className="hidden md:flex w-[200px] shrink-0 flex-col bg-sidebar border-r border-sidebar-border sticky top-0 h-screen overflow-y-auto">
       <div className="p-4 border-b border-sidebar-border">
         <div className="flex items-center justify-center h-12 w-12 rounded-md bg-card border border-border mx-auto">
           <Settings className="h-6 w-6 text-primary" />
@@ -58,7 +58,7 @@ export function Sidebar({ role, companyName }: { role: AppRole; companyName: str
           <span className="mt-1 inline-block rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground text-uppercase-wide">{roleBadge}</span>
         </div>
       </div>
-      <nav className="flex-1 py-2">
+      <nav className="py-2">
         {items.map((it) => {
           const active = path === it.to || (it.to !== "/admin" && path.startsWith(it.to));
           const Icon = it.icon;
@@ -74,7 +74,7 @@ export function Sidebar({ role, companyName }: { role: AppRole; companyName: str
           );
         })}
       </nav>
-      <div className="p-3 border-t border-sidebar-border">
+      <div className="px-3 py-3 border-t border-sidebar-border">
         <button onClick={() => signOut()}
           className="w-full flex items-center gap-2 rounded-md px-3 py-2 text-xs text-uppercase-wide font-medium text-muted-foreground hover:bg-sidebar-accent hover:text-foreground">
           <LogOut className="h-4 w-4" /> Cerrar sesión
@@ -83,3 +83,4 @@ export function Sidebar({ role, companyName }: { role: AppRole; companyName: str
     </aside>
   );
 }
+

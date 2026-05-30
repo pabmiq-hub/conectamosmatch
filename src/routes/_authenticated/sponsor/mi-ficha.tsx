@@ -36,7 +36,7 @@ const inputCls = "w-full rounded-md border border-border bg-background px-3 py-2
 
 function MiFichaSponsor() {
   const [form, setForm] = useState<any>({ company_name: "", tagline: "", description: "", website: "", logo_url: "", linkedin_url: "", categories: [] as string[], responsables: [] as Responsable[] });
-  const [level, setLevel] = useState("BRONZE");
+  const [level, setLevel] = useState("BASIC");
   const [userId, setUserId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [customDraft, setCustomDraft] = useState("");
@@ -58,7 +58,7 @@ function MiFichaSponsor() {
           categories: (data as any).categories ?? [],
           responsables: (data as any).responsables ?? [],
         });
-        setLevel(data.sponsorship_level ?? "BRONZE");
+        setLevel(data.sponsorship_level ?? "BASIC");
       }
     })();
   }, []);

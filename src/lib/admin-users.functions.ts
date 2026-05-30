@@ -19,7 +19,7 @@ const sponsorSchema = z.object({
   company_name: z.string().min(1).max(200),
   sector: z.string().max(120).optional().default(""),
   sponsorship_category: z.string().max(120).optional().default(""),
-  sponsorship_level: z.enum(["GOLD","PREMIUM","BASIC","PLATINUM","SILVER","BRONZE"]).default("BRONZE"),
+  sponsorship_level: z.enum(["GOLD","PREMIUM","BASIC","STARTUP"]).default("BASIC"),
   website: z.string().max(300).optional().default(""),
   linkedin_url: z.string().max(300).optional().default(""),
   tagline: z.string().max(300).optional().default(""),
@@ -277,7 +277,7 @@ const bulkRowSchema = z.object({
   location_city: optStr,
   // sponsor
   sponsorship_category: optStr,
-  sponsorship_level: z.enum(["GOLD","PREMIUM","BASIC","PLATINUM","SILVER","BRONZE"]).optional(),
+  sponsorship_level: z.enum(["GOLD","PREMIUM","BASIC","STARTUP"]).optional(),
 });
 
 
@@ -320,7 +320,7 @@ export const bulkImportUsers = createServerFn({ method: "POST" })
                   company_name: r.company_name,
                   sector: r.sector,
                   sponsorship_category: r.sponsorship_category,
-                  sponsorship_level: r.sponsorship_level ?? "BRONZE",
+                  sponsorship_level: r.sponsorship_level ?? "BASIC",
                   website: r.website,
                   linkedin_url: r.linkedin_url,
                   tagline: r.tagline,
@@ -589,7 +589,7 @@ const confirmedGroupSchema = z.object({
     company_size: z.enum(["1-10", "11-50", "51-200", "201-500", "500+"]).optional(),
     location_city: z.string().optional().default(""),
     sponsorship_category: z.string().optional().default(""),
-    sponsorship_level: z.enum(["GOLD","PREMIUM","BASIC","PLATINUM","SILVER","BRONZE"]).optional(),
+    sponsorship_level: z.enum(["GOLD","PREMIUM","BASIC","STARTUP"]).optional(),
   }),
 });
 
@@ -638,7 +638,7 @@ export const confirmGroupedImport = createServerFn({ method: "POST" })
               tagline: g.account_fields.tagline ?? "",
               description: g.account_fields.description ?? "",
               sponsorship_category: g.account_fields.sponsorship_category ?? "",
-              sponsorship_level: (g.account_fields.sponsorship_level as any) ?? "BRONZE",
+              sponsorship_level: (g.account_fields.sponsorship_level as any) ?? "BASIC",
             })
             .select("id")
             .single();

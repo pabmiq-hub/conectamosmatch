@@ -12,7 +12,7 @@ export const Route = createFileRoute("/_authenticated/sponsor/dashboard")({
 
 function SponsorDashboard() {
   const [name, setName] = useState("");
-  const [level, setLevel] = useState<string>("BRONZE");
+  const [level, setLevel] = useState<string>("BASIC");
   const [agenda, setAgenda] = useState<any[]>([]);
   const [eventTitle, setEventTitle] = useState("");
   const [stats, setStats] = useState({ matches: 0, meetings: 0 });
@@ -23,7 +23,7 @@ function SponsorDashboard() {
       if (!user) return;
       const { data: sp } = await supabase.from("sponsor_profiles").select("company_name, sponsorship_level").eq("user_id", user.id).maybeSingle();
       setName(sp?.company_name ?? "");
-      setLevel(sp?.sponsorship_level ?? "BRONZE");
+      setLevel(sp?.sponsorship_level ?? "BASIC");
       const { data: ev } = await supabase.from("events").select("id, title").in("status", ["published","ongoing"]).order("event_date").limit(1).maybeSingle();
       if (ev) {
         setEventTitle(ev.title);
@@ -38,7 +38,7 @@ function SponsorDashboard() {
     })();
   }, []);
 
-  const isBronze = level === "BRONZE";
+  const isStartup = level === "STARTUP";
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -49,12 +49,12 @@ function SponsorDashboard() {
         <LevelBadge level={level} />
       </div>
 
-      {isBronze && (
-        <div className="rounded-xl border border-bronze/40 bg-bronze/10 p-4 flex items-start gap-3">
+      {isStartup && (
+        <div className="rounded-xl border border-border bg-muted/30 p-4 flex items-start gap-3">
           <Lock className="h-5 w-5 text-foreground shrink-0" />
           <div className="text-xs">
-            <div className="font-bold text-uppercase-wide">Nivel BRONZE</div>
-            <div className="mt-1 text-muted-foreground">Algunas funciones premium (charla magistral, stand premium, mesas redondas) están reservadas para SILVER y superiores. Contacta con el organizador para subir de nivel.</div>
+            <div className="font-bold text-uppercase-wide">Nivel STARTUP</div>
+            <div className="mt-1 text-muted-foreground">Algunas funciones premium (charla magistral, stand premium, mesas redondas) están reservadas para niveles superiores. Contacta con el organizador para subir de nivel.</div>
           </div>
         </div>
       )}

@@ -1,15 +1,13 @@
-type Level = "PLATINUM" | "GOLD" | "SILVER" | "BRONZE" | "PREMIUM" | "BASIC";
+type Level = "GOLD" | "PREMIUM" | "BASIC" | "STARTUP";
 
 export function LevelBadge({ level }: { level: Level | string | null | undefined }) {
   if (!level) return null;
   const l = String(level).toUpperCase() as Level;
   const cls: Record<Level, string> = {
-    PLATINUM: "badge-platinum",
     GOLD: "bg-gold text-black",
-    SILVER: "bg-silver text-white",
-    BRONZE: "bg-bronze text-white",
     PREMIUM: "bg-primary text-primary-foreground",
     BASIC: "bg-muted text-foreground",
+    STARTUP: "bg-secondary text-secondary-foreground",
   };
   return (
     <span
