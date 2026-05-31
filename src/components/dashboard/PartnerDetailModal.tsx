@@ -11,6 +11,7 @@ export interface PartnerDetail {
   location_city?: string | null;
   company_size?: string | null;
   sponsorship_level?: string | null;
+  categories?: string[] | null;
   responsables?: { full_name: string; role: string }[] | null;
 }
 
