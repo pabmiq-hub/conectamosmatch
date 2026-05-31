@@ -47,6 +47,7 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
         full_name: profile.full_name ?? "",
         email: profile.email ?? "",
         phone: profile.phone ?? "",
+        cargo: (profile as any).cargo ?? "",
         is_active: profile.is_active ?? true,
         company_name: account?.company_name ?? "",
         sector: account?.sector ?? "",
@@ -58,6 +59,7 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
         company_size: account?.company_size ?? "11-50",
         sponsorship_category: account?.sponsorship_category ?? "",
         sponsorship_level: account?.sponsorship_level ?? "BASIC",
+        categories: (account as any)?.categories ?? [],
         logo_url: account?.logo_url ?? "",
       });
       setScrapeUrl(account?.website ?? "");
