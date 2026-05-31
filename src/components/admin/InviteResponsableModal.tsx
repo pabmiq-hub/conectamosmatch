@@ -82,6 +82,7 @@ export function InviteResponsableModal({ onClose, onCreated, preset }: { onClose
               </div>
             </div>
             <Field label="Teléfono" value={phone} onChange={setPhone} />
+            <Field label="Cargo" value={cargo} onChange={setCargo} />
           </div>
           <button onClick={submit} disabled={loading || !accountId || !full_name || !email || password.length < 8} className="w-full rounded-md bg-primary py-2.5 text-sm font-bold text-primary-foreground text-uppercase-wide disabled:opacity-50">
             {loading ? "Invitando…" : "Invitar responsable"}
