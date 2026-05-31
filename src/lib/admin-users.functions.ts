@@ -641,7 +641,7 @@ export const confirmGroupedImport = createServerFn({ method: "POST" })
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertSuperAdmin(context.userId);
+    await assertBootstrapAdmin(context.userId);
 
     const created_accounts: { account_id: string; company_name: string; members: { email: string; role: string }[] }[] = [];
     const failed: { email: string; error: string }[] = [];
