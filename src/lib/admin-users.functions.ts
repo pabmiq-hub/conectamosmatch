@@ -121,7 +121,7 @@ export const createSuperAdmin = createServerFn({ method: "POST" })
       full_name: data.full_name,
       role: "super_admin",
       account_id: null,
-      account_role: null,
+      account_role: undefined,
     });
     return { userId: created.user.id, email: data.email };
   });
