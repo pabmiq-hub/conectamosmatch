@@ -106,7 +106,14 @@ export function EmpresaLikeModal({
                 const checked = selected.has(r.id);
                 return (
                   <li key={r.id} className={`flex items-center gap-3 px-3 py-2.5 text-sm ${already ? "opacity-50" : "cursor-pointer hover:bg-muted"}`} onClick={() => !already && toggle(r.id)}>
-                    <input type="checkbox" checked={already || checked} disabled={already} onChange={() => toggle(r.id)} className="h-4 w-4 accent-primary" />
+                    <input
+                      type="checkbox"
+                      checked={already || checked}
+                      disabled={already}
+                      onChange={() => {}}
+                      onClick={(e) => e.stopPropagation()}
+                      className="h-4 w-4 accent-primary cursor-pointer"
+                    />
                     <div className="min-w-0 flex-1">
                       <div className="font-medium text-xs truncate">{r.full_name ?? r.email}</div>
                       <div className="text-[10px] text-muted-foreground truncate">{r.email}</div>
