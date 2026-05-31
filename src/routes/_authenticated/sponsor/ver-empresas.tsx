@@ -47,7 +47,7 @@ function VerEmpresasSponsor() {
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     if (!term) return items;
-    return items.filter((e) => `${e.company_name ?? ""} ${e.sector ?? ""} ${e.location_city ?? ""}`.toLowerCase().includes(term));
+    return items.filter((e) => String(e.company_name ?? "").toLowerCase().includes(term));
   }, [items, q]);
 
   return (
