@@ -164,21 +164,29 @@ function AdminUsuarios() {
           <button className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide" onClick={() => setBulkMode("passwords")}>
             <KeyRound className="h-4 w-4" /> Contraseñas + Excel
           </button>
-          <button className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide" onClick={() => setShowImport(true)}>
-            <Upload className="h-4 w-4" /> Importar Excel
-          </button>
-          <button className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide" onClick={() => setShowInvite(true)}>
-            <UserPlus className="h-4 w-4" /> Invitar responsable
-          </button>
-          <button className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide" onClick={() => setShowModal(true)}>
-            <Plus className="h-4 w-4" /> Nueva cuenta
-          </button>
+          {isBootstrap && (
+            <>
+              <button className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide" onClick={() => setShowImport(true)}>
+                <Upload className="h-4 w-4" /> Importar Excel
+              </button>
+              <button className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide" onClick={() => setShowInvite(true)}>
+                <UserPlus className="h-4 w-4" /> Invitar responsable
+              </button>
+              <button className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide" onClick={() => setShowModal(true)}>
+                <Plus className="h-4 w-4" /> Nueva cuenta
+              </button>
+              <button className="inline-flex items-center gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-400 px-4 py-2 text-xs font-bold text-uppercase-wide hover:bg-amber-500/20" onClick={() => setShowSuperAdmin(true)}>
+                <ShieldPlus className="h-4 w-4" /> Crear super admin
+              </button>
+            </>
+          )}
         </div>
       } />
 
       {showModal && <NewUserModal onClose={() => setShowModal(false)} onCreated={load} />}
       {showImport && <ImportUsersModal onClose={() => setShowImport(false)} onDone={load} />}
       {showInvite && <InviteResponsableModal onClose={() => setShowInvite(false)} onCreated={load} />}
+      {showSuperAdmin && <CreateSuperAdminModal onClose={() => setShowSuperAdmin(false)} onCreated={load} />}
       {invitePreset && <InviteResponsableModal preset={invitePreset} onClose={() => setInvitePreset(null)} onCreated={load} />}
       {approving && <ApproveRequestModal req={approving} onClose={() => setApproving(null)} onDone={load} />}
       {viewing && <UserActivityDrawer userId={viewing.id} userLabel={viewing.label} onClose={() => setViewing(null)} onChanged={load} />}
