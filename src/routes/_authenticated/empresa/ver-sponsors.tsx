@@ -88,7 +88,7 @@ function VerSponsors() {
         ))}
         {filtered.length === 0 && <div className="col-span-full text-center text-sm text-muted-foreground py-12">No hay soluciones que coincidan con tu búsqueda.</div>}
       </div>
-      <PartnerDetailModal open={!!selected} onClose={() => setSelected(null)} partner={selected} hideLevel recommended={String((selected as any)?.sponsorship_level ?? "").toUpperCase() === "GOLD"} />
+      <PartnerDetailModal open={!!selected} onClose={() => setSelected(null)} partner={selected} hideLevel />
     </div>
   );
 }
