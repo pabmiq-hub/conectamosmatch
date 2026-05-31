@@ -255,16 +255,16 @@ function AdminUsuarios() {
                 {isOpen && g.managers.length > 0 && (
                   <ul className="divide-y divide-border border-t border-border bg-muted/10">
                     {g.managers.map((m) => (
-                      <li key={m.id} onClick={() => setViewing({ id: m.id, label: m.full_name ?? m.email ?? "Responsable" })} className="flex items-center gap-3 px-4 py-2.5 pl-10 text-sm cursor-pointer hover:bg-muted/30 transition-colors">
+                      <li key={m.id} onClick={() => setViewing({ id: m.id, label: m.full_name ?? m.email ?? "Responsable" })} className="font-sans flex items-center gap-4 px-4 py-3 pl-12 cursor-pointer hover:bg-muted/30 transition-colors">
                         <CornerDownRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <div className="min-w-0 flex-1">
-                          <div className="font-medium text-xs truncate">{m.full_name ?? m.email}</div>
-                          <div className="text-[11px] text-muted-foreground truncate">
-                            {m.email} · <span className="font-bold">Responsable de {accountName}</span>
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="text-[14px] font-semibold leading-tight truncate" style={{ color: "#111827" }}>{m.full_name ?? m.email}</div>
+                          <div className="text-[13px] font-normal truncate" style={{ color: "#6B7280" }}>
+                            {m.email} · Responsable de {accountName}
                           </div>
                         </div>
-                        <span className="rounded-full bg-muted px-2 py-0.5 text-[9px] font-bold text-uppercase-wide text-muted-foreground">Responsable</span>
-                        <span className={`text-[10px] font-bold text-uppercase-wide ${m.is_active ? "text-success" : "text-muted-foreground"}`}>{m.is_active ? "Activo" : "Inactivo"}</span>
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-[12px] font-medium text-muted-foreground">Responsable</span>
+                        <span className={`text-[12px] font-medium ${m.is_active ? "text-success" : "text-muted-foreground"}`}>{m.is_active ? "Activo" : "Inactivo"}</span>
                         <RowActions p={m} onReset={onReset} onToggle={onToggle} onDelete={onDelete} onView={() => setViewing({ id: m.id, label: m.full_name ?? m.email ?? "Responsable" })} onEdit={() => setEditing(m.id)} />
                       </li>
                     ))}
