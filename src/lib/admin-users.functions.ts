@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { assertSuperAdmin } from "./admin-shared.server";
+import { enrichAccountFromDomain } from "./firecrawl.server";
 
 const empresaSchema = z.object({
   company_name: z.string().min(1).max(200),
