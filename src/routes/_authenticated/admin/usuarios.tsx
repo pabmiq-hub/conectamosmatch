@@ -320,7 +320,7 @@ function AccountHeader({ owner, role, accountName, managersCount, isOpen, onTogg
   const company = owner?.company;
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-3 bg-muted/20 ${owner ? "cursor-pointer hover:bg-muted/40 transition-colors" : ""}`}
+      className={`font-sans flex items-center gap-4 p-4 bg-card ${owner ? "cursor-pointer hover:bg-muted/30 transition-colors" : ""}`}
       onClick={owner ? () => onView(owner) : undefined}
       role={owner ? "button" : undefined}
     >
@@ -333,43 +333,42 @@ function AccountHeader({ owner, role, accountName, managersCount, isOpen, onTogg
       >
         <ChevronRight className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`} />
       </button>
-      <div className="h-10 w-10 rounded-md bg-card border border-border overflow-hidden flex items-center justify-center shrink-0">
+      <div className="h-10 w-10 rounded-md bg-muted/30 border border-border overflow-hidden flex items-center justify-center shrink-0">
         {company?.logo_url ? <img src={company.logo_url} className="max-h-full max-w-full" alt="" /> : <Icon className="h-5 w-5 text-muted-foreground" />}
       </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-display font-bold text-sm truncate">{accountName}</span>
-          <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[9px] font-bold text-uppercase-wide">{role}</span>
-          {company?.is_verified && <span className="text-[9px] text-success">✓ Verificada</span>}
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <div className="text-[16px] font-semibold leading-tight text-foreground truncate" style={{ color: "#111827" }}>{accountName}</div>
+        <div className="flex items-center gap-1.5 flex-wrap text-[12px] font-medium">
+          <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 capitalize">{role}</span>
           {company?.sponsorship_level && <LevelBadge level={company.sponsorship_level} />}
+          {company?.is_verified && <span className="rounded-full bg-success/10 text-success px-2 py-0.5">✓ Verificada</span>}
           {managersCount > 0 && (
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[9px] font-bold text-uppercase-wide text-muted-foreground">
+            <span className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground">
               {managersCount} {managersCount === 1 ? "responsable" : "responsables"}
             </span>
           )}
         </div>
         {owner ? (
-          <div className="text-[11px] text-muted-foreground truncate">
-            Owner: <span className="font-bold text-foreground">{owner.full_name ?? owner.email}</span> · {owner.email}
+          <div className="text-[13px] font-normal truncate" style={{ color: "#6B7280" }}>
+            {owner.full_name ?? owner.email} · {owner.email}
             {company?.sector ? ` · ${company.sector}` : ""}
           </div>
         ) : (
-          <div className="text-[11px] text-warning">Sin owner asignado</div>
+          <div className="text-[13px] text-warning">Sin owner asignado</div>
         )}
       </div>
-      <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">Owner</span>
       {onAddResponsable && (
         <button
           onClick={(e) => { e.stopPropagation(); onAddResponsable(); }}
           title="Añadir responsable a esta cuenta"
-          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[10px] font-bold text-uppercase-wide hover:bg-muted"
+          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] font-medium hover:bg-muted"
         >
           <UserPlus className="h-3.5 w-3.5" /> Responsable
         </button>
       )}
       {owner && (
         <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
-          <span className={`text-[10px] font-bold text-uppercase-wide ${owner.is_active ? "text-success" : "text-muted-foreground"}`}>{owner.is_active ? "Activo" : "Inactivo"}</span>
+          <span className={`text-[11px] font-medium ${owner.is_active ? "text-success" : "text-muted-foreground"}`}>{owner.is_active ? "Activo" : "Inactivo"}</span>
           <RowActions p={owner} onReset={onReset} onToggle={onToggleActive} onDelete={onDelete} onView={() => onView(owner)} onEdit={() => onEdit(owner)} />
         </div>
       )}
