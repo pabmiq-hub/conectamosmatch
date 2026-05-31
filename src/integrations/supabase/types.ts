@@ -578,6 +578,7 @@ export type Database = {
           account_id: string | null
           account_role: string
           avatar_url: string | null
+          cargo: string | null
           created_at: string | null
           email: string | null
           full_name: string | null
@@ -591,6 +592,7 @@ export type Database = {
           account_id?: string | null
           account_role?: string
           avatar_url?: string | null
+          cargo?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
@@ -604,6 +606,7 @@ export type Database = {
           account_id?: string | null
           account_role?: string
           avatar_url?: string | null
+          cargo?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
@@ -619,6 +622,7 @@ export type Database = {
         Row: {
           account_id: string
           account_type: string
+          cargo: string | null
           created_at: string
           email: string
           full_name: string
@@ -633,6 +637,7 @@ export type Database = {
         Insert: {
           account_id: string
           account_type: string
+          cargo?: string | null
           created_at?: string
           email: string
           full_name: string
@@ -647,6 +652,7 @@ export type Database = {
         Update: {
           account_id?: string
           account_type?: string
+          cargo?: string | null
           created_at?: string
           email?: string
           full_name?: string
