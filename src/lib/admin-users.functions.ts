@@ -1000,6 +1000,7 @@ const editUserSchema = z.object({
   full_name: z.string().min(1).max(200),
   email: z.string().email().max(200),
   phone: z.string().max(40).optional().default(""),
+  cargo: z.string().max(120).nullable().optional(),
   is_active: z.boolean().optional(),
   // account fields (apply only if the user is owner of an account)
   account: z
