@@ -14,6 +14,7 @@ export interface ResponsableRequest {
   full_name: string;
   email: string;
   phone: string | null;
+  cargo?: string | null;
   status: "pending" | "approved" | "rejected" | "cancelled";
   rejection_reason: string | null;
   reviewed_at: string | null;
