@@ -111,8 +111,9 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
           full_name: f.full_name,
           email: f.email,
           phone: f.phone,
+          cargo: f.cargo || null,
           is_active: !!f.is_active,
-          account: hasAccount
+          account: hasAccount && accountRole === "owner"
             ? role === "empresa"
               ? {
                   company_name: f.company_name, sector: f.sector, website: f.website,
@@ -124,6 +125,7 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
                   company_name: f.company_name, sector: f.sector, website: f.website,
                   linkedin_url: f.linkedin_url, tagline: f.tagline, description: f.description,
                   sponsorship_category: f.sponsorship_category, sponsorship_level: f.sponsorship_level,
+                  categories: f.categories,
                   logo_url: f.logo_url || null,
                 }
             : undefined,
