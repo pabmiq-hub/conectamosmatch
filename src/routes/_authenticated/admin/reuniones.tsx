@@ -55,10 +55,49 @@ function AdminReuniones() {
     finally { setBusy(false); }
   }
 
+  function exportRows() {
+    return rows.map((r) => ({
+      Empresa: r.empresa_name ?? "",
+      Solución: r.sponsor_name ?? "",
+      Hora: r.scheduled_time ? new Date(r.scheduled_time).toLocaleString("es-ES") : "",
+      Mesa: r.room ?? "",
+      Estado: r.status ?? "",
+    }));
+  }
+  function downloadExcel() {
+    const data = exportRows();
+    if (!data.length) { toast.error("Sin datos"); return; }
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Reuniones");
+    XLSX.writeFile(wb, `reuniones-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
+  function downloadPdf() {
+    const data = exportRows();
+    if (!data.length) { toast.error("Sin datos"); return; }
+    const doc = new jsPDF({ orientation: "landscape" });
+    doc.setFontSize(14); doc.text("Reuniones 1to1", 14, 14);
+    doc.setFontSize(9); doc.text(`${data.length} registros · ${new Date().toLocaleString("es-ES")}`, 14, 20);
+    autoTable(doc, {
+      startY: 25,
+      head: [Object.keys(data[0])],
+      body: data.map((r) => Object.values(r) as string[]),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [107, 0, 255] },
+    });
+    doc.save(`reuniones-${new Date().toISOString().slice(0, 10)}.pdf`);
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader title="Reuniones 1to1" subtitle="Asignación automática y manual de speed-meetings" right={
         <div className="flex flex-wrap gap-2">
+          <button onClick={downloadExcel} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide hover:bg-muted">
+            <FileSpreadsheet className="h-4 w-4" /> Excel
+          </button>
+          <button onClick={downloadPdf} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide hover:bg-muted">
+            <FileText className="h-4 w-4" /> PDF
+          </button>
           <button onClick={() => setShowCreate(true)} className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide">
             <Plus className="h-4 w-4" /> Crear reunión
           </button>
