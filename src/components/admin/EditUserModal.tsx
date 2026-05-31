@@ -35,6 +35,7 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
   const set = (k: string, v: any) => setF((p: any) => ({ ...p, [k]: v }));
 
   useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setAdminUserId(data.user?.id ?? null));
     fetchUser({ data: { userId } }).then(({ profile, account }) => {
       setRole(profile.role);
       setHasAccount(!!account);
@@ -56,13 +57,12 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
         company_size: account?.company_size ?? "11-50",
         sponsorship_category: account?.sponsorship_category ?? "",
         sponsorship_level: account?.sponsorship_level ?? "BASIC",
+        logo_url: account?.logo_url ?? "",
       });
       setScrapeUrl(account?.website ?? "");
       setLoading(false);
     }).catch((e: any) => { toast.error(e?.message ?? "Error"); onClose(); });
   }, [userId]);
-
-  async function runScrape() {
     if (!scrapeUrl.trim() || role === "super_admin") return;
     setScraping(true);
     try {
