@@ -1068,6 +1068,7 @@ export const updateUserProfile = createServerFn({ method: "POST" })
         } else {
           if (data.account.sponsorship_category !== undefined) patch.sponsorship_category = data.account.sponsorship_category;
           if (data.account.sponsorship_level !== undefined) patch.sponsorship_level = data.account.sponsorship_level;
+          if (data.account.categories !== undefined) patch.categories = data.account.categories;
         }
         if (Object.keys(patch).length) {
           await (supabaseAdmin.from(table) as any).update(patch).eq("id", prof.account_id);
