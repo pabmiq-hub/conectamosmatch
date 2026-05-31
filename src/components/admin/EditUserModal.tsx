@@ -157,6 +157,9 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
                 <Field label="Nombre completo *" value={f.full_name} onChange={(v) => set("full_name", v)} />
                 <Field label="Email *" type="email" value={f.email} onChange={(v) => set("email", v)} />
                 <Field label="Teléfono" value={f.phone} onChange={(v) => set("phone", v)} />
+                {role !== "super_admin" && (
+                  <Field label="Cargo" value={f.cargo} onChange={(v) => set("cargo", v)} />
+                )}
                 <div>
                   <label className="text-xs text-uppercase-wide text-muted-foreground">Estado</label>
                   <select value={f.is_active ? "1" : "0"} onChange={(e) => set("is_active", e.target.value === "1")} className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
