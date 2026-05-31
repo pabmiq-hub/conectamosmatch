@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { assertSuperAdmin } from "./admin-shared.server";
+import { assertSuperAdmin, assertBootstrapAdmin } from "./admin-shared.server";
 import { enrichAccountFromDomain } from "./firecrawl.server";
 
 const empresaSchema = z.object({
@@ -91,9 +91,39 @@ export const createUserAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => createSchema.parse(input))
   .handler(async ({ data, context }) => {
-    await assertSuperAdmin(context.userId);
+    await assertBootstrapAdmin(context.userId);
     const userId = await createOne(data);
     return { userId, email: data.email };
+  });
+
+// ---- Super admin creation (bootstrap only) ----
+const createSuperAdminSchema = z.object({
+  full_name: z.string().min(1).max(200),
+  email: z.string().email().max(200),
+  password: z.string().min(8).max(100),
+});
+
+export const createSuperAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => createSuperAdminSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertBootstrapAdmin(context.userId);
+    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+      email: data.email,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: { full_name: data.full_name, role: "super_admin" },
+    });
+    if (error || !created.user) throw new Response(error?.message ?? "No se pudo crear", { status: 400 });
+    await supabaseAdmin.from("profiles").upsert({
+      id: created.user.id,
+      email: data.email,
+      full_name: data.full_name,
+      role: "super_admin",
+      account_id: null,
+      account_role: undefined,
+    });
+    return { userId: created.user.id, email: data.email };
   });
 
 // Add a "manager" responsable to an existing account
@@ -110,7 +140,7 @@ export const inviteResponsable = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => inviteResponsableSchema.parse(input))
   .handler(async ({ data, context }) => {
-    await assertSuperAdmin(context.userId);
+    await assertBootstrapAdmin(context.userId);
 
     // Verify account exists
     const table = data.accountType === "empresa" ? "empresa_profiles" : "sponsor_profiles";
@@ -296,7 +326,7 @@ export const bulkImportUsers = createServerFn({ method: "POST" })
     z.object({ rows: z.array(z.record(z.string(), z.unknown())).min(1).max(500) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertSuperAdmin(context.userId);
+    await assertBootstrapAdmin(context.userId);
     const ok: string[] = [];
     const failed: { email: string; error: string }[] = [];
     for (const raw of data.rows) {
@@ -485,7 +515,7 @@ export const analyzeExcelGroups = createServerFn({ method: "POST" })
     z.object({ rows: z.array(z.record(z.string(), z.unknown())).min(1).max(500) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertSuperAdmin(context.userId);
+    await assertBootstrapAdmin(context.userId);
 
     type Parsed = {
       idx: number;
@@ -611,12 +641,12 @@ export const confirmGroupedImport = createServerFn({ method: "POST" })
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertSuperAdmin(context.userId);
+    await assertBootstrapAdmin(context.userId);
 
     const created_accounts: { account_id: string; company_name: string; members: { email: string; role: string }[] }[] = [];
     const failed: { email: string; error: string }[] = [];
 
-    for (const g of data.groups) {
+    const processGroup = async (g: typeof data.groups[number]) => {
       try {
         let accountId: string;
         if (g.account_type === "empresa") {
@@ -659,7 +689,13 @@ export const confirmGroupedImport = createServerFn({ method: "POST" })
         let ownerSetUserId: string | null = null;
         for (const idx of g.member_idxs) {
           const raw = data.rows_by_idx[String(idx)];
-          const r = bulkRowSchema.parse(raw);
+          let r: z.infer<typeof bulkRowSchema>;
+          try {
+            r = bulkRowSchema.parse(raw);
+          } catch (e: any) {
+            failed.push({ email: String(raw?.email ?? "(?)"), error: e?.message ?? "Datos inválidos" });
+            continue;
+          }
           try {
             const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
               email: r.email,
@@ -699,24 +735,19 @@ export const confirmGroupedImport = createServerFn({ method: "POST" })
         }
 
         created_accounts.push({ account_id: accountId, company_name: g.company_name, members });
-
-        // Best-effort Firecrawl enrichment using the owner's email domain or any provided website.
-        try {
-          const adminRow = data.rows_by_idx[String(g.admin_idx)];
-          const adminEmail: string | undefined = adminRow?.email;
-          const hintUrl: string | undefined = g.account_fields?.website || adminRow?.website;
-          await enrichAccountFromDomain({
-            supabaseAdmin,
-            accountId,
-            kind: g.account_type,
-            hintUrl: hintUrl ?? null,
-            email: adminEmail ?? null,
-          });
-        } catch {}
       } catch (e: any) {
         failed.push({ email: g.company_name, error: e?.message ?? "Error creando cuenta" });
       }
+    };
+
+    // Process groups in parallel chunks. Sequential was timing out the worker
+    // on large imports (50+ accounts × auth.admin.createUser latency).
+    const CONCURRENCY = 6;
+    for (let i = 0; i < data.groups.length; i += CONCURRENCY) {
+      const chunk = data.groups.slice(i, i + CONCURRENCY);
+      await Promise.all(chunk.map(processGroup));
     }
+
 
     return { created_accounts, failed };
   });

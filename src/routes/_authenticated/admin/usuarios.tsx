@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { LevelBadge } from "@/components/brand/LevelBadge";
-import { Users, Building2, Sparkles, Plus, Search, Trash2, KeyRound, Power, Upload, UserPlus, Inbox, Check, X, CornerDownRight, Shield, ChevronRight, BarChart3, Pencil } from "lucide-react";
+import { Users, Building2, Sparkles, Plus, Search, Trash2, KeyRound, Power, Upload, UserPlus, Inbox, Check, X, CornerDownRight, Shield, ChevronRight, BarChart3, Pencil, ShieldPlus } from "lucide-react";
 import { toast } from "sonner";
 import { NewUserModal } from "@/components/admin/NewUserModal";
 import { ImportUsersModal } from "@/components/admin/ImportUsersModal";
@@ -13,8 +13,11 @@ import { ApproveRequestModal } from "@/components/admin/ApproveRequestModal";
 import { UserActivityDrawer } from "@/components/admin/UserActivityDrawer";
 import { EditUserModal } from "@/components/admin/EditUserModal";
 import { BulkUsersModal } from "@/components/admin/BulkUsersModal";
+import { CreateSuperAdminModal } from "@/components/admin/CreateSuperAdminModal";
 import { deleteUserAccount, resetUserPassword, setUserActive } from "@/lib/admin-users.functions";
 import { listAllRequests, rejectRequest, type ResponsableRequest } from "@/lib/responsable-requests.functions";
+
+const BOOTSTRAP_ADMIN_EMAIL = "miquel@conectamos.club";
 
 export const Route = createFileRoute("/_authenticated/admin/usuarios")({
   component: AdminUsuarios,
@@ -47,11 +50,18 @@ function AdminUsuarios() {
   const [viewing, setViewing] = useState<{ id: string; label: string } | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [bulkMode, setBulkMode] = useState<"delete" | "passwords" | null>(null);
+  const [showSuperAdmin, setShowSuperAdmin] = useState(false);
+  const [meEmail, setMeEmail] = useState<string>("");
+  const isBootstrap = meEmail.toLowerCase() === BOOTSTRAP_ADMIN_EMAIL;
   const resetPwd = useServerFn(resetUserPassword);
   const setActive = useServerFn(setUserActive);
   const delAccount = useServerFn(deleteUserAccount);
   const fetchRequests = useServerFn(listAllRequests);
   const reject = useServerFn(rejectRequest);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setMeEmail(data.user?.email ?? ""));
+  }, []);
 
   async function load() {
     setLoading(true);
@@ -154,21 +164,29 @@ function AdminUsuarios() {
           <button className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide" onClick={() => setBulkMode("passwords")}>
             <KeyRound className="h-4 w-4" /> Contraseñas + Excel
           </button>
-          <button className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide" onClick={() => setShowImport(true)}>
-            <Upload className="h-4 w-4" /> Importar Excel
-          </button>
-          <button className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide" onClick={() => setShowInvite(true)}>
-            <UserPlus className="h-4 w-4" /> Invitar responsable
-          </button>
-          <button className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide" onClick={() => setShowModal(true)}>
-            <Plus className="h-4 w-4" /> Nueva cuenta
-          </button>
+          {isBootstrap && (
+            <>
+              <button className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide" onClick={() => setShowImport(true)}>
+                <Upload className="h-4 w-4" /> Importar Excel
+              </button>
+              <button className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide" onClick={() => setShowInvite(true)}>
+                <UserPlus className="h-4 w-4" /> Invitar responsable
+              </button>
+              <button className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide" onClick={() => setShowModal(true)}>
+                <Plus className="h-4 w-4" /> Nueva cuenta
+              </button>
+              <button className="inline-flex items-center gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-400 px-4 py-2 text-xs font-bold text-uppercase-wide hover:bg-amber-500/20" onClick={() => setShowSuperAdmin(true)}>
+                <ShieldPlus className="h-4 w-4" /> Crear super admin
+              </button>
+            </>
+          )}
         </div>
       } />
 
       {showModal && <NewUserModal onClose={() => setShowModal(false)} onCreated={load} />}
       {showImport && <ImportUsersModal onClose={() => setShowImport(false)} onDone={load} />}
       {showInvite && <InviteResponsableModal onClose={() => setShowInvite(false)} onCreated={load} />}
+      {showSuperAdmin && <CreateSuperAdminModal onClose={() => setShowSuperAdmin(false)} onCreated={load} />}
       {invitePreset && <InviteResponsableModal preset={invitePreset} onClose={() => setInvitePreset(null)} onCreated={load} />}
       {approving && <ApproveRequestModal req={approving} onClose={() => setApproving(null)} onDone={load} />}
       {viewing && <UserActivityDrawer userId={viewing.id} userLabel={viewing.label} onClose={() => setViewing(null)} onChanged={load} />}
