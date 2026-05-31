@@ -50,11 +50,18 @@ function AdminUsuarios() {
   const [viewing, setViewing] = useState<{ id: string; label: string } | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [bulkMode, setBulkMode] = useState<"delete" | "passwords" | null>(null);
+  const [showSuperAdmin, setShowSuperAdmin] = useState(false);
+  const [meEmail, setMeEmail] = useState<string>("");
+  const isBootstrap = meEmail.toLowerCase() === BOOTSTRAP_ADMIN_EMAIL;
   const resetPwd = useServerFn(resetUserPassword);
   const setActive = useServerFn(setUserActive);
   const delAccount = useServerFn(deleteUserAccount);
   const fetchRequests = useServerFn(listAllRequests);
   const reject = useServerFn(rejectRequest);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setMeEmail(data.user?.email ?? ""));
+  }, []);
 
   async function load() {
     setLoading(true);
