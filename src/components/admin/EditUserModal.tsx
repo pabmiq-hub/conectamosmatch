@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { getUserForEdit, updateUserProfile, transferAccountAdmin } from "@/lib/admin-users.functions";
 import { scrapeProfileFromUrl } from "@/lib/scrape-profile.functions";
 import { MoveToAccountModal } from "@/components/admin/MoveToAccountModal";
+import { LogoUploader } from "@/components/dashboard/LogoUploader";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export function EditUserModal({ userId, onClose, onSaved }: { userId: string; onClose: () => void; onSaved?: () => void }) {
