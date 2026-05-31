@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { assertSuperAdmin } from "./admin-shared.server";
+import { assertSuperAdmin, assertBootstrapAdmin } from "./admin-shared.server";
 import { enrichAccountFromDomain } from "./firecrawl.server";
 
 const empresaSchema = z.object({
