@@ -140,7 +140,7 @@ export const inviteResponsable = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => inviteResponsableSchema.parse(input))
   .handler(async ({ data, context }) => {
-    await assertSuperAdmin(context.userId);
+    await assertBootstrapAdmin(context.userId);
 
     // Verify account exists
     const table = data.accountType === "empresa" ? "empresa_profiles" : "sponsor_profiles";
