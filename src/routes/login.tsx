@@ -77,7 +77,7 @@ function LoginPage() {
 
           <div className="mt-6 text-center text-xs text-muted-foreground">
             ¿Necesitas acceso? Contáctanos en{" "}
-            <a href="mailto:hola@conectamos.club" className="text-primary font-bold hover:underline">hola@conectamos.club</a>
+            <a href="mailto:marketing@conectamos.club" className="text-primary font-bold hover:underline">marketing@conectamos.club</a>
           </div>
         </div>
         <div className="mt-4 text-center">
