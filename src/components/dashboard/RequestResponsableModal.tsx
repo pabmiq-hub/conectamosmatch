@@ -48,6 +48,10 @@ export function RequestResponsableModal({ onClose, onCreated }: { onClose: () =>
             <label className="text-xs text-uppercase-wide text-muted-foreground">Teléfono</label>
             <input value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm" />
           </div>
+          <div>
+            <label className="text-xs text-uppercase-wide text-muted-foreground">Cargo *</label>
+            <input value={cargo} onChange={(e) => setCargo(e.target.value)} placeholder="p. ej. Directora de RRHH" className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm" />
+          </div>
           <button onClick={send} disabled={loading || !full_name || !email} className="w-full rounded-md bg-primary py-2.5 text-sm font-bold text-primary-foreground text-uppercase-wide disabled:opacity-50">
             {loading ? "Enviando…" : "Enviar solicitud"}
           </button>
