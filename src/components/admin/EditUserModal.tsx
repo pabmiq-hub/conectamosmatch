@@ -6,6 +6,7 @@ import { scrapeProfileFromUrl } from "@/lib/scrape-profile.functions";
 import { MoveToAccountModal } from "@/components/admin/MoveToAccountModal";
 import { LogoUploader } from "@/components/dashboard/LogoUploader";
 import { supabase } from "@/integrations/supabase/client";
+import { PRESET_SPONSOR_CATEGORIES } from "@/lib/sponsor-categories";
 import { toast } from "sonner";
 
 export function EditUserModal({ userId, onClose, onSaved }: { userId: string; onClose: () => void; onSaved?: () => void }) {
