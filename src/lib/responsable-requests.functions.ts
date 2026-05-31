@@ -172,6 +172,7 @@ export const approveRequest = createServerFn({ method: "POST" })
       email: req.email,
       full_name: req.full_name,
       phone: req.phone,
+      cargo: (req as any).cargo ?? null,
       role: req.account_type as "empresa" | "sponsor",
       account_id: req.account_id,
       account_role: "manager",
