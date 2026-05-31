@@ -46,12 +46,11 @@ function MisMatchesEmpresa() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {sorted.map((s) => (
             <PartnerCard key={s.user_id} name={s.company_name} description={s.description} logoUrl={s.logo_url} sector={s.sector}
-              recommended={String(s.sponsorship_level ?? "").toUpperCase() === "GOLD"}
               actions={<ActionButton icon={Eye} label="Ver" onClick={() => setSelected(s)} />} />
           ))}
         </div>
       )}
-      <PartnerDetailModal open={!!selected} onClose={() => setSelected(null)} partner={selected} hideLevel recommended={String((selected as any)?.sponsorship_level ?? "").toUpperCase() === "GOLD"} />
+      <PartnerDetailModal open={!!selected} onClose={() => setSelected(null)} partner={selected} hideLevel />
     </div>
   );
 }
