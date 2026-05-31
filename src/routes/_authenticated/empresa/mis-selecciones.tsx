@@ -112,7 +112,7 @@ function MisSeleccionesEmpresa() {
           </div>
         </>
       )}
-      <PartnerDetailModal open={!!selected} onClose={() => setSelected(null)} partner={selected} hideLevel recommended={String((selected as any)?.sponsorship_level ?? "").toUpperCase() === "GOLD"} />
+      <PartnerDetailModal open={!!selected} onClose={() => setSelected(null)} partner={selected} hideLevel />
     </div>
   );
 }
