@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { assertSuperAdmin } from "./admin-shared.server";
+import { enrichAccountFromDomain } from "./firecrawl.server";
 
 const empresaSchema = z.object({
   company_name: z.string().min(1).max(200),
@@ -74,6 +75,14 @@ async function createOne(d: z.infer<typeof createSchema>) {
     account_id: accountId,
     account_role: "owner",
   });
+
+  // Best-effort auto-enrichment from website / email domain (Firecrawl). Silent on failure.
+  if (accountId) {
+    const hintUrl = d.role === "empresa" ? d.empresa?.website : d.sponsor?.website;
+    try {
+      await enrichAccountFromDomain({ supabaseAdmin, accountId, kind: d.role, hintUrl, email: d.email });
+    } catch {}
+  }
 
   return userId;
 }
@@ -690,6 +699,20 @@ export const confirmGroupedImport = createServerFn({ method: "POST" })
         }
 
         created_accounts.push({ account_id: accountId, company_name: g.company_name, members });
+
+        // Best-effort Firecrawl enrichment using the owner's email domain or any provided website.
+        try {
+          const adminRow = data.rows_by_idx[String(g.admin_idx)];
+          const adminEmail: string | undefined = adminRow?.email;
+          const hintUrl: string | undefined = g.account_fields?.website || adminRow?.website;
+          await enrichAccountFromDomain({
+            supabaseAdmin,
+            accountId,
+            kind: g.account_type,
+            hintUrl: hintUrl ?? null,
+            email: adminEmail ?? null,
+          });
+        } catch {}
       } catch (e: any) {
         failed.push({ email: g.company_name, error: e?.message ?? "Error creando cuenta" });
       }
