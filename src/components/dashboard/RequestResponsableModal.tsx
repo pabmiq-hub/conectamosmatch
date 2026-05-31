@@ -9,13 +9,14 @@ export function RequestResponsableModal({ onClose, onCreated }: { onClose: () =>
   const [full_name, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [cargo, setCargo] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function send() {
     if (!full_name || !email) return;
     setLoading(true);
     try {
-      await submit({ data: { full_name, email, phone } });
+      await submit({ data: { full_name, email, phone, cargo } });
       toast.success("Solicitud enviada. El super administrador la revisará.");
       onCreated();
       onClose();
