@@ -247,6 +247,44 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
                   <label className="text-xs text-uppercase-wide text-muted-foreground">Descripción</label>
                   <textarea rows={3} value={f.description} onChange={(e) => set("description", e.target.value)} className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm" />
                 </div>
+                {role === "sponsor" && (
+                  <div className="mt-4">
+                    <label className="text-xs text-uppercase-wide text-muted-foreground">Retos que soluciona</label>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {PRESET_SPONSOR_CATEGORIES.map((c) => {
+                        const on = (f.categories ?? []).includes(c);
+                        return (
+                          <button type="button" key={c}
+                            onClick={() => set("categories", on ? f.categories.filter((x: string) => x !== c) : [...(f.categories ?? []), c])}
+                            className={`rounded-full border px-2.5 py-1 text-[11px] ${on ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-muted"}`}>
+                            {c}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {(f.categories ?? []).filter((c: string) => !PRESET_SPONSOR_CATEGORIES.includes(c as any)).length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {(f.categories ?? []).filter((c: string) => !PRESET_SPONSOR_CATEGORIES.includes(c as any)).map((c: string) => (
+                          <span key={c} className="inline-flex items-center gap-1 rounded-full border border-primary bg-primary/10 px-2.5 py-1 text-[11px] text-primary">
+                            {c}
+                            <button type="button" onClick={() => set("categories", f.categories.filter((x: string) => x !== c))} className="hover:text-foreground"><X className="h-3 w-3" /></button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="mt-2 flex gap-2">
+                      <input id="cat-other" placeholder="Añadir otro reto…" className="flex-1 rounded-md border border-border bg-input px-3 py-2 text-sm"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            const v = (e.currentTarget.value || "").trim();
+                            if (v && !(f.categories ?? []).includes(v)) set("categories", [...(f.categories ?? []), v]);
+                            e.currentTarget.value = "";
+                          }
+                        }} />
+                    </div>
+                  </div>
+                )}
               </section>
             )}
 
