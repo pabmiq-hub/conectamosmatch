@@ -1056,6 +1056,7 @@ export const updateUserProfile = createServerFn({ method: "POST" })
         if (data.account.linkedin_url !== undefined) patch.linkedin_url = data.account.linkedin_url;
         if (data.account.tagline !== undefined) patch.tagline = data.account.tagline;
         if (data.account.description !== undefined) patch.description = data.account.description;
+        if (data.account.logo_url !== undefined) patch.logo_url = data.account.logo_url;
         if (table === "empresa_profiles") {
           if (data.account.location_city !== undefined) patch.location_city = data.account.location_city;
           if (data.account.company_size !== undefined) patch.company_size = data.account.company_size;
