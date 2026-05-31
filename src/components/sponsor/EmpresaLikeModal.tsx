@@ -16,14 +16,29 @@ export function EmpresaLikeModal({
   const [mode, setMode] = useState<Mode>("choose");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [responsables, setResponsables] = useState<{ id: string; full_name: string | null; email: string | null; account_role: string }[]>([]);
+  const [responsables, setResponsables] = useState<{ id: string; full_name: string | null; email: string | null; account_role: string; cargo?: string | null }[]>([]);
   const [existing, setExisting] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    fetchResp({ data: { empresaUserId } }).then((r) => {
-      setResponsables(r.responsables as any);
-      setExisting(new Set(r.myExistingLikes));
+    fetchResp({ data: { empresaUserId } }).then(async (r) => {
+      const resp = r.responsables as any[];
+      const existingSet = new Set(r.myExistingLikes);
+      const eligible = resp.filter((x) => !existingSet.has(x.id)).map((x) => x.id);
+      // Auto-like when there is exactly one eligible responsable — skip the banner
+      if (eligible.length === 1) {
+        try {
+          const res = await like({ data: { responsableIds: eligible, eventId } });
+          toast.success(`💛 Like enviado a ${empresaName}`);
+          onDone?.();
+        } catch (e: any) {
+          toast.error(e?.message ?? "Error al dar like");
+        }
+        onClose();
+        return;
+      }
+      setResponsables(resp);
+      setExisting(existingSet);
       setLoading(false);
     }).catch((e: any) => { toast.error(e?.message ?? "Error"); onClose(); });
   }, [empresaUserId]);
