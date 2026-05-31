@@ -1085,7 +1085,7 @@ export const getUserForEdit = createServerFn({ method: "POST" })
     await assertSuperAdmin(context.userId);
     const { data: prof } = await supabaseAdmin
       .from("profiles")
-      .select("id, email, full_name, phone, role, account_id, account_role, is_active")
+      .select("id, email, full_name, phone, cargo, role, account_id, account_role, is_active")
       .eq("id", data.userId)
       .maybeSingle();
     if (!prof) throw new Response("Usuario no encontrado", { status: 404 });
