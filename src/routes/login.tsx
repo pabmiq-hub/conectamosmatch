@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/brand/Logo";
 import { toast } from "sonner";
 import { dashboardPathFor } from "@/lib/auth";
+import { Eye, EyeOff } from "lucide-react";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
