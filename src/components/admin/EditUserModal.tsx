@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { getUserForEdit, updateUserProfile, transferAccountAdmin } from "@/lib/admin-users.functions";
 import { scrapeProfileFromUrl } from "@/lib/scrape-profile.functions";
 import { MoveToAccountModal } from "@/components/admin/MoveToAccountModal";
+import { LogoUploader } from "@/components/dashboard/LogoUploader";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export function EditUserModal({ userId, onClose, onSaved }: { userId: string; onClose: () => void; onSaved?: () => void }) {
@@ -22,15 +24,18 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
   const [accountId, setAccountId] = useState<string | null>(null);
   const [accountName, setAccountName] = useState<string>("");
   const [hasAccount, setHasAccount] = useState(false);
+  const [adminUserId, setAdminUserId] = useState<string | null>(null);
   const [f, setF] = useState<any>({
     full_name: "", email: "", phone: "", is_active: true,
     company_name: "", sector: "", website: "", linkedin_url: "", tagline: "", description: "",
     location_city: "", company_size: "11-50",
     sponsorship_category: "", sponsorship_level: "BASIC",
+    logo_url: "",
   });
   const set = (k: string, v: any) => setF((p: any) => ({ ...p, [k]: v }));
 
   useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setAdminUserId(data.user?.id ?? null));
     fetchUser({ data: { userId } }).then(({ profile, account }) => {
       setRole(profile.role);
       setHasAccount(!!account);
@@ -52,6 +57,7 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
         company_size: account?.company_size ?? "11-50",
         sponsorship_category: account?.sponsorship_category ?? "",
         sponsorship_level: account?.sponsorship_level ?? "BASIC",
+        logo_url: account?.logo_url ?? "",
       });
       setScrapeUrl(account?.website ?? "");
       setLoading(false);
@@ -109,11 +115,13 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
                   company_name: f.company_name, sector: f.sector, website: f.website,
                   linkedin_url: f.linkedin_url, tagline: f.tagline, description: f.description,
                   location_city: f.location_city, company_size: f.company_size,
+                  logo_url: f.logo_url || null,
                 }
               : {
                   company_name: f.company_name, sector: f.sector, website: f.website,
                   linkedin_url: f.linkedin_url, tagline: f.tagline, description: f.description,
                   sponsorship_category: f.sponsorship_category, sponsorship_level: f.sponsorship_level,
+                  logo_url: f.logo_url || null,
                 }
             : undefined,
         },
@@ -203,6 +211,11 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-1.5">Solo rellena campos vacíos. Revisa los datos antes de guardar.</p>
                 </div>
+                {adminUserId && (
+                  <div className="mb-3">
+                    <LogoUploader userId={adminUserId} value={f.logo_url} onChange={(url) => set("logo_url", url ?? "")} />
+                  </div>
+                )}
                 <div className="grid md:grid-cols-2 gap-3">
                   <Field label="Nombre" value={f.company_name} onChange={(v) => set("company_name", v)} />
                   <Field label="Sector" value={f.sector} onChange={(v) => set("sector", v)} />

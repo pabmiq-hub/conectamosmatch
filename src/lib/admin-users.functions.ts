@@ -905,9 +905,28 @@ export const listEmpresaResponsables = createServerFn({ method: "POST" })
     // Use admin client to bypass RLS — sponsors need to see responsables of other accounts
     const { data: target } = await supabaseAdmin
       .from("profiles")
-      .select("account_id")
+      .select("account_id, role")
       .eq("id", data.empresaUserId)
       .maybeSingle();
+
+    // Helper to look up cargo from account's responsables jsonb by email match
+    async function loadCargoMap(accountId: string | null, role: string | null): Promise<Map<string, string>> {
+      const map = new Map<string, string>();
+      if (!accountId) return map;
+      const table = role === "sponsor" ? "sponsor_profiles" : "empresa_profiles";
+      const { data: acc } = await (supabaseAdmin.from(table) as any)
+        .select("responsables")
+        .eq("id", accountId)
+        .maybeSingle();
+      const list = Array.isArray(acc?.responsables) ? acc.responsables : [];
+      for (const r of list) {
+        const email = String(r?.email ?? "").trim().toLowerCase();
+        const cargo = String(r?.role ?? "").trim();
+        if (email && cargo) map.set(email, cargo);
+      }
+      return map;
+    }
+
     if (!target?.account_id) {
       const { data: solo } = await supabaseAdmin
         .from("profiles")
@@ -917,7 +936,10 @@ export const listEmpresaResponsables = createServerFn({ method: "POST" })
       const myLikesSolo = solo
         ? await supabaseAdmin.from("likes").select("to_user_id").eq("from_user_id", userId).eq("to_user_id", solo.id)
         : { data: [] as any[] };
-      return { responsables: solo ? [solo] : [], myExistingLikes: (myLikesSolo.data ?? []).map((l: any) => l.to_user_id) };
+      return {
+        responsables: solo ? [{ ...solo, cargo: null }] : [],
+        myExistingLikes: (myLikesSolo.data ?? []).map((l: any) => l.to_user_id),
+      };
     }
     const { data: members } = await supabaseAdmin
       .from("profiles")
@@ -926,13 +948,18 @@ export const listEmpresaResponsables = createServerFn({ method: "POST" })
       .eq("is_active", true);
     const ids = (members ?? []).map((m: any) => m.id);
     if (!ids.length) return { responsables: [], myExistingLikes: [] as string[] };
+    const cargoMap = await loadCargoMap(target.account_id, target.role);
+    const enriched = (members ?? []).map((m: any) => ({
+      ...m,
+      cargo: cargoMap.get(String(m.email ?? "").trim().toLowerCase()) ?? null,
+    }));
     const { data: myLikes } = await supabaseAdmin
       .from("likes")
       .select("to_user_id")
       .eq("from_user_id", userId)
       .in("to_user_id", ids);
     return {
-      responsables: members ?? [],
+      responsables: enriched,
       myExistingLikes: (myLikes ?? []).map((l: any) => l.to_user_id),
     };
   });
@@ -985,6 +1012,7 @@ const editUserSchema = z.object({
       company_size: z.enum(["1-10", "11-50", "51-200", "201-500", "500+"]).optional(),
       sponsorship_category: z.string().max(120).optional(),
       sponsorship_level: z.enum(["GOLD", "PREMIUM", "BASIC", "STARTUP"]).optional(),
+      logo_url: z.string().max(1000).nullable().optional(),
     })
     .optional(),
 });
@@ -1028,6 +1056,7 @@ export const updateUserProfile = createServerFn({ method: "POST" })
         if (data.account.linkedin_url !== undefined) patch.linkedin_url = data.account.linkedin_url;
         if (data.account.tagline !== undefined) patch.tagline = data.account.tagline;
         if (data.account.description !== undefined) patch.description = data.account.description;
+        if (data.account.logo_url !== undefined) patch.logo_url = data.account.logo_url;
         if (table === "empresa_profiles") {
           if (data.account.location_city !== undefined) patch.location_city = data.account.location_city;
           if (data.account.company_size !== undefined) patch.company_size = data.account.company_size;
