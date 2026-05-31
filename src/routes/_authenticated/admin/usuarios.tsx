@@ -275,17 +275,19 @@ function AdminUsuarios() {
           })}
 
           {grouped.admins.length > 0 && (
-            <div className="rounded-xl border border-border bg-card overflow-hidden">
-              <div className="border-b border-border bg-muted/30 px-4 py-2 text-[10px] font-bold text-uppercase-wide text-muted-foreground flex items-center gap-2"><Shield className="h-3.5 w-3.5" /> Super administradores</div>
-              <ul className="divide-y divide-border">
+            <div className="font-sans rounded-xl border bg-card overflow-hidden" style={{ borderColor: "#E5E7EB" }}>
+              <div className="border-b px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide flex items-center gap-2" style={{ borderColor: "#E5E7EB", color: "#6B7280", backgroundColor: "#F9FAFB" }}>
+                <Shield className="h-3.5 w-3.5" /> Super administradores
+              </div>
+              <ul className="divide-y" style={{ borderColor: "#E5E7EB" }}>
                 {grouped.admins.map((p) => (
-                  <li key={p.id} onClick={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Admin" })} className="flex items-center gap-3 px-4 py-3 text-sm cursor-pointer hover:bg-muted/30 transition-colors">
-                    <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center"><Shield className="h-4 w-4 text-primary" /></div>
+                  <li key={p.id} onClick={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Admin" })} className="flex items-center gap-4 px-4 py-4 cursor-pointer hover:bg-muted/30 transition-colors">
+                    <div className="h-9 w-9 rounded-md bg-primary/10 flex items-center justify-center shrink-0"><Shield className="h-4 w-4 text-primary" /></div>
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-xs truncate">{p.full_name ?? p.email}</div>
-                      <div className="text-[11px] text-muted-foreground truncate">{p.email}</div>
+                      <div className="text-[16px] font-semibold leading-tight truncate" style={{ color: "#111827" }}>{p.full_name ?? p.email}</div>
+                      <div className="text-[13px] font-normal truncate mt-0.5" style={{ color: "#6B7280" }}>{p.email}</div>
                     </div>
-                    <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">Super Admin</span>
+                    <span className="rounded-full bg-primary/10 text-primary px-2.5 py-1 text-[12px] font-medium">Super Admin</span>
                     <RowActions p={p} onReset={onReset} onToggle={onToggle} onDelete={onDelete} onView={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Admin" })} onEdit={() => setEditing(p.id)} />
                   </li>
                 ))}
@@ -294,14 +296,14 @@ function AdminUsuarios() {
           )}
 
           {grouped.orphans.length > 0 && (
-            <div className="rounded-xl border border-dashed border-border bg-card overflow-hidden">
-              <div className="border-b border-border bg-muted/30 px-4 py-2 text-[10px] font-bold text-uppercase-wide text-muted-foreground">Sin cuenta asociada</div>
-              <ul className="divide-y divide-border">
+            <div className="font-sans rounded-xl border border-dashed bg-card overflow-hidden" style={{ borderColor: "#E5E7EB" }}>
+              <div className="border-b px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide" style={{ borderColor: "#E5E7EB", color: "#6B7280", backgroundColor: "#F9FAFB" }}>Sin cuenta asociada</div>
+              <ul className="divide-y" style={{ borderColor: "#E5E7EB" }}>
                 {grouped.orphans.map((p) => (
-                  <li key={p.id} onClick={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Usuario" })} className="flex items-center gap-3 px-4 py-3 text-sm cursor-pointer hover:bg-muted/30 transition-colors">
+                  <li key={p.id} onClick={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Usuario" })} className="flex items-center gap-4 px-4 py-4 cursor-pointer hover:bg-muted/30 transition-colors">
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-xs truncate">{p.full_name ?? p.email}</div>
-                      <div className="text-[11px] text-muted-foreground truncate">{p.email} · rol {p.role}</div>
+                      <div className="text-[16px] font-semibold leading-tight truncate" style={{ color: "#111827" }}>{p.full_name ?? p.email}</div>
+                      <div className="text-[13px] font-normal truncate mt-0.5" style={{ color: "#6B7280" }}>{p.email} · rol {p.role}</div>
                     </div>
                     <RowActions p={p} onReset={onReset} onToggle={onToggle} onDelete={onDelete} onView={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Usuario" })} onEdit={() => setEditing(p.id)} />
                   </li>
