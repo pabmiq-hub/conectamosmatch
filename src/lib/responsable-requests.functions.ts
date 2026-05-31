@@ -93,7 +93,7 @@ export const listMyAccountRequests = createServerFn({ method: "GET" })
     if (!me?.account_id) return [];
     const { data } = await supabase
       .from("responsable_requests")
-      .select("id, full_name, email, phone, status, rejection_reason, created_at, reviewed_at")
+      .select("id, full_name, email, phone, cargo, status, rejection_reason, created_at, reviewed_at")
       .eq("account_id", me.account_id)
       .order("created_at", { ascending: false });
     return data ?? [];
