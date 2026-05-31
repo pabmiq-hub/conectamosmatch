@@ -91,9 +91,39 @@ export const createUserAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => createSchema.parse(input))
   .handler(async ({ data, context }) => {
-    await assertSuperAdmin(context.userId);
+    await assertBootstrapAdmin(context.userId);
     const userId = await createOne(data);
     return { userId, email: data.email };
+  });
+
+// ---- Super admin creation (bootstrap only) ----
+const createSuperAdminSchema = z.object({
+  full_name: z.string().min(1).max(200),
+  email: z.string().email().max(200),
+  password: z.string().min(8).max(100),
+});
+
+export const createSuperAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => createSuperAdminSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertBootstrapAdmin(context.userId);
+    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
+      email: data.email,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: { full_name: data.full_name, role: "super_admin" },
+    });
+    if (error || !created.user) throw new Response(error?.message ?? "No se pudo crear", { status: 400 });
+    await supabaseAdmin.from("profiles").upsert({
+      id: created.user.id,
+      email: data.email,
+      full_name: data.full_name,
+      role: "super_admin",
+      account_id: null,
+      account_role: null,
+    });
+    return { userId: created.user.id, email: data.email };
   });
 
 // Add a "manager" responsable to an existing account
