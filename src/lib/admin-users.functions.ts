@@ -730,19 +730,9 @@ export const confirmGroupedImport = createServerFn({ method: "POST" })
 
         created_accounts.push({ account_id: accountId, company_name: g.company_name, members });
 
-        // Best-effort Firecrawl enrichment using the owner's email domain or any provided website.
-        try {
-          const adminRow = data.rows_by_idx[String(g.admin_idx)];
-          const adminEmail: string | undefined = adminRow?.email;
-          const hintUrl: string | undefined = g.account_fields?.website || adminRow?.website;
-          await enrichAccountFromDomain({
-            supabaseAdmin,
-            accountId,
-            kind: g.account_type,
-            hintUrl: hintUrl ?? null,
-            email: adminEmail ?? null,
-          });
-        } catch {}
+        // NOTE: Firecrawl enrichment is intentionally skipped during bulk import
+        // because each scrape takes 10-30s and would time out the worker on large
+        // imports. It can be triggered per-account later from the user edit modal.
       } catch (e: any) {
         failed.push({ email: g.company_name, error: e?.message ?? "Error creando cuenta" });
       }
