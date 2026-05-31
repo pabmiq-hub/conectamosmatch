@@ -35,7 +35,7 @@ export function InviteResponsableModal({ onClose, onCreated, preset }: { onClose
     if (!accountId || !full_name || !email || password.length < 8) return;
     setLoading(true);
     try {
-      await invite({ data: { accountId, accountType, full_name, email, password, phone } });
+      await invite({ data: { accountId, accountType, full_name, email, password, phone, cargo } });
       toast.success("Responsable invitado. Comparte las credenciales por tu canal.");
       onCreated();
       onClose();
