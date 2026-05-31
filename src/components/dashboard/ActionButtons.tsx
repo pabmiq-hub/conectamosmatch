@@ -67,7 +67,7 @@ export function LikeButton({
     <>
       <ActionButton
         icon={Heart}
-        label={liked ? "LIKED" : "MATCH"}
+        label={liked ? "LIKED" : "ME INTERESA"}
         onClick={onClick}
         variant={liked ? "ghost" : "primary"}
         disabled={busy || disabled}
