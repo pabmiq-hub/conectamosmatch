@@ -25,8 +25,10 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 const inputCls = "w-full rounded-md border border-border bg-background px-3 py-2 text-sm";
 
 function MiFichaEmpresa() {
-  const [form, setForm] = useState<any>({ company_name: "", tagline: "", description: "", sector: "", company_size: "", website: "", logo_url: "", location_city: "", linkedin_url: "", looking_for: "", tags: "", responsables: [] as Responsable[] });
+  const [form, setForm] = useState<any>({ id: null, company_name: "", tagline: "", description: "", sector: "", company_size: "", website: "", logo_url: "", location_city: "", linkedin_url: "", looking_for: "", tags: "", responsables: [] as Responsable[] });
   const [userId, setUserId] = useState<string | null>(null);
+  const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
+  const [accountId, setAccountId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -34,16 +36,45 @@ function MiFichaEmpresa() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
-      const { data } = await supabase.from("empresa_profiles").select("*").eq("user_id", user.id).maybeSingle();
-      if (data) setForm({ ...data, tags: (data.tags ?? []).join(", "), responsables: (data as any).responsables ?? [] });
+      const { data: prof } = await supabase.from("profiles").select("account_id").eq("id", user.id).maybeSingle();
+      const accId = prof?.account_id ?? null;
+      setAccountId(accId);
+      const query = accId
+        ? supabase.from("empresa_profiles").select("*").eq("id", accId).maybeSingle()
+        : supabase.from("empresa_profiles").select("*").eq("user_id", user.id).maybeSingle();
+      const { data } = await query;
+      if (data) {
+        setOwnerUserId((data as any).user_id ?? null);
+        setForm({ ...data, tags: (data.tags ?? []).join(", "), responsables: (data as any).responsables ?? [] });
+      }
     })();
   }, []);
 
   async function save() {
     if (!userId) return;
     setBusy(true);
-    const payload = { ...form, user_id: userId, tags: form.tags ? form.tags.split(",").map((t: string) => t.trim()).filter(Boolean) : [], responsables: form.responsables ?? [] };
-    const { error } = await supabase.from("empresa_profiles").upsert(payload, { onConflict: "user_id" });
+    const tags = form.tags ? form.tags.split(",").map((t: string) => t.trim()).filter(Boolean) : [];
+    const baseFields = {
+      company_name: form.company_name,
+      tagline: form.tagline,
+      description: form.description,
+      sector: form.sector,
+      company_size: form.company_size || null,
+      website: form.website,
+      logo_url: form.logo_url,
+      location_city: form.location_city,
+      linkedin_url: form.linkedin_url,
+      looking_for: form.looking_for,
+      tags,
+      responsables: form.responsables ?? [],
+    };
+    let error;
+    if (form.id) {
+      // Update existing row by id (RLS allows: auth.uid = user_id OR id = my_account_id())
+      ({ error } = await supabase.from("empresa_profiles").update(baseFields).eq("id", form.id));
+    } else {
+      ({ error } = await supabase.from("empresa_profiles").insert({ ...baseFields, user_id: userId }));
+    }
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Ficha guardada");

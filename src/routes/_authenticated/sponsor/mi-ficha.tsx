@@ -35,9 +35,10 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 const inputCls = "w-full rounded-md border border-border bg-background px-3 py-2 text-sm";
 
 function MiFichaSponsor() {
-  const [form, setForm] = useState<any>({ company_name: "", tagline: "", description: "", website: "", logo_url: "", linkedin_url: "", categories: [] as string[], responsables: [] as Responsable[] });
+  const [form, setForm] = useState<any>({ id: null, company_name: "", tagline: "", description: "", website: "", logo_url: "", linkedin_url: "", categories: [] as string[], responsables: [] as Responsable[] });
   const [level, setLevel] = useState("BASIC");
   const [userId, setUserId] = useState<string | null>(null);
+  const [accountId, setAccountId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [customDraft, setCustomDraft] = useState("");
 
@@ -46,9 +47,16 @@ function MiFichaSponsor() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
-      const { data } = await supabase.from("sponsor_profiles").select("*").eq("user_id", user.id).maybeSingle();
+      const { data: prof } = await supabase.from("profiles").select("account_id").eq("id", user.id).maybeSingle();
+      const accId = prof?.account_id ?? null;
+      setAccountId(accId);
+      const query = accId
+        ? supabase.from("sponsor_profiles").select("*").eq("id", accId).maybeSingle()
+        : supabase.from("sponsor_profiles").select("*").eq("user_id", user.id).maybeSingle();
+      const { data } = await query;
       if (data) {
         setForm({
+          id: (data as any).id ?? null,
           company_name: data.company_name ?? "",
           tagline: data.tagline ?? "",
           description: data.description ?? "",
@@ -86,8 +94,7 @@ function MiFichaSponsor() {
   async function save() {
     if (!userId) return;
     setBusy(true);
-    const payload = {
-      user_id: userId,
+    const baseFields = {
       company_name: form.company_name,
       tagline: form.tagline,
       description: form.description,
@@ -97,7 +104,12 @@ function MiFichaSponsor() {
       categories: form.categories,
       responsables: form.responsables ?? [],
     };
-    const { error } = await supabase.from("sponsor_profiles").upsert(payload, { onConflict: "user_id" });
+    let error;
+    if (form.id) {
+      ({ error } = await supabase.from("sponsor_profiles").update(baseFields).eq("id", form.id));
+    } else {
+      ({ error } = await supabase.from("sponsor_profiles").insert({ ...baseFields, user_id: userId }));
+    }
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Ficha guardada");

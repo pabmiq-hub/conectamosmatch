@@ -870,31 +870,32 @@ export const listEmpresaResponsables = createServerFn({ method: "POST" })
     z.object({ empresaUserId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    const { data: target } = await supabase
+    const { userId } = context;
+    // Use admin client to bypass RLS — sponsors need to see responsables of other accounts
+    const { data: target } = await supabaseAdmin
       .from("profiles")
       .select("account_id")
       .eq("id", data.empresaUserId)
       .maybeSingle();
     if (!target?.account_id) {
-      const { data: solo } = await supabase
+      const { data: solo } = await supabaseAdmin
         .from("profiles")
         .select("id, full_name, email, account_role")
         .eq("id", data.empresaUserId)
         .maybeSingle();
       const myLikesSolo = solo
-        ? await supabase.from("likes").select("to_user_id").eq("from_user_id", userId).eq("to_user_id", solo.id)
+        ? await supabaseAdmin.from("likes").select("to_user_id").eq("from_user_id", userId).eq("to_user_id", solo.id)
         : { data: [] as any[] };
       return { responsables: solo ? [solo] : [], myExistingLikes: (myLikesSolo.data ?? []).map((l: any) => l.to_user_id) };
     }
-    const { data: members } = await supabase
+    const { data: members } = await supabaseAdmin
       .from("profiles")
       .select("id, full_name, email, account_role")
       .eq("account_id", target.account_id)
       .eq("is_active", true);
     const ids = (members ?? []).map((m: any) => m.id);
     if (!ids.length) return { responsables: [], myExistingLikes: [] as string[] };
-    const { data: myLikes } = await supabase
+    const { data: myLikes } = await supabaseAdmin
       .from("likes")
       .select("to_user_id")
       .eq("from_user_id", userId)

@@ -78,7 +78,6 @@ function VerSponsors() {
             description={s.description}
             logoUrl={s.logo_url}
             sector={s.sector}
-            recommended={String(s.sponsorship_level ?? "").toUpperCase() === "GOLD"}
             actions={
               <>
                 <ActionButton icon={Eye} label="Ver" onClick={() => setSelected(s)} />
@@ -89,7 +88,7 @@ function VerSponsors() {
         ))}
         {filtered.length === 0 && <div className="col-span-full text-center text-sm text-muted-foreground py-12">No hay soluciones que coincidan con tu búsqueda.</div>}
       </div>
-      <PartnerDetailModal open={!!selected} onClose={() => setSelected(null)} partner={selected} hideLevel recommended={String((selected as any)?.sponsorship_level ?? "").toUpperCase() === "GOLD"} />
+      <PartnerDetailModal open={!!selected} onClose={() => setSelected(null)} partner={selected} hideLevel />
     </div>
   );
 }
