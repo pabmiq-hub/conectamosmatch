@@ -131,6 +131,7 @@ export function EmpresaLikeModal({
                     />
                     <div className="min-w-0 flex-1">
                       <div className="font-medium text-xs truncate">{r.full_name ?? r.email}</div>
+                      {r.cargo && <div className="text-[10px] text-foreground/70 truncate">{r.cargo}</div>}
                       <div className="text-[10px] text-muted-foreground truncate">{r.email}</div>
                     </div>
                     {r.account_role === "owner" && <span className="text-[9px] font-bold text-primary rounded-full bg-primary/10 px-2 py-0.5 text-uppercase-wide">Admin</span>}
