@@ -11,6 +11,7 @@ export interface PartnerDetail {
   location_city?: string | null;
   company_size?: string | null;
   sponsorship_level?: string | null;
+  categories?: string[] | null;
   responsables?: { full_name: string; role: string }[] | null;
 }
 
@@ -72,6 +73,18 @@ export function PartnerDetailModal({ open, onClose, partner, hideLevel, recommen
               <p className="text-sm text-foreground/90">{partner.company_size} empleados</p>
             </div>
           )}
+
+          {Array.isArray(partner.categories) && partner.categories.length > 0 && (
+            <div>
+              <h3 className="text-[10px] text-uppercase-wide font-bold text-muted-foreground mb-1.5">Retos solucionados</h3>
+              <div className="flex flex-wrap gap-1.5">
+                {partner.categories.map((c) => (
+                  <span key={c} className="rounded-full border border-border bg-muted/40 px-2.5 py-1 text-[11px] text-foreground/90">{c}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
 
           <div>
             <h3 className="text-[10px] text-uppercase-wide font-bold text-muted-foreground mb-2">Responsables</h3>

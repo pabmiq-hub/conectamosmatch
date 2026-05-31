@@ -6,6 +6,7 @@ import { scrapeProfileFromUrl } from "@/lib/scrape-profile.functions";
 import { MoveToAccountModal } from "@/components/admin/MoveToAccountModal";
 import { LogoUploader } from "@/components/dashboard/LogoUploader";
 import { supabase } from "@/integrations/supabase/client";
+import { PRESET_SPONSOR_CATEGORIES } from "@/lib/sponsor-categories";
 import { toast } from "sonner";
 
 export function EditUserModal({ userId, onClose, onSaved }: { userId: string; onClose: () => void; onSaved?: () => void }) {
@@ -26,10 +27,11 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
   const [hasAccount, setHasAccount] = useState(false);
   const [adminUserId, setAdminUserId] = useState<string | null>(null);
   const [f, setF] = useState<any>({
-    full_name: "", email: "", phone: "", is_active: true,
+    full_name: "", email: "", phone: "", cargo: "", is_active: true,
     company_name: "", sector: "", website: "", linkedin_url: "", tagline: "", description: "",
     location_city: "", company_size: "11-50",
     sponsorship_category: "", sponsorship_level: "BASIC",
+    categories: [] as string[],
     logo_url: "",
   });
   const set = (k: string, v: any) => setF((p: any) => ({ ...p, [k]: v }));
@@ -46,6 +48,7 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
         full_name: profile.full_name ?? "",
         email: profile.email ?? "",
         phone: profile.phone ?? "",
+        cargo: (profile as any).cargo ?? "",
         is_active: profile.is_active ?? true,
         company_name: account?.company_name ?? "",
         sector: account?.sector ?? "",
@@ -57,6 +60,7 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
         company_size: account?.company_size ?? "11-50",
         sponsorship_category: account?.sponsorship_category ?? "",
         sponsorship_level: account?.sponsorship_level ?? "BASIC",
+        categories: (account as any)?.categories ?? [],
         logo_url: account?.logo_url ?? "",
       });
       setScrapeUrl(account?.website ?? "");
@@ -108,8 +112,9 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
           full_name: f.full_name,
           email: f.email,
           phone: f.phone,
+          cargo: f.cargo || null,
           is_active: !!f.is_active,
-          account: hasAccount
+          account: hasAccount && accountRole === "owner"
             ? role === "empresa"
               ? {
                   company_name: f.company_name, sector: f.sector, website: f.website,
@@ -121,6 +126,7 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
                   company_name: f.company_name, sector: f.sector, website: f.website,
                   linkedin_url: f.linkedin_url, tagline: f.tagline, description: f.description,
                   sponsorship_category: f.sponsorship_category, sponsorship_level: f.sponsorship_level,
+                  categories: f.categories,
                   logo_url: f.logo_url || null,
                 }
             : undefined,
@@ -152,6 +158,9 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
                 <Field label="Nombre completo *" value={f.full_name} onChange={(v) => set("full_name", v)} />
                 <Field label="Email *" type="email" value={f.email} onChange={(v) => set("email", v)} />
                 <Field label="Teléfono" value={f.phone} onChange={(v) => set("phone", v)} />
+                {role !== "super_admin" && (
+                  <Field label="Cargo" value={f.cargo} onChange={(v) => set("cargo", v)} />
+                )}
                 <div>
                   <label className="text-xs text-uppercase-wide text-muted-foreground">Estado</label>
                   <select value={f.is_active ? "1" : "0"} onChange={(e) => set("is_active", e.target.value === "1")} className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
@@ -194,7 +203,7 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
 
 
 
-            {hasAccount && role !== "super_admin" && (
+            {hasAccount && role !== "super_admin" && accountRole === "owner" && (
               <section>
                 <h3 className="text-[11px] font-bold text-uppercase-wide text-muted-foreground mb-2">Datos de la cuenta ({role})</h3>
                 <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 mb-3">
@@ -238,6 +247,44 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
                   <label className="text-xs text-uppercase-wide text-muted-foreground">Descripción</label>
                   <textarea rows={3} value={f.description} onChange={(e) => set("description", e.target.value)} className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm" />
                 </div>
+                {role === "sponsor" && (
+                  <div className="mt-4">
+                    <label className="text-xs text-uppercase-wide text-muted-foreground">Retos que soluciona</label>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {PRESET_SPONSOR_CATEGORIES.map((c) => {
+                        const on = (f.categories ?? []).includes(c);
+                        return (
+                          <button type="button" key={c}
+                            onClick={() => set("categories", on ? f.categories.filter((x: string) => x !== c) : [...(f.categories ?? []), c])}
+                            className={`rounded-full border px-2.5 py-1 text-[11px] ${on ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-muted"}`}>
+                            {c}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {(f.categories ?? []).filter((c: string) => !PRESET_SPONSOR_CATEGORIES.includes(c as any)).length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {(f.categories ?? []).filter((c: string) => !PRESET_SPONSOR_CATEGORIES.includes(c as any)).map((c: string) => (
+                          <span key={c} className="inline-flex items-center gap-1 rounded-full border border-primary bg-primary/10 px-2.5 py-1 text-[11px] text-primary">
+                            {c}
+                            <button type="button" onClick={() => set("categories", f.categories.filter((x: string) => x !== c))} className="hover:text-foreground"><X className="h-3 w-3" /></button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="mt-2 flex gap-2">
+                      <input id="cat-other" placeholder="Añadir otro reto…" className="flex-1 rounded-md border border-border bg-input px-3 py-2 text-sm"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            const v = (e.currentTarget.value || "").trim();
+                            if (v && !(f.categories ?? []).includes(v)) set("categories", [...(f.categories ?? []), v]);
+                            e.currentTarget.value = "";
+                          }
+                        }} />
+                    </div>
+                  </div>
+                )}
               </section>
             )}
 

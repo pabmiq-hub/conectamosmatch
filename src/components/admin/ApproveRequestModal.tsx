@@ -42,6 +42,7 @@ export function ApproveRequestModal({ req, onClose, onDone }: { req: Responsable
           <div><span className="text-muted-foreground text-xs">Cuenta:</span> <span className="font-bold">{req.account_name}</span> <span className="text-[10px] text-muted-foreground">({req.account_type})</span></div>
           <div><span className="text-muted-foreground text-xs">Nombre:</span> {req.full_name}</div>
           <div><span className="text-muted-foreground text-xs">Email:</span> {req.email}</div>
+          {(req as any).cargo && <div><span className="text-muted-foreground text-xs">Cargo:</span> {(req as any).cargo}</div>}
           {req.phone && <div><span className="text-muted-foreground text-xs">Teléfono:</span> {req.phone}</div>}
         </div>
         <div>

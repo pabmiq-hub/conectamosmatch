@@ -14,6 +14,7 @@ export interface ResponsableRequest {
   full_name: string;
   email: string;
   phone: string | null;
+  cargo?: string | null;
   status: "pending" | "approved" | "rejected" | "cancelled";
   rejection_reason: string | null;
   reviewed_at: string | null;
@@ -24,6 +25,7 @@ const createSchema = z.object({
   full_name: z.string().min(1).max(200),
   email: z.string().email().max(200),
   phone: z.string().max(40).optional().default(""),
+  cargo: z.string().max(120).optional().default(""),
 });
 
 export const requestResponsable = createServerFn({ method: "POST" })
@@ -57,6 +59,7 @@ export const requestResponsable = createServerFn({ method: "POST" })
       full_name: data.full_name,
       email: data.email,
       phone: data.phone || null,
+      cargo: data.cargo || null,
     });
     if (error) throw new Error(error.message);
 
@@ -91,7 +94,7 @@ export const listMyAccountRequests = createServerFn({ method: "GET" })
     if (!me?.account_id) return [];
     const { data } = await supabase
       .from("responsable_requests")
-      .select("id, full_name, email, phone, status, rejection_reason, created_at, reviewed_at")
+      .select("id, full_name, email, phone, cargo, status, rejection_reason, created_at, reviewed_at")
       .eq("account_id", me.account_id)
       .order("created_at", { ascending: false });
     return data ?? [];
@@ -170,6 +173,7 @@ export const approveRequest = createServerFn({ method: "POST" })
       email: req.email,
       full_name: req.full_name,
       phone: req.phone,
+      cargo: (req as any).cargo ?? null,
       role: req.account_type as "empresa" | "sponsor",
       account_id: req.account_id,
       account_role: "manager",

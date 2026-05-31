@@ -47,7 +47,7 @@ function VerEmpresasSponsor() {
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     if (!term) return items;
-    return items.filter((e) => `${e.company_name ?? ""} ${e.sector ?? ""} ${e.location_city ?? ""}`.toLowerCase().includes(term));
+    return items.filter((e) => String(e.company_name ?? "").toLowerCase().includes(term));
   }, [items, q]);
 
   return (
@@ -59,7 +59,7 @@ function VerEmpresasSponsor() {
       } />
       <div className="relative max-w-md">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar empresa por nombre, sector o ciudad…" className="w-full rounded-md border border-border bg-card pl-9 pr-3 py-2 text-sm" />
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar empresa por nombre…" className="w-full rounded-md border border-border bg-card pl-9 pr-3 py-2 text-sm" />
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filtered.map((e) => {

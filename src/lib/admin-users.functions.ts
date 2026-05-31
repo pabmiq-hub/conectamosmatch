@@ -134,6 +134,7 @@ const inviteResponsableSchema = z.object({
   email: z.string().email().max(200),
   password: z.string().min(8).max(100),
   phone: z.string().max(40).optional().default(""),
+  cargo: z.string().max(120).optional().default(""),
 });
 
 export const inviteResponsable = createServerFn({ method: "POST" })
@@ -165,6 +166,7 @@ export const inviteResponsable = createServerFn({ method: "POST" })
       email: data.email,
       full_name: data.full_name,
       phone: data.phone,
+      cargo: data.cargo || null,
       role: data.accountType,
       account_id: data.accountId,
       account_role: "manager",
@@ -998,6 +1000,7 @@ const editUserSchema = z.object({
   full_name: z.string().min(1).max(200),
   email: z.string().email().max(200),
   phone: z.string().max(40).optional().default(""),
+  cargo: z.string().max(120).nullable().optional(),
   is_active: z.boolean().optional(),
   // account fields (apply only if the user is owner of an account)
   account: z
@@ -1012,6 +1015,7 @@ const editUserSchema = z.object({
       company_size: z.enum(["1-10", "11-50", "51-200", "201-500", "500+"]).optional(),
       sponsorship_category: z.string().max(120).optional(),
       sponsorship_level: z.enum(["GOLD", "PREMIUM", "BASIC", "STARTUP"]).optional(),
+      categories: z.array(z.string().max(200)).max(40).optional(),
       logo_url: z.string().max(1000).nullable().optional(),
     })
     .optional(),
@@ -1042,6 +1046,7 @@ export const updateUserProfile = createServerFn({ method: "POST" })
         full_name: data.full_name,
         email: data.email,
         phone: data.phone,
+        ...(data.cargo !== undefined ? { cargo: data.cargo } : {}),
         ...(typeof data.is_active === "boolean" ? { is_active: data.is_active } : {}),
       })
       .eq("id", data.userId);
@@ -1063,6 +1068,7 @@ export const updateUserProfile = createServerFn({ method: "POST" })
         } else {
           if (data.account.sponsorship_category !== undefined) patch.sponsorship_category = data.account.sponsorship_category;
           if (data.account.sponsorship_level !== undefined) patch.sponsorship_level = data.account.sponsorship_level;
+          if (data.account.categories !== undefined) patch.categories = data.account.categories;
         }
         if (Object.keys(patch).length) {
           await (supabaseAdmin.from(table) as any).update(patch).eq("id", prof.account_id);
@@ -1079,7 +1085,7 @@ export const getUserForEdit = createServerFn({ method: "POST" })
     await assertSuperAdmin(context.userId);
     const { data: prof } = await supabaseAdmin
       .from("profiles")
-      .select("id, email, full_name, phone, role, account_id, account_role, is_active")
+      .select("id, email, full_name, phone, cargo, role, account_id, account_role, is_active")
       .eq("id", data.userId)
       .maybeSingle();
     if (!prof) throw new Response("Usuario no encontrado", { status: 404 });
