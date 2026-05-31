@@ -1,41 +1,10 @@
 import { useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Menu, X, LogOut, LayoutDashboard, User, Search, Users, Heart, Calendar, Megaphone, ClipboardList, Settings, Building2, UsersRound, Shield } from "lucide-react";
+import { Menu, X, LogOut, Settings, Shield } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { NotificationsBell } from "@/components/dashboard/NotificationsBell";
 import { signOut, type AppRole } from "@/lib/auth";
-
-const navByRole: Record<AppRole, { to: string; label: string; icon: typeof LayoutDashboard }[]> = {
-  super_admin: [
-    { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
-    { to: "/admin/usuarios", label: "Usuarios", icon: Users },
-    { to: "/admin/eventos", label: "Eventos", icon: Calendar },
-    { to: "/admin/matches", label: "Matches", icon: Heart },
-    { to: "/admin/reuniones", label: "Reuniones 1to1", icon: ClipboardList },
-    { to: "/admin/tablon", label: "Tablón", icon: Megaphone },
-  ],
-  empresa: [
-    { to: "/empresa/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { to: "/empresa/mi-ficha", label: "Mi Ficha", icon: User },
-    { to: "/empresa/ver-sponsors", label: "Ver Soluciones", icon: Search },
-    { to: "/empresa/ver-empresas", label: "Ver Empresas", icon: Building2 },
-    { to: "/empresa/mis-matches", label: "Mis Matches", icon: Heart },
-    { to: "/empresa/reuniones-1to1", label: "Reuniones 1to1", icon: ClipboardList },
-    { to: "/empresa/equipo", label: "Mi Equipo", icon: UsersRound },
-    { to: "/empresa/tablon", label: "Tablón", icon: Megaphone },
-    { to: "/empresa/agenda", label: "Agenda", icon: Calendar },
-  ],
-  sponsor: [
-    { to: "/sponsor/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { to: "/sponsor/mi-ficha", label: "Mi Ficha", icon: User },
-    { to: "/sponsor/ver-empresas", label: "Ver Empresas", icon: Search },
-    { to: "/sponsor/mis-matches", label: "Mis Matches", icon: Heart },
-    { to: "/sponsor/reuniones-1to1", label: "Reuniones 1to1", icon: ClipboardList },
-    { to: "/sponsor/equipo", label: "Mi Equipo", icon: UsersRound },
-    { to: "/sponsor/tablon", label: "Tablón", icon: Megaphone },
-    { to: "/sponsor/agenda", label: "Agenda", icon: Calendar },
-  ],
-};
+import { navByRole } from "@/components/dashboard/Sidebar";
 
 export function Topbar({ title, userName, role, companyName }: { title?: string; userName?: string | null; role?: AppRole; companyName?: string }) {
   const [open, setOpen] = useState(false);
