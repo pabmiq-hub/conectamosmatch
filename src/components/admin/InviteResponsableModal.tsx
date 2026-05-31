@@ -16,6 +16,7 @@ export function InviteResponsableModal({ onClose, onCreated, preset }: { onClose
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
+  const [cargo, setCargo] = useState("");
   const [loading, setLoading] = useState(false);
   const locked = !!preset;
 
