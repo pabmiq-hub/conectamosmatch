@@ -76,6 +76,14 @@ async function createOne(d: z.infer<typeof createSchema>) {
     account_role: "owner",
   });
 
+  // Best-effort auto-enrichment from website / email domain (Firecrawl). Silent on failure.
+  if (accountId) {
+    const hintUrl = d.role === "empresa" ? d.empresa?.website : d.sponsor?.website;
+    try {
+      await enrichAccountFromDomain({ supabaseAdmin, accountId, kind: d.role, hintUrl, email: d.email });
+    } catch {}
+  }
+
   return userId;
 }
 
