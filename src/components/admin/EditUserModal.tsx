@@ -115,11 +115,13 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
                   company_name: f.company_name, sector: f.sector, website: f.website,
                   linkedin_url: f.linkedin_url, tagline: f.tagline, description: f.description,
                   location_city: f.location_city, company_size: f.company_size,
+                  logo_url: f.logo_url || null,
                 }
               : {
                   company_name: f.company_name, sector: f.sector, website: f.website,
                   linkedin_url: f.linkedin_url, tagline: f.tagline, description: f.description,
                   sponsorship_category: f.sponsorship_category, sponsorship_level: f.sponsorship_level,
+                  logo_url: f.logo_url || null,
                 }
             : undefined,
         },
