@@ -63,6 +63,8 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
       setLoading(false);
     }).catch((e: any) => { toast.error(e?.message ?? "Error"); onClose(); });
   }, [userId]);
+
+  async function runScrape() {
     if (!scrapeUrl.trim() || role === "super_admin") return;
     setScraping(true);
     try {
