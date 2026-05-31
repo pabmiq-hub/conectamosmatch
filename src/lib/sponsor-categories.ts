@@ -1,0 +1,16 @@
+export const PRESET_SPONSOR_CATEGORIES = [
+  "Desarrollo talento y liderazgo",
+  "Uso IA en procesos de RRHH",
+  "Reclutamiento talento",
+  "Formación",
+  "Coaching / mentoring talento",
+  "Comunicación interna",
+  "Beneficios Empleados",
+  "Gestión talento remoto",
+  "Nóminas y laboral",
+  "Control horario / accesos",
+  "Evaluación y mejora del clima laboral / compromiso / employee experience",
+  "Cultura",
+  "Soluciones de conciliación",
+  "Reducción de absentismo",
+] as const;
