@@ -646,7 +646,7 @@ export const confirmGroupedImport = createServerFn({ method: "POST" })
     const created_accounts: { account_id: string; company_name: string; members: { email: string; role: string }[] }[] = [];
     const failed: { email: string; error: string }[] = [];
 
-    for (const g of data.groups) {
+    const processGroup = async (g: typeof data.groups[number]) => {
       try {
         let accountId: string;
         if (g.account_type === "empresa") {
@@ -689,7 +689,13 @@ export const confirmGroupedImport = createServerFn({ method: "POST" })
         let ownerSetUserId: string | null = null;
         for (const idx of g.member_idxs) {
           const raw = data.rows_by_idx[String(idx)];
-          const r = bulkRowSchema.parse(raw);
+          let r: z.infer<typeof bulkRowSchema>;
+          try {
+            r = bulkRowSchema.parse(raw);
+          } catch (e: any) {
+            failed.push({ email: String(raw?.email ?? "(?)"), error: e?.message ?? "Datos inválidos" });
+            continue;
+          }
           try {
             const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
               email: r.email,
@@ -729,14 +735,19 @@ export const confirmGroupedImport = createServerFn({ method: "POST" })
         }
 
         created_accounts.push({ account_id: accountId, company_name: g.company_name, members });
-
-        // NOTE: Firecrawl enrichment is intentionally skipped during bulk import
-        // because each scrape takes 10-30s and would time out the worker on large
-        // imports. It can be triggered per-account later from the user edit modal.
       } catch (e: any) {
         failed.push({ email: g.company_name, error: e?.message ?? "Error creando cuenta" });
       }
+    };
+
+    // Process groups in parallel chunks. Sequential was timing out the worker
+    // on large imports (50+ accounts × auth.admin.createUser latency).
+    const CONCURRENCY = 6;
+    for (let i = 0; i < data.groups.length; i += CONCURRENCY) {
+      const chunk = data.groups.slice(i, i + CONCURRENCY);
+      await Promise.all(chunk.map(processGroup));
     }
+
 
     return { created_accounts, failed };
   });
