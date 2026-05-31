@@ -78,7 +78,6 @@ function VerSponsors() {
             description={s.description}
             logoUrl={s.logo_url}
             sector={s.sector}
-            recommended={String(s.sponsorship_level ?? "").toUpperCase() === "GOLD"}
             actions={
               <>
                 <ActionButton icon={Eye} label="Ver" onClick={() => setSelected(s)} />
