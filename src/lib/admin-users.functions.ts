@@ -1046,6 +1046,7 @@ export const updateUserProfile = createServerFn({ method: "POST" })
         full_name: data.full_name,
         email: data.email,
         phone: data.phone,
+        ...(data.cargo !== undefined ? { cargo: data.cargo } : {}),
         ...(typeof data.is_active === "boolean" ? { is_active: data.is_active } : {}),
       })
       .eq("id", data.userId);
