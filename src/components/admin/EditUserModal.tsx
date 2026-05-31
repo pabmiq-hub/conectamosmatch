@@ -211,6 +211,11 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-1.5">Solo rellena campos vacíos. Revisa los datos antes de guardar.</p>
                 </div>
+                {adminUserId && (
+                  <div className="mb-3">
+                    <LogoUploader userId={adminUserId} value={f.logo_url} onChange={(url) => set("logo_url", url ?? "")} />
+                  </div>
+                )}
                 <div className="grid md:grid-cols-2 gap-3">
                   <Field label="Nombre" value={f.company_name} onChange={(v) => set("company_name", v)} />
                   <Field label="Sector" value={f.sector} onChange={(v) => set("sector", v)} />
