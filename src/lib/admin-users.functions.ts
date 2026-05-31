@@ -326,7 +326,7 @@ export const bulkImportUsers = createServerFn({ method: "POST" })
     z.object({ rows: z.array(z.record(z.string(), z.unknown())).min(1).max(500) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertSuperAdmin(context.userId);
+    await assertBootstrapAdmin(context.userId);
     const ok: string[] = [];
     const failed: { email: string; error: string }[] = [];
     for (const raw of data.rows) {
