@@ -8,7 +8,7 @@ export interface NavItem {
   icon: typeof LayoutDashboard;
 }
 
-const navByRole: Record<AppRole, NavItem[]> = {
+export const navByRole: Record<AppRole, NavItem[]> = {
   super_admin: [
     { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
     { to: "/admin/usuarios", label: "Usuarios", icon: Users },
