@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { LevelBadge } from "@/components/brand/LevelBadge";
-import { Users, Building2, Sparkles, Plus, Search, Trash2, KeyRound, Power, Upload, UserPlus, Inbox, Check, X, CornerDownRight, Shield, ChevronRight, BarChart3, Pencil } from "lucide-react";
+import { Users, Building2, Sparkles, Plus, Search, Trash2, KeyRound, Power, Upload, UserPlus, Inbox, Check, X, CornerDownRight, Shield, ChevronRight, BarChart3, Pencil, ShieldPlus } from "lucide-react";
 import { toast } from "sonner";
 import { NewUserModal } from "@/components/admin/NewUserModal";
 import { ImportUsersModal } from "@/components/admin/ImportUsersModal";
@@ -13,8 +13,11 @@ import { ApproveRequestModal } from "@/components/admin/ApproveRequestModal";
 import { UserActivityDrawer } from "@/components/admin/UserActivityDrawer";
 import { EditUserModal } from "@/components/admin/EditUserModal";
 import { BulkUsersModal } from "@/components/admin/BulkUsersModal";
+import { CreateSuperAdminModal } from "@/components/admin/CreateSuperAdminModal";
 import { deleteUserAccount, resetUserPassword, setUserActive } from "@/lib/admin-users.functions";
 import { listAllRequests, rejectRequest, type ResponsableRequest } from "@/lib/responsable-requests.functions";
+
+const BOOTSTRAP_ADMIN_EMAIL = "miquel@conectamos.club";
 
 export const Route = createFileRoute("/_authenticated/admin/usuarios")({
   component: AdminUsuarios,
