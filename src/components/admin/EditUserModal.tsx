@@ -24,11 +24,13 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
   const [accountId, setAccountId] = useState<string | null>(null);
   const [accountName, setAccountName] = useState<string>("");
   const [hasAccount, setHasAccount] = useState(false);
+  const [adminUserId, setAdminUserId] = useState<string | null>(null);
   const [f, setF] = useState<any>({
     full_name: "", email: "", phone: "", is_active: true,
     company_name: "", sector: "", website: "", linkedin_url: "", tagline: "", description: "",
     location_city: "", company_size: "11-50",
     sponsorship_category: "", sponsorship_level: "BASIC",
+    logo_url: "",
   });
   const set = (k: string, v: any) => setF((p: any) => ({ ...p, [k]: v }));
 
