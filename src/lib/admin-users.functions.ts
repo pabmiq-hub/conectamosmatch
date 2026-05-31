@@ -134,6 +134,7 @@ const inviteResponsableSchema = z.object({
   email: z.string().email().max(200),
   password: z.string().min(8).max(100),
   phone: z.string().max(40).optional().default(""),
+  cargo: z.string().max(120).optional().default(""),
 });
 
 export const inviteResponsable = createServerFn({ method: "POST" })
@@ -165,6 +166,7 @@ export const inviteResponsable = createServerFn({ method: "POST" })
       email: data.email,
       full_name: data.full_name,
       phone: data.phone,
+      cargo: data.cargo || null,
       role: data.accountType,
       account_id: data.accountId,
       account_role: "manager",
