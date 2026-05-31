@@ -202,7 +202,7 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
 
 
 
-            {hasAccount && role !== "super_admin" && (
+            {hasAccount && role !== "super_admin" && accountRole === "owner" && (
               <section>
                 <h3 className="text-[11px] font-bold text-uppercase-wide text-muted-foreground mb-2">Datos de la cuenta ({role})</h3>
                 <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 mb-3">
