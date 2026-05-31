@@ -76,8 +76,14 @@ function AdminLoginPage() {
             </div>
             <div>
               <label className="text-xs text-uppercase-wide text-muted-foreground">Contraseña</label>
-              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm focus:border-primary focus:outline-none" />
+              <div className="relative mt-1">
+                <input type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-md border border-border bg-input px-3 py-2 pr-10 text-sm focus:border-primary focus:outline-none" />
+                <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
             <button type="submit" disabled={loading}
               className="w-full rounded-md bg-primary py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 text-uppercase-wide">
