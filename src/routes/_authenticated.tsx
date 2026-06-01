@@ -12,6 +12,7 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthLayout() {
   const [profile, setProfile] = useState<AppProfile | null>(null);
   const [companyName, setCompanyName] = useState<string>("");
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
