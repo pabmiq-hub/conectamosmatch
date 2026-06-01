@@ -2,11 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PartnerCard } from "@/components/dashboard/PartnerCard";
-import { ActionButton, Eye } from "@/components/dashboard/ActionButtons";
+import { AccountInterestButton, ActionButton, Eye } from "@/components/dashboard/ActionButtons";
 import { PageHeader } from "@/components/dashboard/EmptyState";
 import { PartnerDetailModal, type PartnerDetail } from "@/components/dashboard/PartnerDetailModal";
 import { EmpresaLikeModal } from "@/components/sponsor/EmpresaLikeModal";
-import { Search, Heart } from "lucide-react";
+import { Search } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/sponsor/ver-empresas")({
   component: VerEmpresasSponsor,
@@ -65,15 +65,17 @@ function VerEmpresasSponsor() {
         {filtered.map((e) => {
           const liked = e.id ? likedAccountIds.has(e.id) : false;
           return (
-            <PartnerCard key={e.user_id ?? e.company_name} name={e.company_name} description={e.description} logoUrl={e.logo_url} sector={e.sector} size={e.company_size}
+            <PartnerCard key={e.user_id ?? e.company_name} name={e.company_name} description={e.description} logoUrl={e.logo_url} sector={e.sector} size={e.company_size} liked={liked}
               actions={<>
                 <ActionButton icon={Eye} label="Ver" onClick={() => setSelected(e)} />
                 {me && e.user_id && (
-                  <ActionButton
-                    icon={Heart}
-                    label={liked ? "LIKED" : "ME INTERESA"}
-                    variant={liked ? "primary" : "primary-outline"}
-                    onClick={() => setLikeTarget({ userId: e.user_id, name: e.company_name })}
+                  <AccountInterestButton
+                    targetUserId={e.user_id}
+                    eventId={eventId}
+                    partnerName={e.company_name}
+                    liked={liked}
+                    onLike={() => setLikeTarget({ userId: e.user_id, name: e.company_name })}
+                    onUnliked={load}
                   />
                 )}
               </>} />
