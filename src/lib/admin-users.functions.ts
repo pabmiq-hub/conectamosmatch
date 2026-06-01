@@ -1018,9 +1018,9 @@ export const unlikeEmpresaAccount = createServerFn({ method: "POST" })
       .eq("from_user_id", userId)
       .in("to_user_id", memberIds);
     q = data.eventId ? q.eq("event_id", data.eventId) : q.is("event_id", null);
-    const { error, count } = await q.select("id", { count: "exact" });
+    const { data: deleted, error } = await q.select("id");
     if (error) throw new Error(error.message);
-    return { ok: true, count: count ?? 0 };
+    return { ok: true, count: deleted?.length ?? 0 };
   });
 
 // =====================================================================
