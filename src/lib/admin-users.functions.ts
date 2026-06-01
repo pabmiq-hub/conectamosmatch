@@ -40,6 +40,7 @@ const createSchema = z.object({
   email: z.string().email().max(200),
   password: z.string().min(8).max(100),
   phone: z.string().max(40).optional().default(""),
+  cargo: z.string().max(120).optional().default(""),
   role: z.enum(["empresa", "sponsor"]),
   empresa: empresaSchema.optional(),
   sponsor: sponsorSchema.optional(),
@@ -80,18 +81,11 @@ async function createOne(d: z.infer<typeof createSchema>) {
     email: d.email,
     full_name: d.full_name,
     phone: d.phone,
+    cargo: d.cargo || null,
     role: d.role,
     account_id: accountId,
     account_role: "owner",
   });
-
-  // Best-effort auto-enrichment from website / email domain (Firecrawl). Silent on failure.
-  if (accountId) {
-    const hintUrl = d.role === "empresa" ? d.empresa?.website : d.sponsor?.website;
-    try {
-      await enrichAccountFromDomain({ supabaseAdmin, accountId, kind: d.role, hintUrl, email: d.email });
-    } catch {}
-  }
 
   // Optional: create an additional "manager" responsable tied to the same account
   if (accountId && d.responsable) {
@@ -371,6 +365,7 @@ export const bulkImportUsers = createServerFn({ method: "POST" })
           email: r.email,
           password: r.password,
           phone: r.phone,
+          cargo: r.role,
           role: accountType,
 
           empresa:
