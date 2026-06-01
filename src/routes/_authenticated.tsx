@@ -12,6 +12,7 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthLayout() {
   const [profile, setProfile] = useState<AppProfile | null>(null);
   const [companyName, setCompanyName] = useState<string>("");
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -47,13 +48,16 @@ function AuthLayout() {
 
       // load company name
       if (role === "empresa") {
-        const { data: e } = await supabase.from("empresa_profiles").select("company_name").eq("user_id", session.user.id).maybeSingle();
+        const { data: e } = await supabase.from("empresa_profiles").select("company_name, logo_url").eq("user_id", session.user.id).maybeSingle();
         setCompanyName(e?.company_name ?? prof?.full_name ?? "Empresa");
+        setLogoUrl(e?.logo_url ?? null);
       } else if (role === "sponsor") {
-        const { data: s } = await supabase.from("sponsor_profiles").select("company_name").eq("user_id", session.user.id).maybeSingle();
+        const { data: s } = await supabase.from("sponsor_profiles").select("company_name, logo_url").eq("user_id", session.user.id).maybeSingle();
         setCompanyName(s?.company_name ?? prof?.full_name ?? "Solución");
+        setLogoUrl(s?.logo_url ?? null);
       } else {
         setCompanyName("Super Admin");
+        setLogoUrl(null);
       }
       setReady(true);
     })();
@@ -71,9 +75,9 @@ function AuthLayout() {
 
   return (
     <div className="min-h-screen flex bg-background">
-      <Sidebar role={profile.role} companyName={companyName} />
+      <Sidebar role={profile.role} companyName={companyName} logoUrl={logoUrl} />
       <div className="flex-1 flex flex-col min-w-0">
-        <Topbar userName={profile.full_name ?? profile.email} role={profile.role} companyName={companyName} title={profile.role === "super_admin" ? "Panel de administración" : ""} />
+        <Topbar userName={profile.full_name ?? profile.email} role={profile.role} companyName={companyName} logoUrl={logoUrl} title={profile.role === "super_admin" ? "Panel de administración" : ""} />
         <main className="flex-1 p-4 md:p-8">
           <Outlet />
         </main>

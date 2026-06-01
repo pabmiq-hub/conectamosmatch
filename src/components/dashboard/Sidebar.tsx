@@ -42,7 +42,7 @@ export const navByRole: Record<AppRole, NavItem[]> = {
   ],
 };
 
-export function Sidebar({ role, companyName }: { role: AppRole; companyName: string }) {
+export function Sidebar({ role, companyName, logoUrl }: { role: AppRole; companyName: string; logoUrl?: string | null }) {
   const items = navByRole[role];
   const path = useRouterState({ select: (r) => r.location.pathname });
   const roleBadge = role === "super_admin" ? "ADMIN" : role === "sponsor" ? "SPONSOR" : "EMPRESA";
@@ -50,8 +50,12 @@ export function Sidebar({ role, companyName }: { role: AppRole; companyName: str
   return (
     <aside className="hidden md:flex w-[200px] shrink-0 flex-col bg-sidebar border-r border-sidebar-border sticky top-0 h-screen overflow-y-auto">
       <div className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center justify-center h-12 w-12 rounded-md bg-card border border-border mx-auto">
-          <Settings className="h-6 w-6 text-primary" />
+        <div className="flex items-center justify-center h-12 w-12 rounded-md bg-card border border-border mx-auto overflow-hidden">
+          {logoUrl ? (
+            <img src={logoUrl} alt={companyName} className="max-h-full max-w-full object-contain" />
+          ) : (
+            <Settings className="h-6 w-6 text-primary" />
+          )}
         </div>
         <div className="mt-3 text-center">
           <div className="font-display text-xs font-bold text-uppercase-wide truncate">{companyName}</div>

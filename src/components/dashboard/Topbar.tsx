@@ -6,7 +6,7 @@ import { NotificationsBell } from "@/components/dashboard/NotificationsBell";
 import { signOut, type AppRole } from "@/lib/auth";
 import { navByRole } from "@/components/dashboard/Sidebar";
 
-export function Topbar({ title, userName, role, companyName }: { title?: string; userName?: string | null; role?: AppRole; companyName?: string }) {
+export function Topbar({ title, userName, role, companyName, logoUrl }: { title?: string; userName?: string | null; role?: AppRole; companyName?: string; logoUrl?: string | null }) {
   const [open, setOpen] = useState(false);
   const path = useRouterState({ select: (r) => r.location.pathname });
   const items = role ? navByRole[role] : [];
@@ -41,8 +41,14 @@ export function Topbar({ title, userName, role, companyName }: { title?: string;
           <aside className="absolute left-0 top-0 bottom-0 w-72 bg-sidebar border-r border-sidebar-border flex flex-col overflow-y-auto">
             <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
               <div className="flex items-center gap-2 min-w-0">
-                <div className="h-10 w-10 rounded-md bg-card border border-border flex items-center justify-center shrink-0">
-                  {role === "super_admin" ? <Shield className="h-5 w-5 text-primary" /> : <Settings className="h-5 w-5 text-primary" />}
+                <div className="h-10 w-10 rounded-md bg-card border border-border flex items-center justify-center shrink-0 overflow-hidden">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt={companyName ?? "logo"} className="max-h-full max-w-full object-contain" />
+                  ) : role === "super_admin" ? (
+                    <Shield className="h-5 w-5 text-primary" />
+                  ) : (
+                    <Settings className="h-5 w-5 text-primary" />
+                  )}
                 </div>
                 <div className="min-w-0">
                   <div className="font-display text-xs font-bold text-uppercase-wide truncate">{companyName ?? userName ?? "Usuario"}</div>
