@@ -40,6 +40,7 @@ const createSchema = z.object({
   email: z.string().email().max(200),
   password: z.string().min(8).max(100),
   phone: z.string().max(40).optional().default(""),
+  cargo: z.string().max(120).optional().default(""),
   role: z.enum(["empresa", "sponsor"]),
   empresa: empresaSchema.optional(),
   sponsor: sponsorSchema.optional(),
