@@ -7,9 +7,9 @@ import { toast } from "sonner";
 type Mode = "choose" | "selective";
 
 export function EmpresaLikeModal({
-  empresaUserId, empresaName, eventId, onClose, onDone,
+  empresaUserId, empresaName, eventId, accountLabel = "empresa", onClose, onDone,
 }: {
-  empresaUserId: string; empresaName: string; eventId: string | null; onClose: () => void; onDone?: () => void;
+  empresaUserId: string; empresaName: string; eventId: string | null; accountLabel?: "empresa" | "solución"; onClose: () => void; onDone?: () => void;
 }) {
   const fetchResp = useServerFn(listEmpresaResponsables);
   const like = useServerFn(likeEmpresaAccount);
@@ -81,7 +81,7 @@ export function EmpresaLikeModal({
         ) : mode === "choose" ? (
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              Esta empresa tiene <span className="font-bold text-foreground">{responsables.length}</span> responsable(s) activo(s). ¿Cómo quieres mostrar tu interés?
+              Esta {accountLabel} tiene <span className="font-bold text-foreground">{responsables.length}</span> responsable(s) activo(s). ¿Cómo quieres mostrar tu interés?
             </p>
             <button
               onClick={() => doLike(eligibleIds)}
@@ -91,7 +91,7 @@ export function EmpresaLikeModal({
               <div className="flex items-start gap-3">
                 <Users className="h-5 w-5 text-primary mt-0.5 shrink-0" />
                 <div>
-                  <div className="font-bold text-sm">Me interesa esta empresa</div>
+                  <div className="font-bold text-sm">Me interesa esta {accountLabel}</div>
                   <div className="text-[11px] text-muted-foreground mt-1">
                     Da like a todos los responsables activos ({eligibleIds.length} pendientes). Si alguno responde, se crea un match a nivel cuenta.
                   </div>
