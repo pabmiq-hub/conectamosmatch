@@ -900,7 +900,7 @@ export const removeResponsableFromAccount = createServerFn({ method: "POST" })
 export const listEmpresaResponsables = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ empresaUserId: z.string().uuid() }).parse(input),
+    z.object({ empresaUserId: z.string().uuid(), eventId: z.string().uuid().nullable().optional() }).parse(input),
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
@@ -935,12 +935,14 @@ export const listEmpresaResponsables = createServerFn({ method: "POST" })
         .select("id, full_name, email, account_role")
         .eq("id", data.empresaUserId)
         .maybeSingle();
-      const myLikesSolo = solo
-        ? await supabaseAdmin.from("likes").select("to_user_id").eq("from_user_id", userId).eq("to_user_id", solo.id)
-        : { data: [] as any[] };
+      let myLikesSolo = solo
+        ? supabaseAdmin.from("likes").select("to_user_id").eq("from_user_id", userId).eq("to_user_id", solo.id)
+        : null;
+      if (myLikesSolo) myLikesSolo = data.eventId ? myLikesSolo.eq("event_id", data.eventId) : myLikesSolo.is("event_id", null);
+      const myLikesSoloResult = myLikesSolo ? await myLikesSolo : { data: [] as any[] };
       return {
         responsables: solo ? [{ ...solo, cargo: null }] : [],
-        myExistingLikes: (myLikesSolo.data ?? []).map((l: any) => l.to_user_id),
+        myExistingLikes: (myLikesSoloResult.data ?? []).map((l: any) => l.to_user_id),
       };
     }
     const { data: members } = await supabaseAdmin
@@ -955,14 +957,40 @@ export const listEmpresaResponsables = createServerFn({ method: "POST" })
       ...m,
       cargo: cargoMap.get(String(m.email ?? "").trim().toLowerCase()) ?? null,
     }));
-    const { data: myLikes } = await supabaseAdmin
+    let myLikesQuery = supabaseAdmin
       .from("likes")
       .select("to_user_id")
       .eq("from_user_id", userId)
       .in("to_user_id", ids);
+    myLikesQuery = data.eventId ? myLikesQuery.eq("event_id", data.eventId) : myLikesQuery.is("event_id", null);
+    const { data: myLikes } = await myLikesQuery;
     return {
       responsables: enriched,
       myExistingLikes: (myLikes ?? []).map((l: any) => l.to_user_id),
+    };
+  });
+
+export const listMyLikedAccountIds = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ eventId: z.string().uuid().nullable() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    let likesQuery = supabaseAdmin.from("likes").select("to_user_id").eq("from_user_id", userId);
+    likesQuery = data.eventId ? likesQuery.eq("event_id", data.eventId) : likesQuery.is("event_id", null);
+    const { data: likes, error } = await likesQuery;
+    if (error) throw new Error(error.message);
+    const targetIds = (likes ?? []).map((l: any) => l.to_user_id).filter(Boolean);
+    if (!targetIds.length) return { accountIds: [] as string[], userIds: [] as string[] };
+
+    const { data: profiles, error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .select("id, account_id")
+      .in("id", targetIds);
+    if (profileError) throw new Error(profileError.message);
+
+    return {
+      accountIds: Array.from(new Set((profiles ?? []).map((p: any) => p.account_id ?? p.id).filter(Boolean))),
+      userIds: targetIds,
     };
   });
 
