@@ -1,8 +1,12 @@
 import { X, Globe, MapPin, User } from "lucide-react";
 import { LevelBadge } from "@/components/brand/LevelBadge";
 import { Building2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { listEmpresaResponsables } from "@/lib/admin-users.functions";
 
 export interface PartnerDetail {
+  user_id?: string | null;
   company_name: string;
   description?: string | null;
   logo_url?: string | null;
@@ -24,8 +28,28 @@ interface Props {
 }
 
 export function PartnerDetailModal({ open, onClose, partner, hideLevel, recommended }: Props) {
+  const fetchResponsables = useServerFn(listEmpresaResponsables);
+  const [team, setTeam] = useState<{ full_name: string; role: string }[]>([]);
+
+  useEffect(() => {
+    if (!open || !partner?.user_id) { setTeam([]); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetchResponsables({ data: { empresaUserId: partner.user_id!, eventId: null } });
+        if (cancelled) return;
+        const mapped = (res.responsables ?? [])
+          .filter((r: any) => r?.full_name)
+          .map((r: any) => ({ full_name: r.full_name as string, role: (r.cargo ?? "") as string }));
+        setTeam(mapped);
+      } catch { if (!cancelled) setTeam([]); }
+    })();
+    return () => { cancelled = true; };
+  }, [open, partner?.user_id, fetchResponsables]);
+
   if (!open || !partner) return null;
-  const responsables = (partner.responsables ?? []).filter((r) => r?.full_name);
+  const fromProp = (partner.responsables ?? []).filter((r) => r?.full_name);
+  const responsables = team.length > 0 ? team : fromProp;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
