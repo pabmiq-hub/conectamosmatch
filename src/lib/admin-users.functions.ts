@@ -27,6 +27,14 @@ const sponsorSchema = z.object({
   description: z.string().max(2000).optional().default(""),
 });
 
+const responsableSchema = z.object({
+  full_name: z.string().min(1).max(200),
+  email: z.string().email().max(200),
+  password: z.string().min(8).max(100),
+  phone: z.string().max(40).optional().default(""),
+  cargo: z.string().max(120).optional().default(""),
+});
+
 const createSchema = z.object({
   full_name: z.string().min(1).max(200),
   email: z.string().email().max(200),
@@ -35,6 +43,7 @@ const createSchema = z.object({
   role: z.enum(["empresa", "sponsor"]),
   empresa: empresaSchema.optional(),
   sponsor: sponsorSchema.optional(),
+  responsable: responsableSchema.optional(),
 });
 
 async function createOne(d: z.infer<typeof createSchema>) {
