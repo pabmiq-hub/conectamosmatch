@@ -93,6 +93,28 @@ async function createOne(d: z.infer<typeof createSchema>) {
     } catch {}
   }
 
+  // Optional: create an additional "manager" responsable tied to the same account
+  if (accountId && d.responsable) {
+    const r = d.responsable;
+    const { data: rCreated, error: rErr } = await supabaseAdmin.auth.admin.createUser({
+      email: r.email,
+      password: r.password,
+      email_confirm: true,
+      user_metadata: { full_name: r.full_name, role: d.role },
+    });
+    if (rErr || !rCreated.user) throw new Error(`Responsable: ${rErr?.message ?? "no se pudo crear"}`);
+    await supabaseAdmin.from("profiles").upsert({
+      id: rCreated.user.id,
+      email: r.email,
+      full_name: r.full_name,
+      phone: r.phone,
+      cargo: r.cargo || null,
+      role: d.role,
+      account_id: accountId,
+      account_role: "manager",
+    });
+  }
+
   return userId;
 }
 
