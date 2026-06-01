@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PartnerCard } from "@/components/dashboard/PartnerCard";
 import { AccountInterestButton, ActionButton, Eye } from "@/components/dashboard/ActionButtons";
 import { PartnerDetailModal, type PartnerDetail } from "@/components/dashboard/PartnerDetailModal";
 import { EmpresaLikeModal } from "@/components/sponsor/EmpresaLikeModal";
+import { listMyLikedAccountIds } from "@/lib/admin-users.functions";
 import { PRESET_SPONSOR_CATEGORIES } from "@/lib/sponsor-categories";
 import { Search, Filter, X } from "lucide-react";
 
@@ -15,6 +17,7 @@ export const Route = createFileRoute("/_authenticated/empresa/ver-sponsors")({
 const MIN_REQUIRED = 12;
 
 function VerSponsors() {
+  const getLikedAccounts = useServerFn(listMyLikedAccountIds);
   const [me, setMe] = useState<string | null>(null);
   const [eventId, setEventId] = useState<string | null>(null);
   const [items, setItems] = useState<any[]>([]);
@@ -33,17 +36,8 @@ function VerSponsors() {
     setEventId(ev?.id ?? null);
     const { data: sp } = await supabase.from("sponsor_profiles").select("id, user_id, company_name, description, logo_url, sector, sponsorship_level, website, location_city, responsables, categories");
     setItems(sp ?? []);
-    const myLikes = ev?.id
-      ? supabase.from("likes").select("to_user_id").eq("from_user_id", user.id).eq("event_id", ev.id)
-      : supabase.from("likes").select("to_user_id").eq("from_user_id", user.id);
-    const { data: my } = await myLikes;
-    const targetIds = (my ?? []).map((l: any) => l.to_user_id).filter(Boolean);
-    if (targetIds.length) {
-      const { data: profs } = await supabase.from("profiles").select("id, account_id").in("id", targetIds);
-      setLikedAccountIds(new Set((profs ?? []).map((p: any) => p.account_id).filter(Boolean)));
-    } else {
-      setLikedAccountIds(new Set());
-    }
+    const liked = await getLikedAccounts({ data: { eventId: ev?.id ?? null } });
+    setLikedAccountIds(new Set(liked.accountIds));
   }
   useEffect(() => { load(); }, []);
 
