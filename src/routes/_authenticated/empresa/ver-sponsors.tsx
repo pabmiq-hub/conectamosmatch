@@ -1,9 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PartnerCard } from "@/components/dashboard/PartnerCard";
-import { ActionButton, LikeButton, Eye } from "@/components/dashboard/ActionButtons";
+import { AccountInterestButton, ActionButton, Eye } from "@/components/dashboard/ActionButtons";
 import { PartnerDetailModal, type PartnerDetail } from "@/components/dashboard/PartnerDetailModal";
+import { EmpresaLikeModal } from "@/components/sponsor/EmpresaLikeModal";
+import { listMyLikedAccountIds } from "@/lib/admin-users.functions";
 import { PRESET_SPONSOR_CATEGORIES } from "@/lib/sponsor-categories";
 import { Search, Filter, X } from "lucide-react";
 
@@ -14,31 +17,29 @@ export const Route = createFileRoute("/_authenticated/empresa/ver-sponsors")({
 const MIN_REQUIRED = 12;
 
 function VerSponsors() {
+  const getLikedAccounts = useServerFn(listMyLikedAccountIds);
   const [me, setMe] = useState<string | null>(null);
   const [eventId, setEventId] = useState<string | null>(null);
   const [items, setItems] = useState<any[]>([]);
-  const [likedSet, setLikedSet] = useState<Set<string>>(new Set());
+  const [likedAccountIds, setLikedAccountIds] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<PartnerDetail | null>(null);
+  const [likeTarget, setLikeTarget] = useState<{ userId: string; name: string } | null>(null);
   const [q, setQ] = useState("");
   const [activeCats, setActiveCats] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      setMe(user.id);
-      const { data: ev } = await supabase.from("events").select("id").in("status", ["published","ongoing"]).order("event_date").limit(1).maybeSingle();
-      setEventId(ev?.id ?? null);
-      const { data: sp } = await supabase.from("sponsor_profiles").select("user_id, company_name, description, logo_url, sector, sponsorship_level, website, location_city, responsables, categories");
-      setItems(sp ?? []);
-      const myLikes = ev?.id
-        ? supabase.from("likes").select("to_user_id").eq("from_user_id", user.id).eq("event_id", ev.id)
-        : supabase.from("likes").select("to_user_id").eq("from_user_id", user.id);
-      const { data: my } = await myLikes;
-      setLikedSet(new Set((my ?? []).map((l: any) => l.to_user_id)));
-    })();
-  }, []);
+  async function load() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    setMe(user.id);
+    const { data: ev } = await supabase.from("events").select("id").in("status", ["published","ongoing"]).order("event_date").limit(1).maybeSingle();
+    setEventId(ev?.id ?? null);
+    const { data: sp } = await supabase.from("sponsor_profiles").select("id, user_id, company_name, description, logo_url, sector, sponsorship_level, website, location_city, responsables, categories");
+    setItems(sp ?? []);
+    const liked = await getLikedAccounts({ data: { eventId: ev?.id ?? null } });
+    setLikedAccountIds(new Set(liked.accountIds));
+  }
+  useEffect(() => { load(); }, []);
 
   // Categories present in the actual sponsor list (preset + custom)
   const availableCats = useMemo(() => {
@@ -59,14 +60,14 @@ function VerSponsors() {
     return [...base].sort((a, b) => (a.company_name ?? "").localeCompare(b.company_name ?? "", "es", { sensitivity: "base" }));
   }, [items, q, activeCats]);
 
-  const reachedMin = likedSet.size >= MIN_REQUIRED;
+  const reachedMin = likedAccountIds.size >= MIN_REQUIRED;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-2xl font-bold text-uppercase-wide">Soluciones disponibles</h1>
         <span className={`rounded-full border px-3 py-1 text-xs font-bold text-uppercase-wide ${reachedMin ? "border-success text-success" : "border-border"}`}>
-          {likedSet.size} / {MIN_REQUIRED} mínimo {reachedMin && "✓"}
+          {likedAccountIds.size} / {MIN_REQUIRED} mínimo {reachedMin && "✓"}
         </span>
       </div>
 
@@ -101,24 +102,47 @@ function VerSponsors() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filtered.map((s) => (
-          <PartnerCard
-            key={s.user_id}
-            name={s.company_name}
-            description={s.description}
-            logoUrl={s.logo_url}
-            sector={s.sector}
-            actions={
-              <>
-                <ActionButton icon={Eye} label="Ver" onClick={() => setSelected(s)} />
-                {me && <LikeButton fromUserId={me} toUserId={s.user_id} eventId={eventId} alreadyLiked={likedSet.has(s.user_id)} partnerName={s.company_name} />}
-              </>
-            }
-          />
-        ))}
+        {filtered.map((s) => {
+          const liked = s.id ? likedAccountIds.has(s.id) : false;
+          return (
+            <PartnerCard
+              key={s.user_id}
+              name={s.company_name}
+              description={s.description}
+              logoUrl={s.logo_url}
+              sector={s.sector}
+              liked={liked}
+              actions={
+                <>
+                  <ActionButton icon={Eye} label="Ver" onClick={() => setSelected(s)} />
+                  {me && s.user_id && (
+                    <AccountInterestButton
+                      targetUserId={s.user_id}
+                      eventId={eventId}
+                      partnerName={s.company_name}
+                      liked={liked}
+                      onLike={() => setLikeTarget({ userId: s.user_id, name: s.company_name })}
+                      onUnliked={load}
+                    />
+                  )}
+                </>
+              }
+            />
+          );
+        })}
         {filtered.length === 0 && <div className="col-span-full text-center text-sm text-muted-foreground py-12">No hay soluciones que coincidan con tu búsqueda.</div>}
       </div>
       <PartnerDetailModal open={!!selected} onClose={() => setSelected(null)} partner={selected} hideLevel />
+      {likeTarget && (
+        <EmpresaLikeModal
+          empresaUserId={likeTarget.userId}
+          empresaName={likeTarget.name}
+          eventId={eventId}
+          accountLabel="solución"
+          onClose={() => setLikeTarget(null)}
+          onDone={load}
+        />
+      )}
     </div>
   );
 }

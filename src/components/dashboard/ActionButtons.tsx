@@ -1,6 +1,8 @@
 import { Eye, Heart } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { unlikeEmpresaAccount } from "@/lib/admin-users.functions";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -31,13 +33,17 @@ export function ActionButton({ icon: Icon, label, onClick, variant = "ghost", di
 }
 
 export function LikeButton({
-  fromUserId, toUserId, eventId, alreadyLiked, partnerName, disabled,
+  fromUserId, toUserId, eventId, alreadyLiked, partnerName, disabled, onLikedChange,
 }: {
-  fromUserId: string; toUserId: string; eventId: string | null; alreadyLiked?: boolean; partnerName: string; disabled?: boolean;
+  fromUserId: string; toUserId: string; eventId: string | null; alreadyLiked?: boolean; partnerName: string; disabled?: boolean; onLikedChange?: (liked: boolean) => void;
 }) {
   const [liked, setLiked] = useState(!!alreadyLiked);
   const [busy, setBusy] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+
+  useEffect(() => {
+    setLiked(!!alreadyLiked);
+  }, [alreadyLiked]);
 
   async function doLike() {
     setBusy(true);
@@ -46,12 +52,14 @@ export function LikeButton({
     if (error) {
       if ((error as any).code === "23505" || /duplicate key/i.test(error.message)) {
         setLiked(true);
+        onLikedChange?.(true);
         toast.success(`Ya tenías like a ${partnerName}`);
         return;
       }
       toast.error(error.message); return;
     }
     setLiked(true);
+    onLikedChange?.(true);
     toast.success(`💛 Le has dado like a ${partnerName}`);
   }
 
@@ -64,6 +72,7 @@ export function LikeButton({
     setConfirmOpen(false);
     if (error) { toast.error(error.message); return; }
     setLiked(false);
+    onLikedChange?.(false);
     toast.success(`Has retirado tu like a ${partnerName}`);
   }
 
@@ -97,6 +106,56 @@ export function LikeButton({
             <AlertDialogAction onClick={doUnlike} disabled={busy}>
               Sí, retirar like
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+export function AccountInterestButton({
+  targetUserId, eventId, partnerName, liked, disabled, onLike, onUnliked,
+}: {
+  targetUserId: string; eventId: string | null; partnerName: string; liked: boolean; disabled?: boolean; onLike: () => void; onUnliked?: () => void;
+}) {
+  const unlike = useServerFn(unlikeEmpresaAccount);
+  const [busy, setBusy] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  async function doUnlike() {
+    setBusy(true);
+    try {
+      await unlike({ data: { empresaUserId: targetUserId, eventId } });
+      toast.success(`Has retirado tu like a ${partnerName}`);
+      onUnliked?.();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Error al retirar el like");
+    } finally {
+      setBusy(false);
+      setConfirmOpen(false);
+    }
+  }
+
+  return (
+    <>
+      <ActionButton
+        icon={Heart}
+        label={liked ? "LIKED" : "ME INTERESA"}
+        variant={liked ? "primary" : "primary-outline"}
+        disabled={busy || disabled}
+        onClick={() => (liked ? setConfirmOpen(true) : onLike())}
+      />
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Retirar tu like a {partnerName}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se retirará tu interés por esta cuenta y se desharán los matches y reuniones asociados a esta interacción.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={doUnlike} disabled={busy}>Sí, retirar like</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
