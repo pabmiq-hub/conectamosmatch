@@ -21,7 +21,7 @@ export function EmpresaLikeModal({
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    fetchResp({ data: { empresaUserId } }).then(async (r) => {
+    fetchResp({ data: { empresaUserId, eventId } }).then(async (r) => {
       const resp = r.responsables as any[];
       const existingSet = new Set(r.myExistingLikes);
       const eligible = resp.filter((x) => !existingSet.has(x.id)).map((x) => x.id);
@@ -41,7 +41,7 @@ export function EmpresaLikeModal({
       setExisting(existingSet);
       setLoading(false);
     }).catch((e: any) => { toast.error(e?.message ?? "Error"); onClose(); });
-  }, [empresaUserId]);
+  }, [empresaUserId, eventId]);
 
   const eligibleIds = useMemo(() => responsables.filter((r) => !existing.has(r.id)).map((r) => r.id), [responsables, existing]);
 
