@@ -1,6 +1,8 @@
 import { Eye, Heart } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { unlikeEmpresaAccount } from "@/lib/admin-users.functions";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -104,6 +106,56 @@ export function LikeButton({
             <AlertDialogAction onClick={doUnlike} disabled={busy}>
               Sí, retirar like
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+export function AccountInterestButton({
+  targetUserId, eventId, partnerName, liked, disabled, onLike, onUnliked,
+}: {
+  targetUserId: string; eventId: string | null; partnerName: string; liked: boolean; disabled?: boolean; onLike: () => void; onUnliked?: () => void;
+}) {
+  const unlike = useServerFn(unlikeEmpresaAccount);
+  const [busy, setBusy] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  async function doUnlike() {
+    setBusy(true);
+    try {
+      await unlike({ data: { empresaUserId: targetUserId, eventId } });
+      toast.success(`Has retirado tu like a ${partnerName}`);
+      onUnliked?.();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Error al retirar el like");
+    } finally {
+      setBusy(false);
+      setConfirmOpen(false);
+    }
+  }
+
+  return (
+    <>
+      <ActionButton
+        icon={Heart}
+        label={liked ? "LIKED" : "ME INTERESA"}
+        variant={liked ? "primary" : "primary-outline"}
+        disabled={busy || disabled}
+        onClick={() => (liked ? setConfirmOpen(true) : onLike())}
+      />
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Retirar tu like a {partnerName}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se retirará tu interés por esta cuenta y se desharán los matches y reuniones asociados a esta interacción.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={doUnlike} disabled={busy}>Sí, retirar like</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
