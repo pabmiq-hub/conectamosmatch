@@ -6,7 +6,7 @@ import { NotificationsBell } from "@/components/dashboard/NotificationsBell";
 import { signOut, type AppRole } from "@/lib/auth";
 import { navByRole } from "@/components/dashboard/Sidebar";
 
-export function Topbar({ title, userName, role, companyName }: { title?: string; userName?: string | null; role?: AppRole; companyName?: string }) {
+export function Topbar({ title, userName, role, companyName, logoUrl }: { title?: string; userName?: string | null; role?: AppRole; companyName?: string; logoUrl?: string | null }) {
   const [open, setOpen] = useState(false);
   const path = useRouterState({ select: (r) => r.location.pathname });
   const items = role ? navByRole[role] : [];
