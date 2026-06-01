@@ -1,29 +1,23 @@
 import { useState } from "react";
-import { Building2, Sparkles, X, Copy, Check, Wand2, Loader2, UserPlus } from "lucide-react";
+import { Building2, Sparkles, X, Copy, Check, UserCog } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { createUserAccount } from "@/lib/admin-users.functions";
-import { scrapeProfileFromUrl } from "@/lib/scrape-profile.functions";
+import { PRESET_SPONSOR_CATEGORIES } from "@/lib/sponsor-categories";
 import { toast } from "sonner";
 
 type Role = "empresa" | "sponsor";
-type Step = 1 | 2 | 3 | 4 | 5;
+type Step = 1 | 2 | 3 | 4;
 
 export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const create = useServerFn(createUserAccount);
-  const scrape = useServerFn(scrapeProfileFromUrl);
   const [step, setStep] = useState<Step>(1);
   const [role, setRole] = useState<Role | null>(null);
   const [loading, setLoading] = useState(false);
-  const [scrapeUrl, setScrapeUrl] = useState("");
-  const [scraping, setScraping] = useState(false);
-  const [created, setCreated] = useState<{ email: string; password: string; respEmail?: string; respPassword?: string } | null>(null);
+  const [created, setCreated] = useState<{ email: string; password: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const [f, setF] = useState({
-    full_name: "",
-    email: "",
-    password: "",
-    phone: "",
+  // Company data (step 2)
+  const [c, setC] = useState({
     company_name: "",
     sector: "",
     company_size: "11-50" as "1-10" | "11-50" | "51-200" | "201-500" | "500+",
@@ -35,38 +29,17 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
     tagline: "",
     description: "",
   });
-  const set = (k: keyof typeof f, v: string) => setF((p) => ({ ...p, [k]: v }));
+  const setC1 = (k: keyof typeof c, v: string) => setC((p) => ({ ...p, [k]: v }));
 
-  const [addResp, setAddResp] = useState(true);
-  const [r, setR] = useState({ full_name: "", email: "", password: "", phone: "", cargo: "" });
-  const setRf = (k: keyof typeof r, v: string) => setR((p) => ({ ...p, [k]: v }));
+  // Responsable / owner data (step 3) — all required
+  const [o, setO] = useState({ full_name: "", cargo: "", email: "", phone: "", password: "" });
+  const setO1 = (k: keyof typeof o, v: string) => setO((p) => ({ ...p, [k]: v }));
 
-  function genPwd(setter: (v: string) => void) {
+  function genPwd() {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
     let p = "";
     for (let i = 0; i < 12; i++) p += chars[Math.floor(Math.random() * chars.length)];
-    setter(p + "!2");
-  }
-
-  async function runScrape() {
-    if (!scrapeUrl.trim() || !role) return;
-    setScraping(true);
-    try {
-      const { data } = await scrape({ data: { url: scrapeUrl, kind: role } });
-      setF((p) => ({
-        ...p,
-        company_name: p.company_name || data.company_name || "",
-        sector: p.sector || data.sector || "",
-        website: p.website || data.website || "",
-        linkedin_url: p.linkedin_url || data.linkedin_url || "",
-        location_city: p.location_city || data.location_city || "",
-        tagline: p.tagline || data.tagline || "",
-        description: p.description || data.description || "",
-      }));
-      toast.success("Datos autocompletados — revísalos antes de guardar");
-    } catch (e: any) {
-      toast.error(e?.message ?? "No se pudo extraer la web");
-    } finally { setScraping(false); }
+    setO1("password", p + "!2");
   }
 
   async function submit() {
@@ -75,57 +48,44 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
     try {
       await create({
         data: {
-          full_name: f.full_name,
-          email: f.email,
-          password: f.password,
-          phone: f.phone,
+          full_name: o.full_name,
+          email: o.email,
+          password: o.password,
+          phone: o.phone,
+          cargo: o.cargo,
           role,
           empresa: role === "empresa" ? {
-            company_name: f.company_name, sector: f.sector, company_size: f.company_size,
-            website: f.website, location_city: f.location_city, linkedin_url: f.linkedin_url,
-            tagline: f.tagline, description: f.description,
+            company_name: c.company_name, sector: c.sector, company_size: c.company_size,
+            website: c.website, location_city: c.location_city, linkedin_url: c.linkedin_url,
+            tagline: c.tagline, description: c.description,
           } : undefined,
           sponsor: role === "sponsor" ? {
-            company_name: f.company_name, sector: f.sector,
-            sponsorship_category: f.sponsorship_category, sponsorship_level: f.sponsorship_level,
-            website: f.website, linkedin_url: f.linkedin_url,
-            tagline: f.tagline, description: f.description,
-          } : undefined,
-          responsable: addResp ? {
-            full_name: r.full_name, email: r.email, password: r.password,
-            phone: r.phone, cargo: r.cargo,
+            company_name: c.company_name, sector: c.sector,
+            sponsorship_category: c.sponsorship_category, sponsorship_level: c.sponsorship_level,
+            website: c.website, linkedin_url: c.linkedin_url,
+            tagline: c.tagline, description: c.description,
           } : undefined,
         },
       });
-      setCreated({
-        email: f.email, password: f.password,
-        respEmail: addResp ? r.email : undefined,
-        respPassword: addResp ? r.password : undefined,
-      });
+      setCreated({ email: o.email, password: o.password });
       onCreated();
     } catch (e: any) {
-      toast.error(e?.message ?? "Error al crear el usuario");
-    } finally {
-      setLoading(false);
-    }
+      toast.error(e?.message ?? "Error al crear la cuenta");
+    } finally { setLoading(false); }
   }
 
   function copyCreds() {
     if (!created) return;
-    const lines = [
-      `Owner — Email: ${created.email}`,
-      `Owner — Contraseña: ${created.password}`,
-    ];
-    if (created.respEmail) {
-      lines.push(`Responsable — Email: ${created.respEmail}`);
-      lines.push(`Responsable — Contraseña: ${created.respPassword}`);
-    }
-    navigator.clipboard.writeText(lines.join("\n"));
+    navigator.clipboard.writeText(`Email: ${created.email}\nContraseña: ${created.password}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
 
-  const respValid = !addResp || (r.full_name && /\S+@\S+\.\S+/.test(r.email) && r.password.length >= 8);
+  const companyValid = role === "empresa"
+    ? !!c.company_name
+    : !!c.company_name && !!c.sponsorship_category;
+  const ownerValid =
+    !!o.full_name && !!o.cargo && /\S+@\S+\.\S+/.test(o.email) && !!o.phone && o.password.length >= 8;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
@@ -133,9 +93,9 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="font-display text-lg font-bold text-uppercase-wide">
-              {created ? "Cuenta creada" : `Nuevo usuario${role ? ` · ${role}` : ""}`}
+              {created ? "Cuenta creada" : `Nueva cuenta${role ? ` · ${role === "empresa" ? "Empresa" : "Solución"}` : ""}`}
             </h2>
-            {!created && <p className="text-xs text-muted-foreground mt-1">Paso {step} de 5 · la primera persona será <span className="font-bold text-primary">owner</span> y podrás añadir un <span className="font-bold text-primary">responsable</span> en el proceso.</p>}
+            {!created && <p className="text-xs text-muted-foreground mt-1">Paso {step} de 4</p>}
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
         </div>
@@ -143,20 +103,10 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
         {created ? (
           <div className="space-y-4">
             <div className="rounded-lg border border-success/30 bg-success/5 p-4">
-              <p className="text-sm font-bold mb-3">Comparte estas credenciales con cada persona por tu canal:</p>
-              <div className="rounded-md bg-background p-3 font-mono text-xs space-y-2">
-                <div>
-                  <div className="text-[10px] text-uppercase-wide text-primary font-bold mb-1">Owner</div>
-                  <div><span className="text-muted-foreground">Email:</span> {created.email}</div>
-                  <div><span className="text-muted-foreground">Contraseña:</span> {created.password}</div>
-                </div>
-                {created.respEmail && (
-                  <div className="pt-2 border-t border-border">
-                    <div className="text-[10px] text-uppercase-wide text-primary font-bold mb-1">Responsable</div>
-                    <div><span className="text-muted-foreground">Email:</span> {created.respEmail}</div>
-                    <div><span className="text-muted-foreground">Contraseña:</span> {created.respPassword}</div>
-                  </div>
-                )}
+              <p className="text-sm font-bold mb-3">Comparte estas credenciales con el responsable por tu canal:</p>
+              <div className="rounded-md bg-background p-3 font-mono text-xs space-y-1">
+                <div><span className="text-muted-foreground">Email:</span> {created.email}</div>
+                <div><span className="text-muted-foreground">Contraseña:</span> {created.password}</div>
               </div>
               <button onClick={copyCreds} className="mt-3 inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs font-bold text-uppercase-wide">
                 {copied ? <><Check className="h-3.5 w-3.5" /> Copiado</> : <><Copy className="h-3.5 w-3.5" /> Copiar credenciales</>}
@@ -179,104 +129,90 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
         ) : step === 2 ? (
           <div className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
-              <Field label="Nombre completo *" value={f.full_name} onChange={(v) => set("full_name", v)} />
-              <Field label="Email *" type="email" value={f.email} onChange={(v) => set("email", v)} />
-              <div>
-                <label className="text-xs text-uppercase-wide text-muted-foreground">Contraseña inicial *</label>
-                <div className="flex gap-2 mt-1">
-                  <input value={f.password} onChange={(e) => set("password", e.target.value)} className="flex-1 rounded-md border border-border bg-input px-3 py-2 text-sm" />
-                  <button type="button" onClick={() => genPwd((v) => set("password", v))} className="rounded-md border border-border px-3 text-xs font-bold text-uppercase-wide">Generar</button>
-                </div>
-                <p className="text-[10px] text-muted-foreground mt-1">Mínimo 8 caracteres. La compartirás manualmente.</p>
-              </div>
-              <Field label="Teléfono" value={f.phone} onChange={(v) => set("phone", v)} />
+              <Field label="Nombre de la empresa *" value={c.company_name} onChange={(v) => setC1("company_name", v)} />
+              <Field label="Sector" value={c.sector} onChange={(v) => setC1("sector", v)} placeholder="Tech, Health, Retail…" />
+              {role === "empresa" ? (
+                <>
+                  <Select label="Tamaño" value={c.company_size} onChange={(v) => setC1("company_size", v)} options={["1-10","11-50","51-200","201-500","500+"]} />
+                  <Field label="Website" value={c.website} onChange={(v) => setC1("website", v)} placeholder="https://…" />
+                  <Field label="LinkedIn" value={c.linkedin_url} onChange={(v) => setC1("linkedin_url", v)} />
+                  <Field label="Ciudad" value={c.location_city} onChange={(v) => setC1("location_city", v)} />
+                  <div className="md:col-span-2">
+                    <Field label="Tagline" value={c.tagline} onChange={(v) => setC1("tagline", v)} />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="text-xs text-uppercase-wide text-muted-foreground">Reto que soluciona *</label>
+                    <select value={c.sponsorship_category} onChange={(e) => setC1("sponsorship_category", e.target.value)}
+                      className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
+                      <option value="">Selecciona…</option>
+                      {PRESET_SPONSOR_CATEGORIES.map((o) => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <Select label="Nivel *" value={c.sponsorship_level} onChange={(v) => setC1("sponsorship_level", v)} options={["GOLD","PREMIUM","BASIC","STARTUP"]} />
+                  <Field label="Website" value={c.website} onChange={(v) => setC1("website", v)} placeholder="https://…" />
+                  <Field label="LinkedIn" value={c.linkedin_url} onChange={(v) => setC1("linkedin_url", v)} />
+                  <div className="md:col-span-2">
+                    <Field label="Tagline" value={c.tagline} onChange={(v) => setC1("tagline", v)} />
+                  </div>
+                </>
+              )}
             </div>
-            <Nav onBack={() => setStep(1)} onNext={() => setStep(3)} disabled={!f.full_name || !f.email || f.password.length < 8} />
+            <div>
+              <label className="text-xs text-uppercase-wide text-muted-foreground">Descripción</label>
+              <textarea rows={3} value={c.description} onChange={(e) => setC1("description", e.target.value)} className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm" />
+            </div>
+            <Nav onBack={() => setStep(1)} onNext={() => setStep(3)} disabled={!companyValid} />
           </div>
         ) : step === 3 ? (
           <div className="space-y-4">
             <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
-              <div className="flex items-center gap-2 text-[11px] font-bold text-uppercase-wide text-primary mb-2">
-                <Wand2 className="h-3.5 w-3.5" /> Autocompletar desde web
-              </div>
-              <div className="flex gap-2">
-                <input value={scrapeUrl} onChange={(e) => setScrapeUrl(e.target.value)} placeholder="empresa.com o https://…"
-                  className="flex-1 rounded-md border border-border bg-input px-3 py-2 text-sm" />
-                <button type="button" onClick={runScrape} disabled={scraping || !scrapeUrl.trim()}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide disabled:opacity-50">
-                  {scraping ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Extrayendo…</> : <><Wand2 className="h-3.5 w-3.5" /> Extraer</>}
-                </button>
-              </div>
-              <p className="text-[10px] text-muted-foreground mt-1.5">Solo rellena los campos vacíos. Revisa siempre los datos antes de guardar.</p>
-            </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <Field label="Nombre de empresa *" value={f.company_name} onChange={(v) => set("company_name", v)} />
-              <Field label="Sector" value={f.sector} onChange={(v) => set("sector", v)} placeholder="Tech, Health, Retail..." />
-              {role === "empresa" ? (
-                <Select label="Tamaño" value={f.company_size} onChange={(v) => set("company_size", v)} options={["1-10","11-50","51-200","201-500","500+"]} />
-              ) : (
-                <>
-                  <Field label="Categoría de patrocinio" value={f.sponsorship_category} onChange={(v) => set("sponsorship_category", v)} />
-                  <Select label="Nivel *" value={f.sponsorship_level} onChange={(v) => set("sponsorship_level", v)} options={["GOLD","PREMIUM","BASIC","STARTUP"]} />
-                </>
-              )}
-              <Field label="Website" value={f.website} onChange={(v) => set("website", v)} placeholder="https://…" />
-              <Field label="LinkedIn" value={f.linkedin_url} onChange={(v) => set("linkedin_url", v)} />
-              {role === "empresa" && <Field label="Ciudad" value={f.location_city} onChange={(v) => set("location_city", v)} />}
-              <Field label="Tagline" value={f.tagline} onChange={(v) => set("tagline", v)} />
-            </div>
-            <div>
-              <label className="text-xs text-uppercase-wide text-muted-foreground">Descripción</label>
-              <textarea rows={3} value={f.description} onChange={(e) => set("description", e.target.value)} className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm" />
-            </div>
-            <Nav onBack={() => setStep(2)} onNext={() => setStep(4)} disabled={!f.company_name} />
-          </div>
-        ) : step === 4 ? (
-          <div className="space-y-4">
-            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
               <div className="flex items-center gap-2 text-[11px] font-bold text-uppercase-wide text-primary">
-                <UserPlus className="h-3.5 w-3.5" /> Responsable de la cuenta
+                <UserCog className="h-3.5 w-3.5" /> Responsable de la cuenta (owner)
               </div>
               <p className="text-[11px] text-muted-foreground mt-1">
-                Crea la persona responsable que podrá tener reuniones 1to1 en nombre de la cuenta. Tendrá rol <span className="font-bold">manager</span>.
+                Será el administrador de la cuenta y podrá solicitar nuevos responsables a los super administradores. Todos los datos son obligatorios.
               </p>
-              <label className="mt-3 flex items-center gap-2 text-xs">
-                <input type="checkbox" checked={addResp} onChange={(e) => setAddResp(e.target.checked)} />
-                <span>Añadir un responsable ahora (recomendado)</span>
-              </label>
             </div>
-            {addResp && (
-              <div className="grid md:grid-cols-2 gap-4">
-                <Field label="Nombre completo *" value={r.full_name} onChange={(v) => setRf("full_name", v)} />
-                <Field label="Cargo" value={r.cargo} onChange={(v) => setRf("cargo", v)} placeholder="Director Comercial, CTO…" />
-                <Field label="Email *" type="email" value={r.email} onChange={(v) => setRf("email", v)} />
-                <Field label="Teléfono" value={r.phone} onChange={(v) => setRf("phone", v)} />
-                <div className="md:col-span-2">
-                  <label className="text-xs text-uppercase-wide text-muted-foreground">Contraseña inicial *</label>
-                  <div className="flex gap-2 mt-1">
-                    <input value={r.password} onChange={(e) => setRf("password", e.target.value)} className="flex-1 rounded-md border border-border bg-input px-3 py-2 text-sm" />
-                    <button type="button" onClick={() => genPwd((v) => setRf("password", v))} className="rounded-md border border-border px-3 text-xs font-bold text-uppercase-wide">Generar</button>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground mt-1">Mínimo 8 caracteres. Se la compartirás manualmente al responsable.</p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <Field label="Nombre completo *" value={o.full_name} onChange={(v) => setO1("full_name", v)} />
+              <Field label="Cargo *" value={o.cargo} onChange={(v) => setO1("cargo", v)} placeholder="Director RRHH, CEO…" />
+              <Field label="Email *" type="email" value={o.email} onChange={(v) => setO1("email", v)} />
+              <Field label="Teléfono *" value={o.phone} onChange={(v) => setO1("phone", v)} />
+              <div className="md:col-span-2">
+                <label className="text-xs text-uppercase-wide text-muted-foreground">Contraseña inicial *</label>
+                <div className="flex gap-2 mt-1">
+                  <input value={o.password} onChange={(e) => setO1("password", e.target.value)} className="flex-1 rounded-md border border-border bg-input px-3 py-2 text-sm" />
+                  <button type="button" onClick={genPwd} className="rounded-md border border-border px-3 text-xs font-bold text-uppercase-wide">Generar</button>
                 </div>
+                <p className="text-[10px] text-muted-foreground mt-1">Mínimo 8 caracteres. La compartirás manualmente.</p>
               </div>
-            )}
-            <Nav onBack={() => setStep(3)} onNext={() => setStep(5)} disabled={!respValid} />
+            </div>
+            <Nav onBack={() => setStep(2)} onNext={() => setStep(4)} disabled={!ownerValid} />
           </div>
         ) : (
           <div className="space-y-4">
             <div className="rounded-lg border border-border bg-background p-4 text-sm space-y-2">
-              <Row k="Rol" v={role!} />
-              <Row k="Owner" v={`${f.full_name} · ${f.email}`} />
-              <Row k="Teléfono" v={f.phone || "—"} />
-              <Row k="Empresa" v={f.company_name} />
-              <Row k="Sector" v={f.sector || "—"} />
-              {role === "sponsor" && <Row k="Nivel" v={f.sponsorship_level} />}
-              {role === "empresa" && <Row k="Tamaño" v={f.company_size} />}
-              <Row k="Responsable" v={addResp ? `${r.full_name} · ${r.email}${r.cargo ? ` · ${r.cargo}` : ""}` : "— (no añadido)"} />
+              <Row k="Tipo de cuenta" v={role === "empresa" ? "Empresa" : "Solución"} />
+              <Row k="Empresa" v={c.company_name} />
+              <Row k="Sector" v={c.sector || "—"} />
+              {role === "empresa" && <Row k="Tamaño" v={c.company_size} />}
+              {role === "sponsor" && <Row k="Reto que soluciona" v={c.sponsorship_category} />}
+              {role === "sponsor" && <Row k="Nivel" v={c.sponsorship_level} />}
+              <Row k="Website" v={c.website || "—"} />
+              <Row k="LinkedIn" v={c.linkedin_url || "—"} />
+              {role === "empresa" && <Row k="Ciudad" v={c.location_city || "—"} />}
+              <Row k="Tagline" v={c.tagline || "—"} />
+              <div className="border-t border-border pt-2 mt-2">
+                <Row k="Responsable" v={`${o.full_name} · ${o.cargo}`} />
+                <Row k="Email" v={o.email} />
+                <Row k="Teléfono" v={o.phone} />
+              </div>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setStep(4)} className="flex-1 rounded-md border border-border py-2.5 text-sm font-bold text-uppercase-wide">Atrás</button>
+              <button onClick={() => setStep(3)} className="flex-1 rounded-md border border-border py-2.5 text-sm font-bold text-uppercase-wide">Atrás</button>
               <button onClick={submit} disabled={loading} className="flex-[2] rounded-md bg-primary py-2.5 text-sm font-bold text-primary-foreground text-uppercase-wide disabled:opacity-50">
                 {loading ? "Creando…" : "Crear cuenta"}
               </button>
