@@ -72,7 +72,7 @@ function VerEmpresasSponsor() {
                   <ActionButton
                     icon={Heart}
                     label={liked ? "LIKED" : "ME INTERESA"}
-                    variant={liked ? "ghost" : "primary"}
+                    variant={liked ? "primary" : "primary-outline"}
                     onClick={() => setLikeTarget({ userId: e.user_id, name: e.company_name })}
                   />
                 )}
