@@ -990,6 +990,39 @@ export const likeEmpresaAccount = createServerFn({ method: "POST" })
     return { ok: true, count: inserted };
   });
 
+export const unlikeEmpresaAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({
+      empresaUserId: z.string().uuid(),
+      eventId: z.string().uuid().nullable(),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { data: target } = await supabaseAdmin
+      .from("profiles")
+      .select("account_id")
+      .eq("id", data.empresaUserId)
+      .maybeSingle();
+
+    const memberIds = target?.account_id
+      ? (await supabaseAdmin.from("profiles").select("id").eq("account_id", target.account_id)).data?.map((m: any) => m.id) ?? []
+      : [data.empresaUserId];
+
+    if (!memberIds.length) return { ok: true, count: 0 };
+
+    let q = supabaseAdmin
+      .from("likes")
+      .delete()
+      .eq("from_user_id", userId)
+      .in("to_user_id", memberIds);
+    q = data.eventId ? q.eq("event_id", data.eventId) : q.is("event_id", null);
+    const { error, count } = await q.select("id", { count: "exact" });
+    if (error) throw new Error(error.message);
+    return { ok: true, count: count ?? 0 };
+  });
+
 // =====================================================================
 // ============ Edit user + account (super admin) ======================
 // =====================================================================
