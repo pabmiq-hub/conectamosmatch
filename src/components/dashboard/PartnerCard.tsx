@@ -1,4 +1,4 @@
-import { Building2, Sparkles } from "lucide-react";
+import { Building2, Heart, Sparkles } from "lucide-react";
 import { LevelBadge } from "@/components/brand/LevelBadge";
 
 export interface PartnerCardProps {
@@ -9,14 +9,20 @@ export interface PartnerCardProps {
   level?: string | null;
   size?: string | null;
   recommended?: boolean;
+  liked?: boolean;
   actions?: React.ReactNode;
 }
 
-export function PartnerCard({ name, description, logoUrl, sector, level, size, recommended, actions }: PartnerCardProps) {
+export function PartnerCard({ name, description, logoUrl, sector, level, size, recommended, liked, actions }: PartnerCardProps) {
   return (
-    <div className={`relative rounded-xl border bg-card p-5 card-hover flex flex-col ${recommended ? "border-amber-400/70 shadow-[0_0_0_1px_rgba(251,191,36,0.35)]" : "border-border"}`}>
+    <div className={`relative rounded-xl border bg-card p-5 card-hover flex flex-col ${liked ? "border-primary shadow-[0_0_0_1px_color-mix(in_oklab,var(--primary)_55%,transparent),0_16px_34px_-24px_color-mix(in_oklab,var(--primary)_60%,transparent)]" : recommended ? "border-amber-400/70 shadow-[0_0_0_1px_rgba(251,191,36,0.35)]" : "border-border"}`}>
+      {liked && (
+        <div className="absolute -top-2 left-3 inline-flex items-center gap-1 rounded-full border border-primary bg-primary px-2 py-0.5 text-[9px] font-bold text-uppercase-wide text-primary-foreground shadow">
+          <Heart className="h-3 w-3 fill-current" /> Te interesa
+        </div>
+      )}
       {recommended && (
-        <div className="absolute -top-2 left-3 inline-flex items-center gap-1 rounded-full bg-amber-400 px-2 py-0.5 text-[9px] font-bold text-uppercase-wide text-black shadow">
+        <div className={`absolute -top-2 ${liked ? "right-3" : "left-3"} inline-flex items-center gap-1 rounded-full bg-amber-400 px-2 py-0.5 text-[9px] font-bold text-uppercase-wide text-black shadow`}>
           <Sparkles className="h-3 w-3" /> Solución recomendada
         </div>
       )}
