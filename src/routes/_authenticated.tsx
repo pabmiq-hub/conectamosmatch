@@ -48,13 +48,16 @@ function AuthLayout() {
 
       // load company name
       if (role === "empresa") {
-        const { data: e } = await supabase.from("empresa_profiles").select("company_name").eq("user_id", session.user.id).maybeSingle();
+        const { data: e } = await supabase.from("empresa_profiles").select("company_name, logo_url").eq("user_id", session.user.id).maybeSingle();
         setCompanyName(e?.company_name ?? prof?.full_name ?? "Empresa");
+        setLogoUrl(e?.logo_url ?? null);
       } else if (role === "sponsor") {
-        const { data: s } = await supabase.from("sponsor_profiles").select("company_name").eq("user_id", session.user.id).maybeSingle();
+        const { data: s } = await supabase.from("sponsor_profiles").select("company_name, logo_url").eq("user_id", session.user.id).maybeSingle();
         setCompanyName(s?.company_name ?? prof?.full_name ?? "Solución");
+        setLogoUrl(s?.logo_url ?? null);
       } else {
         setCompanyName("Super Admin");
+        setLogoUrl(null);
       }
       setReady(true);
     })();
