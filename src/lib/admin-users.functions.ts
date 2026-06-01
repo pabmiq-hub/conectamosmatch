@@ -365,6 +365,7 @@ export const bulkImportUsers = createServerFn({ method: "POST" })
           email: r.email,
           password: r.password,
           phone: r.phone,
+          cargo: r.role,
           role: accountType,
 
           empresa:
