@@ -81,18 +81,11 @@ async function createOne(d: z.infer<typeof createSchema>) {
     email: d.email,
     full_name: d.full_name,
     phone: d.phone,
+    cargo: d.cargo || null,
     role: d.role,
     account_id: accountId,
     account_role: "owner",
   });
-
-  // Best-effort auto-enrichment from website / email domain (Firecrawl). Silent on failure.
-  if (accountId) {
-    const hintUrl = d.role === "empresa" ? d.empresa?.website : d.sponsor?.website;
-    try {
-      await enrichAccountFromDomain({ supabaseAdmin, accountId, kind: d.role, hintUrl, email: d.email });
-    } catch {}
-  }
 
   // Optional: create an additional "manager" responsable tied to the same account
   if (accountId && d.responsable) {
