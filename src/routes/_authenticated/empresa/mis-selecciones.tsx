@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { PartnerCard } from "@/components/dashboard/PartnerCard";
-import { ActionButton, LikeButton, Eye } from "@/components/dashboard/ActionButtons";
+import { AccountInterestButton, ActionButton, Eye } from "@/components/dashboard/ActionButtons";
 import { PartnerDetailModal, type PartnerDetail } from "@/components/dashboard/PartnerDetailModal";
+import { listMyLikedAccountIds } from "@/lib/admin-users.functions";
 import { Heart, Search } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/empresa/mis-selecciones")({
@@ -14,6 +16,7 @@ export const Route = createFileRoute("/_authenticated/empresa/mis-selecciones")(
 const MIN_REQUIRED = 12;
 
 function MisSeleccionesEmpresa() {
+  const getLikedAccounts = useServerFn(listMyLikedAccountIds);
   const [me, setMe] = useState<string | null>(null);
   const [eventId, setEventId] = useState<string | null>(null);
   const [items, setItems] = useState<any[]>([]);
@@ -29,17 +32,14 @@ function MisSeleccionesEmpresa() {
       const { data: ev } = await supabase.from("events").select("id").in("status", ["published","ongoing"]).order("event_date").limit(1).maybeSingle();
       setEventId(ev?.id ?? null);
 
-      const likesQ = ev?.id
-        ? supabase.from("likes").select("to_user_id").eq("from_user_id", user.id).eq("event_id", ev.id)
-        : supabase.from("likes").select("to_user_id").eq("from_user_id", user.id);
-      const { data: likes } = await likesQ;
-      const ids = (likes ?? []).map((l: any) => l.to_user_id).filter(Boolean);
+      const likedAccounts = await getLikedAccounts({ data: { eventId: ev?.id ?? null } });
+      const ids = likedAccounts.accountIds;
       if (!ids.length) { setItems([]); return; }
 
       const { data: sp } = await supabase
         .from("sponsor_profiles")
         .select("user_id, company_name, description, logo_url, sector, sponsorship_level, website, location_city, responsables")
-        .in("user_id", ids);
+        .in("id", ids);
       setItems(sp ?? []);
 
       const { data: matches } = await supabase
@@ -104,7 +104,7 @@ function MisSeleccionesEmpresa() {
                 actions={
                   <>
                     <ActionButton icon={Eye} label={matchedSet.has(s.user_id) ? "MATCH ✓" : "Ver"} onClick={() => setSelected(s)} />
-                    {me && <LikeButton fromUserId={me} toUserId={s.user_id} eventId={eventId} alreadyLiked partnerName={s.company_name} onLikedChange={(liked) => !liked && setItems((prev) => prev.filter((item) => item.user_id !== s.user_id))} />}
+                    {me && <AccountInterestButton targetUserId={s.user_id} eventId={eventId} partnerName={s.company_name} liked onLike={() => {}} onUnliked={() => setItems((prev) => prev.filter((item) => item.user_id !== s.user_id))} />}
                   </>
                 }
               />
