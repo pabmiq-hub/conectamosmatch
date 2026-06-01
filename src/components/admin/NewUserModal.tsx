@@ -1,21 +1,22 @@
 import { useState } from "react";
-import { Building2, Sparkles, X, Copy, Check, Wand2, Loader2 } from "lucide-react";
+import { Building2, Sparkles, X, Copy, Check, Wand2, Loader2, UserPlus } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { createUserAccount } from "@/lib/admin-users.functions";
 import { scrapeProfileFromUrl } from "@/lib/scrape-profile.functions";
 import { toast } from "sonner";
 
 type Role = "empresa" | "sponsor";
+type Step = 1 | 2 | 3 | 4 | 5;
 
 export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const create = useServerFn(createUserAccount);
   const scrape = useServerFn(scrapeProfileFromUrl);
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [step, setStep] = useState<Step>(1);
   const [role, setRole] = useState<Role | null>(null);
   const [loading, setLoading] = useState(false);
   const [scrapeUrl, setScrapeUrl] = useState("");
   const [scraping, setScraping] = useState(false);
-  const [created, setCreated] = useState<{ email: string; password: string } | null>(null);
+  const [created, setCreated] = useState<{ email: string; password: string; respEmail?: string; respPassword?: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
   const [f, setF] = useState({
@@ -36,11 +37,15 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
   });
   const set = (k: keyof typeof f, v: string) => setF((p) => ({ ...p, [k]: v }));
 
-  function genPassword() {
+  const [addResp, setAddResp] = useState(true);
+  const [r, setR] = useState({ full_name: "", email: "", password: "", phone: "", cargo: "" });
+  const setRf = (k: keyof typeof r, v: string) => setR((p) => ({ ...p, [k]: v }));
+
+  function genPwd(setter: (v: string) => void) {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
     let p = "";
     for (let i = 0; i < 12; i++) p += chars[Math.floor(Math.random() * chars.length)];
-    set("password", p + "!2");
+    setter(p + "!2");
   }
 
   async function runScrape() {
@@ -86,9 +91,17 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
             website: f.website, linkedin_url: f.linkedin_url,
             tagline: f.tagline, description: f.description,
           } : undefined,
+          responsable: addResp ? {
+            full_name: r.full_name, email: r.email, password: r.password,
+            phone: r.phone, cargo: r.cargo,
+          } : undefined,
         },
       });
-      setCreated({ email: f.email, password: f.password });
+      setCreated({
+        email: f.email, password: f.password,
+        respEmail: addResp ? r.email : undefined,
+        respPassword: addResp ? r.password : undefined,
+      });
       onCreated();
     } catch (e: any) {
       toast.error(e?.message ?? "Error al crear el usuario");
@@ -99,10 +112,20 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
 
   function copyCreds() {
     if (!created) return;
-    navigator.clipboard.writeText(`Email: ${created.email}\nContraseña: ${created.password}`);
+    const lines = [
+      `Owner — Email: ${created.email}`,
+      `Owner — Contraseña: ${created.password}`,
+    ];
+    if (created.respEmail) {
+      lines.push(`Responsable — Email: ${created.respEmail}`);
+      lines.push(`Responsable — Contraseña: ${created.respPassword}`);
+    }
+    navigator.clipboard.writeText(lines.join("\n"));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
+
+  const respValid = !addResp || (r.full_name && /\S+@\S+\.\S+/.test(r.email) && r.password.length >= 8);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
@@ -112,7 +135,7 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
             <h2 className="font-display text-lg font-bold text-uppercase-wide">
               {created ? "Cuenta creada" : `Nuevo usuario${role ? ` · ${role}` : ""}`}
             </h2>
-            {!created && <p className="text-xs text-muted-foreground mt-1">Paso {step} de 4 · esta persona será <span className="font-bold text-primary">owner</span> de la cuenta. Para añadir más responsables usa "Invitar responsable".</p>}
+            {!created && <p className="text-xs text-muted-foreground mt-1">Paso {step} de 5 · la primera persona será <span className="font-bold text-primary">owner</span> y podrás añadir un <span className="font-bold text-primary">responsable</span> en el proceso.</p>}
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
         </div>
@@ -120,10 +143,20 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
         {created ? (
           <div className="space-y-4">
             <div className="rounded-lg border border-success/30 bg-success/5 p-4">
-              <p className="text-sm font-bold mb-3">Comparte estas credenciales con el usuario por tu canal:</p>
-              <div className="rounded-md bg-background p-3 font-mono text-xs space-y-1">
-                <div><span className="text-muted-foreground">Email:</span> {created.email}</div>
-                <div><span className="text-muted-foreground">Contraseña:</span> {created.password}</div>
+              <p className="text-sm font-bold mb-3">Comparte estas credenciales con cada persona por tu canal:</p>
+              <div className="rounded-md bg-background p-3 font-mono text-xs space-y-2">
+                <div>
+                  <div className="text-[10px] text-uppercase-wide text-primary font-bold mb-1">Owner</div>
+                  <div><span className="text-muted-foreground">Email:</span> {created.email}</div>
+                  <div><span className="text-muted-foreground">Contraseña:</span> {created.password}</div>
+                </div>
+                {created.respEmail && (
+                  <div className="pt-2 border-t border-border">
+                    <div className="text-[10px] text-uppercase-wide text-primary font-bold mb-1">Responsable</div>
+                    <div><span className="text-muted-foreground">Email:</span> {created.respEmail}</div>
+                    <div><span className="text-muted-foreground">Contraseña:</span> {created.respPassword}</div>
+                  </div>
+                )}
               </div>
               <button onClick={copyCreds} className="mt-3 inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs font-bold text-uppercase-wide">
                 {copied ? <><Check className="h-3.5 w-3.5" /> Copiado</> : <><Copy className="h-3.5 w-3.5" /> Copiar credenciales</>}
@@ -152,7 +185,7 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
                 <label className="text-xs text-uppercase-wide text-muted-foreground">Contraseña inicial *</label>
                 <div className="flex gap-2 mt-1">
                   <input value={f.password} onChange={(e) => set("password", e.target.value)} className="flex-1 rounded-md border border-border bg-input px-3 py-2 text-sm" />
-                  <button type="button" onClick={genPassword} className="rounded-md border border-border px-3 text-xs font-bold text-uppercase-wide">Generar</button>
+                  <button type="button" onClick={() => genPwd((v) => set("password", v))} className="rounded-md border border-border px-3 text-xs font-bold text-uppercase-wide">Generar</button>
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-1">Mínimo 8 caracteres. La compartirás manualmente.</p>
               </div>
@@ -198,20 +231,52 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
             </div>
             <Nav onBack={() => setStep(2)} onNext={() => setStep(4)} disabled={!f.company_name} />
           </div>
+        ) : step === 4 ? (
+          <div className="space-y-4">
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+              <div className="flex items-center gap-2 text-[11px] font-bold text-uppercase-wide text-primary">
+                <UserPlus className="h-3.5 w-3.5" /> Responsable de la cuenta
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Crea la persona responsable que podrá tener reuniones 1to1 en nombre de la cuenta. Tendrá rol <span className="font-bold">manager</span>.
+              </p>
+              <label className="mt-3 flex items-center gap-2 text-xs">
+                <input type="checkbox" checked={addResp} onChange={(e) => setAddResp(e.target.checked)} />
+                <span>Añadir un responsable ahora (recomendado)</span>
+              </label>
+            </div>
+            {addResp && (
+              <div className="grid md:grid-cols-2 gap-4">
+                <Field label="Nombre completo *" value={r.full_name} onChange={(v) => setRf("full_name", v)} />
+                <Field label="Cargo" value={r.cargo} onChange={(v) => setRf("cargo", v)} placeholder="Director Comercial, CTO…" />
+                <Field label="Email *" type="email" value={r.email} onChange={(v) => setRf("email", v)} />
+                <Field label="Teléfono" value={r.phone} onChange={(v) => setRf("phone", v)} />
+                <div className="md:col-span-2">
+                  <label className="text-xs text-uppercase-wide text-muted-foreground">Contraseña inicial *</label>
+                  <div className="flex gap-2 mt-1">
+                    <input value={r.password} onChange={(e) => setRf("password", e.target.value)} className="flex-1 rounded-md border border-border bg-input px-3 py-2 text-sm" />
+                    <button type="button" onClick={() => genPwd((v) => setRf("password", v))} className="rounded-md border border-border px-3 text-xs font-bold text-uppercase-wide">Generar</button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">Mínimo 8 caracteres. Se la compartirás manualmente al responsable.</p>
+                </div>
+              </div>
+            )}
+            <Nav onBack={() => setStep(3)} onNext={() => setStep(5)} disabled={!respValid} />
+          </div>
         ) : (
           <div className="space-y-4">
             <div className="rounded-lg border border-border bg-background p-4 text-sm space-y-2">
               <Row k="Rol" v={role!} />
-              <Row k="Nombre" v={f.full_name} />
-              <Row k="Email" v={f.email} />
+              <Row k="Owner" v={`${f.full_name} · ${f.email}`} />
               <Row k="Teléfono" v={f.phone || "—"} />
               <Row k="Empresa" v={f.company_name} />
               <Row k="Sector" v={f.sector || "—"} />
               {role === "sponsor" && <Row k="Nivel" v={f.sponsorship_level} />}
               {role === "empresa" && <Row k="Tamaño" v={f.company_size} />}
+              <Row k="Responsable" v={addResp ? `${r.full_name} · ${r.email}${r.cargo ? ` · ${r.cargo}` : ""}` : "— (no añadido)"} />
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setStep(3)} className="flex-1 rounded-md border border-border py-2.5 text-sm font-bold text-uppercase-wide">Atrás</button>
+              <button onClick={() => setStep(4)} className="flex-1 rounded-md border border-border py-2.5 text-sm font-bold text-uppercase-wide">Atrás</button>
               <button onClick={submit} disabled={loading} className="flex-[2] rounded-md bg-primary py-2.5 text-sm font-bold text-primary-foreground text-uppercase-wide disabled:opacity-50">
                 {loading ? "Creando…" : "Crear cuenta"}
               </button>
@@ -251,5 +316,5 @@ function Nav({ onBack, onNext, disabled }: { onBack: () => void; onNext: () => v
   );
 }
 function Row({ k, v }: { k: string; v: string }) {
-  return <div className="flex justify-between gap-4"><span className="text-muted-foreground text-xs text-uppercase-wide">{k}</span><span className="font-medium">{v}</span></div>;
+  return <div className="flex justify-between gap-4"><span className="text-muted-foreground text-xs text-uppercase-wide">{k}</span><span className="font-medium text-right">{v}</span></div>;
 }
