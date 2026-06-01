@@ -1,5 +1,5 @@
 import { Eye, Heart } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -31,13 +31,17 @@ export function ActionButton({ icon: Icon, label, onClick, variant = "ghost", di
 }
 
 export function LikeButton({
-  fromUserId, toUserId, eventId, alreadyLiked, partnerName, disabled,
+  fromUserId, toUserId, eventId, alreadyLiked, partnerName, disabled, onLikedChange,
 }: {
-  fromUserId: string; toUserId: string; eventId: string | null; alreadyLiked?: boolean; partnerName: string; disabled?: boolean;
+  fromUserId: string; toUserId: string; eventId: string | null; alreadyLiked?: boolean; partnerName: string; disabled?: boolean; onLikedChange?: (liked: boolean) => void;
 }) {
   const [liked, setLiked] = useState(!!alreadyLiked);
   const [busy, setBusy] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+
+  useEffect(() => {
+    setLiked(!!alreadyLiked);
+  }, [alreadyLiked]);
 
   async function doLike() {
     setBusy(true);
@@ -46,12 +50,14 @@ export function LikeButton({
     if (error) {
       if ((error as any).code === "23505" || /duplicate key/i.test(error.message)) {
         setLiked(true);
+        onLikedChange?.(true);
         toast.success(`Ya tenías like a ${partnerName}`);
         return;
       }
       toast.error(error.message); return;
     }
     setLiked(true);
+    onLikedChange?.(true);
     toast.success(`💛 Le has dado like a ${partnerName}`);
   }
 
@@ -64,6 +70,7 @@ export function LikeButton({
     setConfirmOpen(false);
     if (error) { toast.error(error.message); return; }
     setLiked(false);
+    onLikedChange?.(false);
     toast.success(`Has retirado tu like a ${partnerName}`);
   }
 
