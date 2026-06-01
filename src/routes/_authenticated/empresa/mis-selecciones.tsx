@@ -100,10 +100,11 @@ function MisSeleccionesEmpresa() {
                 logoUrl={s.logo_url}
                 sector={s.sector}
                 recommended={String(s.sponsorship_level ?? "").toUpperCase() === "GOLD"}
+                liked
                 actions={
                   <>
                     <ActionButton icon={Eye} label={matchedSet.has(s.user_id) ? "MATCH ✓" : "Ver"} onClick={() => setSelected(s)} />
-                    {me && <LikeButton fromUserId={me} toUserId={s.user_id} eventId={eventId} alreadyLiked partnerName={s.company_name} />}
+                    {me && <LikeButton fromUserId={me} toUserId={s.user_id} eventId={eventId} alreadyLiked partnerName={s.company_name} onLikedChange={(liked) => !liked && setItems((prev) => prev.filter((item) => item.user_id !== s.user_id))} />}
                   </>
                 }
               />

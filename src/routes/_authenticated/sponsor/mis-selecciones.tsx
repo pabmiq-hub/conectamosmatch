@@ -85,10 +85,11 @@ function MisSeleccionesSponsor() {
                 logoUrl={e.logo_url}
                 sector={e.sector}
                 size={e.company_size}
+                liked
                 actions={
                   <>
                     <ActionButton icon={Eye} label={matchedSet.has(e.user_id) ? "MATCH ✓" : "Ver"} onClick={() => setSelected(e)} />
-                    {me && <LikeButton fromUserId={me} toUserId={e.user_id} eventId={eventId} alreadyLiked partnerName={e.company_name} />}
+                    {me && <LikeButton fromUserId={me} toUserId={e.user_id} eventId={eventId} alreadyLiked partnerName={e.company_name} onLikedChange={(liked) => !liked && setItems((prev) => prev.filter((item) => item.user_id !== e.user_id))} />}
                   </>
                 }
               />
