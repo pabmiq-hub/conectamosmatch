@@ -695,6 +695,7 @@ export const confirmGroupedImport = createServerFn({ method: "POST" })
               description: g.account_fields.description ?? "",
               company_size: g.account_fields.company_size,
               location_city: g.account_fields.location_city ?? "",
+              looking_for: g.account_fields.looking_for ?? "",
             })
             .select("id")
             .single();
@@ -712,6 +713,7 @@ export const confirmGroupedImport = createServerFn({ method: "POST" })
               description: g.account_fields.description ?? "",
               sponsorship_category: g.account_fields.sponsorship_category ?? "",
               sponsorship_level: (g.account_fields.sponsorship_level as any) ?? "BASIC",
+              target_audience: g.account_fields.target_audience ?? "",
             })
             .select("id")
             .single();
