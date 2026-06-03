@@ -362,11 +362,14 @@ function AccountHeader({ owner, role, accountName, managersCount, isOpen, onTogg
           <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 capitalize">{role}</span>
           {company?.sponsorship_level && <LevelBadge level={company.sponsorship_level} />}
           {company?.is_verified && <span className="rounded-full bg-success/10 text-success px-2 py-0.5">✓ Verificada</span>}
-          {managersCount > 0 && (
-            <span className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground">
-              {managersCount} {managersCount === 1 ? "responsable" : "responsables"}
-            </span>
-          )}
+          {(() => {
+            const total = managersCount + (owner ? 1 : 0);
+            return total > 0 ? (
+              <span className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground">
+                {total} {total === 1 ? "responsable" : "responsables"}
+              </span>
+            ) : null;
+          })()}
         </div>
         {owner ? (
           <div className="text-[13px] font-normal truncate" style={{ color: "#6B7280" }}>

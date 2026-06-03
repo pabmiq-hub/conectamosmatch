@@ -743,6 +743,7 @@ export const confirmGroupedImport = createServerFn({ method: "POST" })
               email: r.email,
               full_name: r.full_name,
               phone: r.phone,
+              cargo: r.role || null,
               role: g.account_type,
               account_id: accountId,
               account_role,
@@ -937,7 +938,7 @@ export const listEmpresaResponsables = createServerFn({ method: "POST" })
       .eq("id", data.empresaUserId)
       .maybeSingle();
 
-    // Helper to look up cargo from account's responsables jsonb by email match
+    // Helper to look up cargo from account's legacy responsables jsonb by email match
     async function loadCargoMap(accountId: string | null, role: string | null): Promise<Map<string, string>> {
       const map = new Map<string, string>();
       if (!accountId) return map;
@@ -958,7 +959,7 @@ export const listEmpresaResponsables = createServerFn({ method: "POST" })
     if (!target?.account_id) {
       const { data: solo } = await supabaseAdmin
         .from("profiles")
-        .select("id, full_name, email, account_role")
+        .select("id, full_name, email, cargo, account_role")
         .eq("id", data.empresaUserId)
         .maybeSingle();
       let myLikesSolo = solo
@@ -967,13 +968,13 @@ export const listEmpresaResponsables = createServerFn({ method: "POST" })
       if (myLikesSolo) myLikesSolo = data.eventId ? myLikesSolo.eq("event_id", data.eventId) : myLikesSolo.is("event_id", null);
       const myLikesSoloResult = myLikesSolo ? await myLikesSolo : { data: [] as any[] };
       return {
-        responsables: solo ? [{ ...solo, cargo: null }] : [],
+        responsables: solo ? [{ ...solo, cargo: solo.cargo ?? null }] : [],
         myExistingLikes: (myLikesSoloResult.data ?? []).map((l: any) => l.to_user_id),
       };
     }
     const { data: members } = await supabaseAdmin
       .from("profiles")
-      .select("id, full_name, email, account_role")
+      .select("id, full_name, email, cargo, account_role")
       .eq("account_id", target.account_id)
       .eq("is_active", true);
     const ids = (members ?? []).map((m: any) => m.id);
@@ -981,7 +982,7 @@ export const listEmpresaResponsables = createServerFn({ method: "POST" })
     const cargoMap = await loadCargoMap(target.account_id, target.role);
     const enriched = (members ?? []).map((m: any) => ({
       ...m,
-      cargo: cargoMap.get(String(m.email ?? "").trim().toLowerCase()) ?? null,
+      cargo: m.cargo ?? cargoMap.get(String(m.email ?? "").trim().toLowerCase()) ?? null,
     }));
     let myLikesQuery = supabaseAdmin
       .from("likes")
