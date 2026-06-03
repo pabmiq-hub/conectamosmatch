@@ -19,7 +19,7 @@ const empresaSchema = z.object({
 const sponsorSchema = z.object({
   company_name: z.string().min(1).max(200),
   sector: z.string().max(120).optional().default(""),
-  sponsorship_category: z.string().max(120).optional().default(""),
+  sponsorship_category: z.string().max(1000).optional().default(""),
   sponsorship_level: z.enum(["GOLD","PREMIUM","BASIC","STARTUP"]).default("BASIC"),
   website: z.string().max(300).optional().default(""),
   linkedin_url: z.string().max(300).optional().default(""),
