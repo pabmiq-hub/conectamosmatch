@@ -73,8 +73,47 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
       });
       setScrapeUrl(account?.website ?? "");
       setLoading(false);
+      if (profile.account_id) {
+        loadMembers(profile.account_id);
+      }
     }).catch((e: any) => { toast.error(e?.message ?? "Error"); onClose(); });
   }, [userId]);
+
+  async function loadMembers(aid: string) {
+    try {
+      const { members: list } = await fetchMembers({ data: { accountId: aid } });
+      setMembers(list);
+    } catch { /* ignore */ }
+  }
+
+  function patchMember(id: string, patch: any) {
+    setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch, _dirty: true } : m)));
+  }
+
+  async function saveMemberRow(m: any) {
+    setMemberBusy(m.id);
+    try {
+      await saveMember({ data: { userId: m.id, full_name: m.full_name ?? "", email: m.email ?? "", phone: m.phone ?? "", cargo: m.cargo ?? null } });
+      setMembers((prev) => prev.map((x) => (x.id === m.id ? { ...x, _dirty: false } : x)));
+      toast.success("Responsable actualizado");
+      onSaved?.();
+    } catch (e: any) { toast.error(e?.message ?? "Error"); }
+    finally { setMemberBusy(null); }
+  }
+
+  async function promoteMember(m: any) {
+    if (m.account_role === "owner") return;
+    if (!confirm(`¿Hacer admin de "${accountName}" a ${m.full_name || m.email}?`)) return;
+    setMemberBusy(m.id);
+    try {
+      await promote({ data: { newAdminUserId: m.id } });
+      toast.success("Admin actualizado");
+      if (accountId) await loadMembers(accountId);
+      onSaved?.();
+    } catch (e: any) { toast.error(e?.message ?? "Error"); }
+    finally { setMemberBusy(null); }
+  }
+
 
   async function runScrape() {
     if (!scrapeUrl.trim() || role === "super_admin") return;
