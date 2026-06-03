@@ -14,6 +14,8 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
   const save = useServerFn(updateUserProfile);
   const scrape = useServerFn(scrapeProfileFromUrl);
   const promote = useServerFn(transferAccountAdmin);
+  const resetPwd = useServerFn(resetUserPassword);
+  const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [scraping, setScraping] = useState(false);
