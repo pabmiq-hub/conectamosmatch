@@ -436,6 +436,13 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
           onDone={() => { setMoving(false); onSaved?.(); onClose(); }}
         />
       )}
+      {inviting && accountId && (role === "empresa" || role === "sponsor") && (
+        <InviteResponsableModal
+          preset={{ accountId, accountType: role, accountName }}
+          onClose={() => setInviting(false)}
+          onCreated={() => { setInviting(false); if (accountId) loadMembers(accountId); onSaved?.(); }}
+        />
+      )}
     </div>
   );
 }
