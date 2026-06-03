@@ -45,8 +45,8 @@ export function ImportUsersModal({ onClose, onDone }: { onClose: () => void; onD
     let filename: string;
     if (type === "empresa") {
       rows = [
-        { full_name: "Ana López", email: "ana@acme.com", password: "Cambiame123", phone: "+34600000000", role: "CEO", company_name: "Acme SL", sector: "Tech", company_size: "11-50", location_city: "Madrid", website: "https://acme.com", linkedin_url: "", tagline: "", description: "", looking_for: "Automatización de procesos internos, mejora de la experiencia de cliente, herramientas de analítica avanzada" },
-        { full_name: "Luis Pérez", email: "luis@acme.com", password: "Cambiame123", phone: "", role: "Director de Marketing", company_name: "Acme SL", sector: "Tech", company_size: "11-50", location_city: "Madrid", website: "https://acme.com", linkedin_url: "", tagline: "", description: "", looking_for: "Automatización de procesos internos, mejora de la experiencia de cliente, herramientas de analítica avanzada" },
+        { full_name: "Ana López", email: "ana@acme.com", password: "Cambiame123", phone: "+34600000000", role: "CEO", company_name: "Acme SL", sector: "Tech", company_size: "11-50", location_city: "Madrid", website: "https://acme.com", linkedin_url: "", tagline: "", description: "" },
+        { full_name: "Luis Pérez", email: "luis@acme.com", password: "Cambiame123", phone: "", role: "Director de Marketing", company_name: "Acme SL", sector: "Tech", company_size: "11-50", location_city: "Madrid", website: "https://acme.com", linkedin_url: "", tagline: "", description: "" },
       ];
       filename = "plantilla-empresas.xlsx";
     } else {
