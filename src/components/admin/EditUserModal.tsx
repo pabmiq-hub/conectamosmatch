@@ -106,6 +106,10 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
   }
 
   async function submit() {
+    if (newPassword && newPassword.length < 8) {
+      toast.error("La nueva contraseña debe tener al menos 8 caracteres");
+      return;
+    }
     setBusy(true);
     try {
       await save({
@@ -134,7 +138,11 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
             : undefined,
         },
       });
-      toast.success("Datos actualizados");
+      if (newPassword) {
+        await resetPwd({ data: { userId, password: newPassword } });
+      }
+      toast.success(newPassword ? "Datos y contraseña actualizados" : "Datos actualizados");
+      setNewPassword("");
       onSaved?.();
       onClose();
     } catch (e: any) {
