@@ -743,6 +743,7 @@ export const confirmGroupedImport = createServerFn({ method: "POST" })
               email: r.email,
               full_name: r.full_name,
               phone: r.phone,
+              cargo: r.role || null,
               role: g.account_type,
               account_id: accountId,
               account_role,
