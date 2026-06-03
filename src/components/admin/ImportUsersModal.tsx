@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { X, Upload, Download, FileSpreadsheet, Users, Crown, ArrowLeft, Scissors, Merge } from "lucide-react";
+import { X, Upload, Download, FileSpreadsheet, Users, Crown, ArrowLeft, Scissors, Merge, Building2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { analyzeExcelGroups, confirmGroupedImport } from "@/lib/admin-users.functions";
+
+type AccountType = "empresa" | "sponsor";
 
 type GroupMember = {
   idx: number;
@@ -15,7 +17,7 @@ type GroupMember = {
 
 type Group = {
   id: string;
-  account_type: "empresa" | "sponsor";
+  account_type: AccountType;
   suggested_company_name: string;
   members: GroupMember[];
   account_fields: Record<string, any>;
@@ -23,29 +25,41 @@ type Group = {
 
 type WorkingGroup = Group & {
   company_name: string;
-  admin_idx: number; // selected admin
+  admin_idx: number;
 };
 
 export function ImportUsersModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const analyzeFn = useServerFn(analyzeExcelGroups);
   const confirmFn = useServerFn(confirmGroupedImport);
 
-  const [step, setStep] = useState<"upload" | "review" | "result">("upload");
+  const [step, setStep] = useState<"type" | "upload" | "review" | "result">("type");
+  const [accountType, setAccountType] = useState<AccountType>("empresa");
   const [busy, setBusy] = useState(false);
   const [groups, setGroups] = useState<WorkingGroup[]>([]);
   const [rowsByIdx, setRowsByIdx] = useState<Record<string, any>>({});
   const [parseErrors, setParseErrors] = useState<{ idx: number; email: string; error: string }[]>([]);
   const [result, setResult] = useState<{ created: number; failed: { email: string; error: string }[] } | null>(null);
 
-  function downloadTemplate() {
-    const ws = XLSX.utils.json_to_sheet([
-      { full_name: "Ana López", email: "ana@acme.com", password: "Cambiame123", account_type: "empresa", phone: "+34600000000", company_name: "Acme SL", sector: "Tech", company_size: "11-50", location_city: "Madrid", website: "https://acme.com", linkedin_url: "", tagline: "", description: "" },
-      { full_name: "Luis Pérez", email: "luis@acme.com", password: "Cambiame123", account_type: "empresa", phone: "", company_name: "Acme SL", sector: "Tech", company_size: "11-50", location_city: "Madrid", website: "https://acme.com", linkedin_url: "", tagline: "", description: "" },
-      { full_name: "Marta Ruiz", email: "marta@solucion.com", password: "Cambiame123", account_type: "sponsor", phone: "", company_name: "Solución SA", sector: "Cloud", website: "https://solucion.com", linkedin_url: "", tagline: "", description: "", sponsorship_category: "Cloud", sponsorship_level: "GOLD" },
-    ]);
+  function downloadTemplate(type: AccountType) {
+    let rows: Record<string, any>[];
+    let filename: string;
+    if (type === "empresa") {
+      rows = [
+        { full_name: "Ana López", email: "ana@acme.com", password: "Cambiame123", phone: "+34600000000", role: "CEO", company_name: "Acme SL", sector: "Tech", company_size: "11-50", location_city: "Madrid", website: "https://acme.com", linkedin_url: "", tagline: "", description: "" },
+        { full_name: "Luis Pérez", email: "luis@acme.com", password: "Cambiame123", phone: "", role: "Director de Marketing", company_name: "Acme SL", sector: "Tech", company_size: "11-50", location_city: "Madrid", website: "https://acme.com", linkedin_url: "", tagline: "", description: "" },
+      ];
+      filename = "plantilla-empresas.xlsx";
+    } else {
+      rows = [
+        { full_name: "Marta Ruiz", email: "marta@solucion.com", password: "Cambiame123", phone: "", role: "Head of Partnerships", company_name: "Solución SA", sector: "Cloud", location_city: "Barcelona", website: "https://solucion.com", linkedin_url: "", tagline: "", description: "", sponsorship_category: "Cloud", sponsorship_level: "GOLD" },
+        { full_name: "Carlos Gil", email: "carlos@solucion.com", password: "Cambiame123", phone: "", role: "Sales Manager", company_name: "Solución SA", sector: "Cloud", location_city: "Barcelona", website: "https://solucion.com", linkedin_url: "", tagline: "", description: "", sponsorship_category: "Cloud", sponsorship_level: "GOLD" },
+      ];
+      filename = "plantilla-soluciones.xlsx";
+    }
+    const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Usuarios");
-    XLSX.writeFile(wb, "plantilla-usuarios.xlsx");
+    XLSX.utils.book_append_sheet(wb, ws, type === "empresa" ? "Empresas" : "Soluciones");
+    XLSX.writeFile(wb, filename);
   }
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -56,19 +70,17 @@ export function ImportUsersModal({ onClose, onDone }: { onClose: () => void; onD
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(buf, { type: "array" });
       const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws);
-      if (!rows.length) {
+      const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws);
+      if (!rawRows.length) {
         toast.error("El fichero está vacío");
         return;
       }
+      // Force account_type from the selected flow so the user doesn't have to fill it
+      const rows = rawRows.map((r) => ({ ...r, account_type: accountType }));
       const res = await analyzeFn({ data: { rows } });
       const wg: WorkingGroup[] = res.groups.map((g) => {
         const adminMember = g.members.find((m) => m.suggested_admin) ?? g.members[0];
-        return {
-          ...g,
-          company_name: g.suggested_company_name,
-          admin_idx: adminMember.idx,
-        };
+        return { ...g, company_name: g.suggested_company_name, admin_idx: adminMember.idx };
       });
       setGroups(wg);
       setRowsByIdx(res.rows_by_idx);
@@ -123,10 +135,7 @@ export function ImportUsersModal({ onClose, onDone }: { onClose: () => void; onD
         toast.error("Solo se pueden fusionar cuentas del mismo tipo");
         return gs;
       }
-      const merged: WorkingGroup = {
-        ...prev,
-        members: [...prev.members, ...curr.members],
-      };
+      const merged: WorkingGroup = { ...prev, members: [...prev.members, ...curr.members] };
       return [...gs.slice(0, i - 1), merged, ...gs.slice(i + 1)];
     });
   }
@@ -157,19 +166,30 @@ export function ImportUsersModal({ onClose, onDone }: { onClose: () => void; onD
   }
 
   const totalMembers = groups.reduce((acc, g) => acc + g.members.length, 0);
+  const typeLabel = accountType === "empresa" ? "empresas" : "soluciones";
+  const requiredCols = accountType === "empresa"
+    ? "full_name, email, password, company_name"
+    : "full_name, email, password, company_name, sponsorship_level";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div className="w-full max-w-4xl rounded-xl border border-border bg-card p-6 max-h-[92vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
-            {step === "review" && (
-              <button onClick={() => { setStep("upload"); setGroups([]); }} className="text-muted-foreground hover:text-foreground">
+            {(step === "upload" || step === "review") && (
+              <button
+                onClick={() => {
+                  if (step === "review") { setStep("upload"); setGroups([]); }
+                  else { setStep("type"); }
+                }}
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <ArrowLeft className="h-5 w-5" />
               </button>
             )}
             <h2 className="font-display text-lg font-bold text-uppercase-wide">
-              {step === "upload" && "Importar usuarios desde Excel"}
+              {step === "type" && "Importar usuarios desde Excel"}
+              {step === "upload" && `Importar ${typeLabel} desde Excel`}
               {step === "review" && `Revisar agrupaciones (${groups.length} cuentas · ${totalMembers} responsables)`}
               {step === "result" && "Importación completada"}
             </h2>
@@ -180,9 +200,10 @@ export function ImportUsersModal({ onClose, onDone }: { onClose: () => void; onD
         {/* Step indicator */}
         <div className="flex items-center gap-2 mb-6 text-[10px] text-uppercase-wide">
           {[
-            { k: "upload", label: "1. Subir" },
-            { k: "review", label: "2. Revisar" },
-            { k: "result", label: "3. Resultado" },
+            { k: "type", label: "1. Tipo" },
+            { k: "upload", label: "2. Subir" },
+            { k: "review", label: "3. Revisar" },
+            { k: "result", label: "4. Resultado" },
           ].map((s) => (
             <div key={s.k} className={`flex-1 rounded-md px-3 py-1.5 font-bold border ${step === s.k ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"}`}>
               {s.label}
@@ -190,20 +211,51 @@ export function ImportUsersModal({ onClose, onDone }: { onClose: () => void; onD
           ))}
         </div>
 
+        {step === "type" && (
+          <div className="space-y-4">
+            <p className="text-xs text-muted-foreground">
+              ¿Qué tipo de cuentas quieres importar? Cada tipo usa una <strong className="text-foreground">plantilla distinta</strong> con las columnas adecuadas para evitar errores.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                onClick={() => { setAccountType("empresa"); setStep("upload"); }}
+                className="group rounded-lg border border-border bg-background hover:border-primary hover:bg-primary/5 p-5 text-left transition"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Building2 className="h-5 w-5 text-primary" />
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[9px] font-bold text-uppercase-wide">Empresa</span>
+                </div>
+                <div className="font-bold text-sm mb-1">Importar empresas</div>
+                <div className="text-xs text-muted-foreground">Para cuentas de empresa que buscan soluciones. Incluye sector, tamaño y ubicación.</div>
+              </button>
+              <button
+                onClick={() => { setAccountType("sponsor"); setStep("upload"); }}
+                className="group rounded-lg border border-border bg-background hover:border-primary hover:bg-primary/5 p-5 text-left transition"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="h-5 w-5 text-accent-foreground" />
+                  <span className="inline-flex items-center gap-1 rounded-full bg-accent/30 px-2 py-0.5 text-[9px] font-bold text-uppercase-wide">Solución</span>
+                </div>
+                <div className="font-bold text-sm mb-1">Importar soluciones</div>
+                <div className="text-xs text-muted-foreground">Para cuentas de solución/sponsor. Incluye categoría y nivel de sponsorship.</div>
+              </button>
+            </div>
+          </div>
+        )}
+
         {step === "upload" && (
           <div className="space-y-5">
             <div className="rounded-lg border border-border bg-background p-4 text-xs text-muted-foreground space-y-2">
-              <p>Sube un Excel con los responsables. La plataforma <strong className="text-foreground">agrupará automáticamente</strong> a las personas de la misma empresa (por nombre o dominio de email).</p>
-              <p>Después podrás revisar las agrupaciones, designar el administrador de cada cuenta y separar/fusionar según necesites.</p>
-              <p>Columnas obligatorias: <strong className="text-foreground">full_name, email, password, account_type, company_name</strong>.</p>
+              <p>Estás importando <strong className="text-foreground">{typeLabel}</strong>. La plataforma agrupará automáticamente a las personas de la misma cuenta (por nombre o dominio de email).</p>
+              <p>Columnas obligatorias: <strong className="text-foreground">{requiredCols}</strong>. La columna <strong className="text-foreground">role</strong> es el cargo de la persona (ej. "CEO", "Director de Marketing").</p>
             </div>
-            <button onClick={downloadTemplate} className="w-full inline-flex items-center justify-center gap-2 rounded-md border border-border py-2.5 text-xs font-bold text-uppercase-wide">
-              <Download className="h-4 w-4" /> Descargar plantilla
+            <button onClick={() => downloadTemplate(accountType)} className="w-full inline-flex items-center justify-center gap-2 rounded-md border border-border py-2.5 text-xs font-bold text-uppercase-wide hover:bg-muted">
+              <Download className="h-4 w-4" /> Descargar plantilla de {typeLabel}
             </button>
             <label className="block w-full">
               <input type="file" accept=".xlsx,.xls" onChange={handleFile} disabled={busy} className="hidden" />
               <span className={`flex items-center justify-center gap-2 rounded-md bg-primary py-3 text-sm font-bold text-primary-foreground text-uppercase-wide cursor-pointer ${busy ? "opacity-50" : ""}`}>
-                <Upload className="h-4 w-4" /> {busy ? "Analizando…" : "Subir Excel y analizar"}
+                <Upload className="h-4 w-4" /> {busy ? "Analizando…" : `Subir Excel de ${typeLabel}`}
               </span>
             </label>
           </div>
