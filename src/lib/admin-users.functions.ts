@@ -659,8 +659,10 @@ const confirmedGroupSchema = z.object({
     description: z.string().optional().default(""),
     company_size: z.enum(["1-10", "11-50", "51-200", "201-500", "500+"]).optional(),
     location_city: z.string().optional().default(""),
+    looking_for: z.string().optional().default(""),
     sponsorship_category: z.string().optional().default(""),
     sponsorship_level: z.enum(["GOLD","PREMIUM","BASIC","STARTUP"]).optional(),
+    target_audience: z.string().optional().default(""),
   }),
 });
 
