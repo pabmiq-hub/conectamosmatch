@@ -341,9 +341,11 @@ const bulkRowSchema = z.object({
   // empresa
   company_size: z.enum(["1-10", "11-50", "51-200", "201-500", "500+"]).optional(),
   location_city: optStr,
+  looking_for: optStr, // retos que la empresa quiere resolver
   // sponsor
   sponsorship_category: optStr,
   sponsorship_level: z.enum(["GOLD","PREMIUM","BASIC","STARTUP"]).optional(),
+  target_audience: optStr, // retos que la solución resuelve / a quién se dirige
 });
 
 
@@ -625,8 +627,10 @@ export const analyzeExcelGroups = createServerFn({ method: "POST" })
         description: g.members[0].row!.description,
         company_size: g.members[0].row!.company_size,
         location_city: g.members[0].row!.location_city,
+        looking_for: g.members[0].row!.looking_for,
         sponsorship_category: g.members[0].row!.sponsorship_category,
         sponsorship_level: g.members[0].row!.sponsorship_level,
+        target_audience: g.members[0].row!.target_audience,
       },
     }));
 
@@ -655,8 +659,10 @@ const confirmedGroupSchema = z.object({
     description: z.string().optional().default(""),
     company_size: z.enum(["1-10", "11-50", "51-200", "201-500", "500+"]).optional(),
     location_city: z.string().optional().default(""),
+    looking_for: z.string().optional().default(""),
     sponsorship_category: z.string().optional().default(""),
     sponsorship_level: z.enum(["GOLD","PREMIUM","BASIC","STARTUP"]).optional(),
+    target_audience: z.string().optional().default(""),
   }),
 });
 
@@ -689,6 +695,7 @@ export const confirmGroupedImport = createServerFn({ method: "POST" })
               description: g.account_fields.description ?? "",
               company_size: g.account_fields.company_size,
               location_city: g.account_fields.location_city ?? "",
+              looking_for: g.account_fields.looking_for ?? "",
             })
             .select("id")
             .single();
@@ -706,6 +713,7 @@ export const confirmGroupedImport = createServerFn({ method: "POST" })
               description: g.account_fields.description ?? "",
               sponsorship_category: g.account_fields.sponsorship_category ?? "",
               sponsorship_level: (g.account_fields.sponsorship_level as any) ?? "BASIC",
+              target_audience: g.account_fields.target_audience ?? "",
             })
             .select("id")
             .single();

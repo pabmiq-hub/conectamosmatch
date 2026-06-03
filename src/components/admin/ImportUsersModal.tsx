@@ -45,14 +45,14 @@ export function ImportUsersModal({ onClose, onDone }: { onClose: () => void; onD
     let filename: string;
     if (type === "empresa") {
       rows = [
-        { full_name: "Ana López", email: "ana@acme.com", password: "Cambiame123", phone: "+34600000000", role: "CEO", company_name: "Acme SL", sector: "Tech", company_size: "11-50", location_city: "Madrid", website: "https://acme.com", linkedin_url: "", tagline: "", description: "" },
-        { full_name: "Luis Pérez", email: "luis@acme.com", password: "Cambiame123", phone: "", role: "Director de Marketing", company_name: "Acme SL", sector: "Tech", company_size: "11-50", location_city: "Madrid", website: "https://acme.com", linkedin_url: "", tagline: "", description: "" },
+        { full_name: "Ana López", email: "ana@acme.com", password: "Cambiame123", phone: "+34600000000", role: "CEO", company_name: "Acme SL", sector: "Tech", company_size: "11-50", location_city: "Madrid", website: "https://acme.com", linkedin_url: "", tagline: "", description: "", looking_for: "Automatización de procesos internos, mejora de la experiencia de cliente, herramientas de analítica avanzada" },
+        { full_name: "Luis Pérez", email: "luis@acme.com", password: "Cambiame123", phone: "", role: "Director de Marketing", company_name: "Acme SL", sector: "Tech", company_size: "11-50", location_city: "Madrid", website: "https://acme.com", linkedin_url: "", tagline: "", description: "", looking_for: "Automatización de procesos internos, mejora de la experiencia de cliente, herramientas de analítica avanzada" },
       ];
       filename = "plantilla-empresas.xlsx";
     } else {
       rows = [
-        { full_name: "Marta Ruiz", email: "marta@solucion.com", password: "Cambiame123", phone: "", role: "Head of Partnerships", company_name: "Solución SA", sector: "Cloud", location_city: "Barcelona", website: "https://solucion.com", linkedin_url: "", tagline: "", description: "", sponsorship_category: "Cloud", sponsorship_level: "GOLD" },
-        { full_name: "Carlos Gil", email: "carlos@solucion.com", password: "Cambiame123", phone: "", role: "Sales Manager", company_name: "Solución SA", sector: "Cloud", location_city: "Barcelona", website: "https://solucion.com", linkedin_url: "", tagline: "", description: "", sponsorship_category: "Cloud", sponsorship_level: "GOLD" },
+        { full_name: "Marta Ruiz", email: "marta@solucion.com", password: "Cambiame123", phone: "", role: "Head of Partnerships", company_name: "Solución SA", sector: "Cloud", location_city: "Barcelona", website: "https://solucion.com", linkedin_url: "", tagline: "", description: "", sponsorship_category: "Cloud", sponsorship_level: "GOLD", target_audience: "Retail, ecommerce y marcas que necesitan escalar su infraestructura cloud y reducir costes operativos" },
+        { full_name: "Carlos Gil", email: "carlos@solucion.com", password: "Cambiame123", phone: "", role: "Sales Manager", company_name: "Solución SA", sector: "Cloud", location_city: "Barcelona", website: "https://solucion.com", linkedin_url: "", tagline: "", description: "", sponsorship_category: "Cloud", sponsorship_level: "GOLD", target_audience: "Retail, ecommerce y marcas que necesitan escalar su infraestructura cloud y reducir costes operativos" },
       ];
       filename = "plantilla-soluciones.xlsx";
     }
@@ -247,7 +247,7 @@ export function ImportUsersModal({ onClose, onDone }: { onClose: () => void; onD
           <div className="space-y-5">
             <div className="rounded-lg border border-border bg-background p-4 text-xs text-muted-foreground space-y-2">
               <p>Estás importando <strong className="text-foreground">{typeLabel}</strong>. La plataforma agrupará automáticamente a las personas de la misma cuenta (por nombre o dominio de email).</p>
-              <p>Columnas obligatorias: <strong className="text-foreground">{requiredCols}</strong>. La columna <strong className="text-foreground">role</strong> es el cargo de la persona (ej. "CEO", "Director de Marketing").</p>
+              <p>Columnas obligatorias: <strong className="text-foreground">{requiredCols}</strong>. La columna <strong className="text-foreground">role</strong> es el cargo de la persona (ej. "CEO", "Director de Marketing"). La columna <strong className="text-foreground">{accountType === "empresa" ? "looking_for" : "target_audience"}</strong> describe los retos {accountType === "empresa" ? "que la empresa quiere resolver" : "que la solución resuelve y a quién se dirige"}.</p>
             </div>
             <button onClick={() => downloadTemplate(accountType)} className="w-full inline-flex items-center justify-center gap-2 rounded-md border border-border py-2.5 text-xs font-bold text-uppercase-wide hover:bg-muted">
               <Download className="h-4 w-4" /> Descargar plantilla de {typeLabel}
