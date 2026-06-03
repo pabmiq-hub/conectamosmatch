@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { X, Pencil, Wand2, Loader2, Crown, ArrowRightLeft, ShieldCheck } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { getUserForEdit, updateUserProfile, transferAccountAdmin } from "@/lib/admin-users.functions";
+import { getUserForEdit, updateUserProfile, transferAccountAdmin, resetUserPassword } from "@/lib/admin-users.functions";
 import { scrapeProfileFromUrl } from "@/lib/scrape-profile.functions";
 import { MoveToAccountModal } from "@/components/admin/MoveToAccountModal";
 import { LogoUploader } from "@/components/dashboard/LogoUploader";
@@ -14,6 +14,8 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
   const save = useServerFn(updateUserProfile);
   const scrape = useServerFn(scrapeProfileFromUrl);
   const promote = useServerFn(transferAccountAdmin);
+  const resetPwd = useServerFn(resetUserPassword);
+  const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [scraping, setScraping] = useState(false);
@@ -104,6 +106,10 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
   }
 
   async function submit() {
+    if (newPassword && newPassword.length < 8) {
+      toast.error("La nueva contraseña debe tener al menos 8 caracteres");
+      return;
+    }
     setBusy(true);
     try {
       await save({
@@ -132,7 +138,11 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
             : undefined,
         },
       });
-      toast.success("Datos actualizados");
+      if (newPassword) {
+        await resetPwd({ data: { userId, password: newPassword } });
+      }
+      toast.success(newPassword ? "Datos y contraseña actualizados" : "Datos actualizados");
+      setNewPassword("");
       onSaved?.();
       onClose();
     } catch (e: any) {
@@ -166,6 +176,29 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
                   <select value={f.is_active ? "1" : "0"} onChange={(e) => set("is_active", e.target.value === "1")} className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
                     <option value="1">Activo</option><option value="0">Inactivo</option>
                   </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-xs text-uppercase-wide text-muted-foreground">Nueva contraseña (opcional)</label>
+                  <div className="flex gap-2 mt-1">
+                    <input
+                      type="text"
+                      value={newPassword}
+                      placeholder="Dejar vacío para no cambiarla"
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="flex-1 rounded-md border border-border bg-input px-3 py-2 text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+                        let p = "";
+                        for (let i = 0; i < 12; i++) p += chars[Math.floor(Math.random() * chars.length)];
+                        setNewPassword(p + "!2");
+                      }}
+                      className="rounded-md border border-border px-3 text-xs font-bold text-uppercase-wide"
+                    >Generar</button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">Mínimo 8 caracteres. Se guarda al pulsar "Guardar cambios" y se aplica al iniciar sesión.</p>
                 </div>
               </div>
             </section>
