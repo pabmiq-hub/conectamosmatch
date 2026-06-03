@@ -731,8 +731,26 @@ export const confirmGroupedImport = createServerFn({ method: "POST" })
               email_confirm: true,
               user_metadata: { full_name: r.full_name, role: g.account_type },
             });
-            if (error || !created.user) throw new Error(error?.message ?? "No se pudo crear usuario");
-            const userId = created.user.id;
+            let userId: string | null = null;
+            if (error || !created?.user) {
+              // If user already exists, update existing profile (so re-importing populates cargo/phone).
+              const msg = (error?.message ?? "").toLowerCase();
+              const alreadyExists = msg.includes("already") || msg.includes("registered") || msg.includes("exists") || msg.includes("duplicate");
+              if (alreadyExists) {
+                const { data: prof } = await supabaseAdmin
+                  .from("profiles").select("id").ilike("email", r.email).maybeSingle();
+                userId = prof?.id ?? null;
+                if (!userId) {
+                  const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+                  userId = list?.users?.find((u: any) => (u.email ?? "").toLowerCase() === r.email.toLowerCase())?.id ?? null;
+                }
+                if (!userId) throw new Error(error?.message ?? "Usuario existe pero no se encontró");
+              } else {
+                throw new Error(error?.message ?? "No se pudo crear usuario");
+              }
+            } else {
+              userId = created.user.id;
+            }
 
             const isAdmin = idx === g.admin_idx;
             const account_role = isAdmin ? "owner" : "manager";
