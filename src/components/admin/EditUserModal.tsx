@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { X, Pencil, Wand2, Loader2, Crown, ArrowRightLeft, ShieldCheck } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { getUserForEdit, updateUserProfile, transferAccountAdmin } from "@/lib/admin-users.functions";
+import { getUserForEdit, updateUserProfile, transferAccountAdmin, resetUserPassword } from "@/lib/admin-users.functions";
 import { scrapeProfileFromUrl } from "@/lib/scrape-profile.functions";
 import { MoveToAccountModal } from "@/components/admin/MoveToAccountModal";
 import { LogoUploader } from "@/components/dashboard/LogoUploader";
