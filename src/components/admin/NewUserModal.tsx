@@ -143,13 +143,48 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
                 </>
               ) : (
                 <>
-                  <div>
-                    <label className="text-xs text-uppercase-wide text-muted-foreground">Reto que soluciona *</label>
-                    <select value={c.sponsorship_category} onChange={(e) => setC1("sponsorship_category", e.target.value)}
-                      className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
-                      <option value="">Selecciona…</option>
-                      {PRESET_SPONSOR_CATEGORIES.map((o) => <option key={o} value={o}>{o}</option>)}
-                    </select>
+                  <div className="md:col-span-2">
+                    <label className="text-xs text-uppercase-wide text-muted-foreground">Retos que soluciona * (selección múltiple)</label>
+                    <div className="mt-1 grid grid-cols-1 sm:grid-cols-2 gap-1.5 rounded-md border border-border bg-input p-3 max-h-64 overflow-y-auto">
+                      {PRESET_SPONSOR_CATEGORIES.map((opt) => {
+                        const selected = c.sponsorship_category.split(",").map((s) => s.trim()).filter(Boolean);
+                        const checked = selected.includes(opt);
+                        return (
+                          <label key={opt} className="flex items-start gap-2 text-sm cursor-pointer hover:text-primary">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(e) => {
+                                const next = e.target.checked
+                                  ? [...selected, opt]
+                                  : selected.filter((s) => s !== opt);
+                                setC1("sponsorship_category", next.join(", "));
+                              }}
+                              className="mt-0.5"
+                            />
+                            <span>{opt}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-2">
+                      <label className="text-[11px] text-uppercase-wide text-muted-foreground">Otros (personalizado, separar por comas)</label>
+                      <input
+                        type="text"
+                        placeholder="Otro reto 1, Otro reto 2…"
+                        value={(() => {
+                          const sel = c.sponsorship_category.split(",").map((s) => s.trim()).filter(Boolean);
+                          return sel.filter((s) => !PRESET_SPONSOR_CATEGORIES.includes(s as any)).join(", ");
+                        })()}
+                        onChange={(e) => {
+                          const sel = c.sponsorship_category.split(",").map((s) => s.trim()).filter(Boolean);
+                          const preset = sel.filter((s) => PRESET_SPONSOR_CATEGORIES.includes(s as any));
+                          const custom = e.target.value.split(",").map((s) => s.trim()).filter(Boolean);
+                          setC1("sponsorship_category", [...preset, ...custom].join(", "));
+                        }}
+                        className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm"
+                      />
+                    </div>
                   </div>
                   <Select label="Nivel *" value={c.sponsorship_level} onChange={(v) => setC1("sponsorship_level", v)} options={["GOLD","PREMIUM","BASIC","STARTUP"]} />
                   <Field label="Website" value={c.website} onChange={(v) => setC1("website", v)} placeholder="https://…" />
