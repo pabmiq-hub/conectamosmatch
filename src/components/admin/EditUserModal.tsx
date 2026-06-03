@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { X, Pencil, Wand2, Loader2, Crown, ArrowRightLeft, ShieldCheck } from "lucide-react";
+import { X, Pencil, Wand2, Loader2, Crown, ArrowRightLeft, ShieldCheck, Save, UserPlus } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { getUserForEdit, updateUserProfile, transferAccountAdmin, resetUserPassword } from "@/lib/admin-users.functions";
+import { getUserForEdit, updateUserProfile, transferAccountAdmin, resetUserPassword, listAccountMembers, updateAccountMember } from "@/lib/admin-users.functions";
 import { scrapeProfileFromUrl } from "@/lib/scrape-profile.functions";
 import { MoveToAccountModal } from "@/components/admin/MoveToAccountModal";
+import { InviteResponsableModal } from "@/components/admin/InviteResponsableModal";
 import { LogoUploader } from "@/components/dashboard/LogoUploader";
 import { supabase } from "@/integrations/supabase/client";
 import { PRESET_SPONSOR_CATEGORIES } from "@/lib/sponsor-categories";
