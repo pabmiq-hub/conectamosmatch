@@ -177,6 +177,29 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
                     <option value="1">Activo</option><option value="0">Inactivo</option>
                   </select>
                 </div>
+                <div className="md:col-span-2">
+                  <label className="text-xs text-uppercase-wide text-muted-foreground">Nueva contraseña (opcional)</label>
+                  <div className="flex gap-2 mt-1">
+                    <input
+                      type="text"
+                      value={newPassword}
+                      placeholder="Dejar vacío para no cambiarla"
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="flex-1 rounded-md border border-border bg-input px-3 py-2 text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+                        let p = "";
+                        for (let i = 0; i < 12; i++) p += chars[Math.floor(Math.random() * chars.length)];
+                        setNewPassword(p + "!2");
+                      }}
+                      className="rounded-md border border-border px-3 text-xs font-bold text-uppercase-wide"
+                    >Generar</button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">Mínimo 8 caracteres. Se guarda al pulsar "Guardar cambios" y se aplica al iniciar sesión.</p>
+                </div>
               </div>
             </section>
 
