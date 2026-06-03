@@ -341,9 +341,11 @@ const bulkRowSchema = z.object({
   // empresa
   company_size: z.enum(["1-10", "11-50", "51-200", "201-500", "500+"]).optional(),
   location_city: optStr,
+  looking_for: optStr, // retos que la empresa quiere resolver
   // sponsor
   sponsorship_category: optStr,
   sponsorship_level: z.enum(["GOLD","PREMIUM","BASIC","STARTUP"]).optional(),
+  target_audience: optStr, // retos que la solución resuelve / a quién se dirige
 });
 
 
