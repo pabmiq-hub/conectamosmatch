@@ -627,8 +627,10 @@ export const analyzeExcelGroups = createServerFn({ method: "POST" })
         description: g.members[0].row!.description,
         company_size: g.members[0].row!.company_size,
         location_city: g.members[0].row!.location_city,
+        looking_for: g.members[0].row!.looking_for,
         sponsorship_category: g.members[0].row!.sponsorship_category,
         sponsorship_level: g.members[0].row!.sponsorship_level,
+        target_audience: g.members[0].row!.target_audience,
       },
     }));
 
