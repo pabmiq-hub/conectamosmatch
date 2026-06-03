@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { X, Pencil, Wand2, Loader2, Crown, ArrowRightLeft, ShieldCheck } from "lucide-react";
+import { X, Pencil, Wand2, Loader2, Crown, ArrowRightLeft, ShieldCheck, Save, UserPlus } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { getUserForEdit, updateUserProfile, transferAccountAdmin, resetUserPassword } from "@/lib/admin-users.functions";
+import { getUserForEdit, updateUserProfile, transferAccountAdmin, resetUserPassword, listAccountMembers, updateAccountMember } from "@/lib/admin-users.functions";
 import { scrapeProfileFromUrl } from "@/lib/scrape-profile.functions";
 import { MoveToAccountModal } from "@/components/admin/MoveToAccountModal";
+import { InviteResponsableModal } from "@/components/admin/InviteResponsableModal";
 import { LogoUploader } from "@/components/dashboard/LogoUploader";
 import { supabase } from "@/integrations/supabase/client";
 import { PRESET_SPONSOR_CATEGORIES } from "@/lib/sponsor-categories";
@@ -15,7 +16,12 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
   const scrape = useServerFn(scrapeProfileFromUrl);
   const promote = useServerFn(transferAccountAdmin);
   const resetPwd = useServerFn(resetUserPassword);
+  const fetchMembers = useServerFn(listAccountMembers);
+  const saveMember = useServerFn(updateAccountMember);
   const [newPassword, setNewPassword] = useState("");
+  const [members, setMembers] = useState<any[]>([]);
+  const [memberBusy, setMemberBusy] = useState<string | null>(null);
+  const [inviting, setInviting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [scraping, setScraping] = useState(false);
@@ -67,8 +73,47 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
       });
       setScrapeUrl(account?.website ?? "");
       setLoading(false);
+      if (profile.account_id) {
+        loadMembers(profile.account_id);
+      }
     }).catch((e: any) => { toast.error(e?.message ?? "Error"); onClose(); });
   }, [userId]);
+
+  async function loadMembers(aid: string) {
+    try {
+      const { members: list } = await fetchMembers({ data: { accountId: aid } });
+      setMembers(list);
+    } catch { /* ignore */ }
+  }
+
+  function patchMember(id: string, patch: any) {
+    setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch, _dirty: true } : m)));
+  }
+
+  async function saveMemberRow(m: any) {
+    setMemberBusy(m.id);
+    try {
+      await saveMember({ data: { userId: m.id, full_name: m.full_name ?? "", email: m.email ?? "", phone: m.phone ?? "", cargo: m.cargo ?? null } });
+      setMembers((prev) => prev.map((x) => (x.id === m.id ? { ...x, _dirty: false } : x)));
+      toast.success("Responsable actualizado");
+      onSaved?.();
+    } catch (e: any) { toast.error(e?.message ?? "Error"); }
+    finally { setMemberBusy(null); }
+  }
+
+  async function promoteMember(m: any) {
+    if (m.account_role === "owner") return;
+    if (!confirm(`¿Hacer admin de "${accountName}" a ${m.full_name || m.email}?`)) return;
+    setMemberBusy(m.id);
+    try {
+      await promote({ data: { newAdminUserId: m.id } });
+      toast.success("Admin actualizado");
+      if (accountId) await loadMembers(accountId);
+      onSaved?.();
+    } catch (e: any) { toast.error(e?.message ?? "Error"); }
+    finally { setMemberBusy(null); }
+  }
+
 
   async function runScrape() {
     if (!scrapeUrl.trim() || role === "super_admin") return;
@@ -234,6 +279,58 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
               </section>
             )}
 
+            {hasAccount && role !== "super_admin" && accountId && (
+              <section>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-[11px] font-bold text-uppercase-wide text-muted-foreground">
+                    Responsables de la cuenta ({members.length})
+                  </h3>
+                  <button type="button" onClick={() => setInviting(true)}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-[11px] font-bold text-uppercase-wide hover:bg-muted">
+                    <UserPlus className="h-3.5 w-3.5" /> Añadir responsable
+                  </button>
+                </div>
+                <div className="rounded-lg border border-border bg-background overflow-hidden divide-y divide-border">
+                  {members.length === 0 && (
+                    <div className="px-3 py-4 text-xs text-muted-foreground">Cargando responsables…</div>
+                  )}
+                  {members.map((m) => (
+                    <div key={m.id} className="p-3 space-y-2">
+                      <div className="flex items-center gap-2 text-[11px] font-bold text-uppercase-wide">
+                        {m.account_role === "owner" ? (
+                          <span className="inline-flex items-center gap-1 text-primary"><Crown className="h-3.5 w-3.5" /> Admin de la cuenta</span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-muted-foreground"><ShieldCheck className="h-3.5 w-3.5" /> Responsable</span>
+                        )}
+                        {m.id === userId && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">Editando arriba</span>}
+                      </div>
+                      <div className="grid md:grid-cols-2 gap-2">
+                        <Field label="Nombre" value={m.full_name ?? ""} onChange={(v) => patchMember(m.id, { full_name: v })} />
+                        <Field label="Email" type="email" value={m.email ?? ""} onChange={(v) => patchMember(m.id, { email: v })} />
+                        <Field label="Cargo" value={m.cargo ?? ""} onChange={(v) => patchMember(m.id, { cargo: v })} />
+                        <Field label="Teléfono" value={m.phone ?? ""} onChange={(v) => patchMember(m.id, { phone: v })} />
+                      </div>
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <button type="button" onClick={() => saveMemberRow(m)} disabled={memberBusy === m.id || !m._dirty}
+                          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-[11px] font-bold text-primary-foreground text-uppercase-wide disabled:opacity-40">
+                          {memberBusy === m.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Guardar
+                        </button>
+                        {m.account_role !== "owner" && (
+                          <button type="button" onClick={() => promoteMember(m)} disabled={memberBusy === m.id}
+                            className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-2.5 py-1.5 text-[11px] font-bold text-primary text-uppercase-wide hover:bg-primary/20 disabled:opacity-40">
+                            <Crown className="h-3.5 w-3.5" /> Hacer admin
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1.5">Edita inline el cargo y datos de cualquier responsable. Para cambiar contraseña usa el campo de arriba editando ese usuario individual.</p>
+              </section>
+            )}
+
+
+
 
 
             {hasAccount && role !== "super_admin" && accountRole === "owner" && (
@@ -337,6 +434,13 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
           currentRole={role as "empresa" | "sponsor"}
           onClose={() => setMoving(false)}
           onDone={() => { setMoving(false); onSaved?.(); onClose(); }}
+        />
+      )}
+      {inviting && accountId && (role === "empresa" || role === "sponsor") && (
+        <InviteResponsableModal
+          preset={{ accountId, accountType: role, accountName }}
+          onClose={() => setInviting(false)}
+          onCreated={() => { setInviting(false); if (accountId) loadMembers(accountId); onSaved?.(); }}
         />
       )}
     </div>
