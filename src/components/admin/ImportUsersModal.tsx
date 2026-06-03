@@ -247,7 +247,7 @@ export function ImportUsersModal({ onClose, onDone }: { onClose: () => void; onD
           <div className="space-y-5">
             <div className="rounded-lg border border-border bg-background p-4 text-xs text-muted-foreground space-y-2">
               <p>Estás importando <strong className="text-foreground">{typeLabel}</strong>. La plataforma agrupará automáticamente a las personas de la misma cuenta (por nombre o dominio de email).</p>
-              <p>Columnas obligatorias: <strong className="text-foreground">{requiredCols}</strong>. La columna <strong className="text-foreground">role</strong> es el cargo de la persona (ej. "CEO", "Director de Marketing"). La columna <strong className="text-foreground">{accountType === "empresa" ? "looking_for" : "target_audience"}</strong> describe los retos {accountType === "empresa" ? "que la empresa quiere resolver" : "que la solución resuelve y a quién se dirige"}.</p>
+              <p>Columnas obligatorias: <strong className="text-foreground">{requiredCols}</strong>. La columna <strong className="text-foreground">role</strong> es el cargo de la persona (ej. "CEO", "Director de Marketing").{accountType === "sponsor" && <> La columna <strong className="text-foreground">target_audience</strong> describe los retos que la solución resuelve y a quién se dirige.</>}</p>
             </div>
             <button onClick={() => downloadTemplate(accountType)} className="w-full inline-flex items-center justify-center gap-2 rounded-md border border-border py-2.5 text-xs font-bold text-uppercase-wide hover:bg-muted">
               <Download className="h-4 w-4" /> Descargar plantilla de {typeLabel}
