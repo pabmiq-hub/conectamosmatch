@@ -16,7 +16,12 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
   const scrape = useServerFn(scrapeProfileFromUrl);
   const promote = useServerFn(transferAccountAdmin);
   const resetPwd = useServerFn(resetUserPassword);
+  const fetchMembers = useServerFn(listAccountMembers);
+  const saveMember = useServerFn(updateAccountMember);
   const [newPassword, setNewPassword] = useState("");
+  const [members, setMembers] = useState<any[]>([]);
+  const [memberBusy, setMemberBusy] = useState<string | null>(null);
+  const [inviting, setInviting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [scraping, setScraping] = useState(false);
