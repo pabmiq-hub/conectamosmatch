@@ -1188,4 +1188,48 @@ export const getUserForEdit = createServerFn({ method: "POST" })
     return { profile: prof, account };
   });
 
+// ---- List + edit all responsables of an account (super admin) ----
+export const listAccountMembers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ accountId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+    const { data: members } = await supabaseAdmin
+      .from("profiles")
+      .select("id, full_name, email, phone, cargo, account_role, is_active, role")
+      .eq("account_id", data.accountId)
+      .order("account_role", { ascending: true });
+    return { members: members ?? [] };
+  });
+
+const memberPatchSchema = z.object({
+  userId: z.string().uuid(),
+  full_name: z.string().min(1).max(200),
+  email: z.string().email().max(200),
+  phone: z.string().max(40).optional().default(""),
+  cargo: z.string().max(120).nullable().optional(),
+});
+
+export const updateAccountMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => memberPatchSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+    const { data: prof } = await supabaseAdmin
+      .from("profiles").select("email").eq("id", data.userId).maybeSingle();
+    if (!prof) throw new Response("Usuario no encontrado", { status: 404 });
+    if (data.email !== prof.email) {
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, { email: data.email });
+      if (error) throw new Response(error.message, { status: 400 });
+    }
+    await supabaseAdmin.from("profiles").update({
+      full_name: data.full_name,
+      email: data.email,
+      phone: data.phone,
+      cargo: data.cargo ?? null,
+    }).eq("id", data.userId);
+    return { ok: true };
+  });
+
+
 
