@@ -279,6 +279,58 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
               </section>
             )}
 
+            {hasAccount && role !== "super_admin" && accountId && (
+              <section>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-[11px] font-bold text-uppercase-wide text-muted-foreground">
+                    Responsables de la cuenta ({members.length})
+                  </h3>
+                  <button type="button" onClick={() => setInviting(true)}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-[11px] font-bold text-uppercase-wide hover:bg-muted">
+                    <UserPlus className="h-3.5 w-3.5" /> Añadir responsable
+                  </button>
+                </div>
+                <div className="rounded-lg border border-border bg-background overflow-hidden divide-y divide-border">
+                  {members.length === 0 && (
+                    <div className="px-3 py-4 text-xs text-muted-foreground">Cargando responsables…</div>
+                  )}
+                  {members.map((m) => (
+                    <div key={m.id} className="p-3 space-y-2">
+                      <div className="flex items-center gap-2 text-[11px] font-bold text-uppercase-wide">
+                        {m.account_role === "owner" ? (
+                          <span className="inline-flex items-center gap-1 text-primary"><Crown className="h-3.5 w-3.5" /> Admin de la cuenta</span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-muted-foreground"><ShieldCheck className="h-3.5 w-3.5" /> Responsable</span>
+                        )}
+                        {m.id === userId && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">Editando arriba</span>}
+                      </div>
+                      <div className="grid md:grid-cols-2 gap-2">
+                        <Field label="Nombre" value={m.full_name ?? ""} onChange={(v) => patchMember(m.id, { full_name: v })} />
+                        <Field label="Email" type="email" value={m.email ?? ""} onChange={(v) => patchMember(m.id, { email: v })} />
+                        <Field label="Cargo" value={m.cargo ?? ""} onChange={(v) => patchMember(m.id, { cargo: v })} />
+                        <Field label="Teléfono" value={m.phone ?? ""} onChange={(v) => patchMember(m.id, { phone: v })} />
+                      </div>
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <button type="button" onClick={() => saveMemberRow(m)} disabled={memberBusy === m.id || !m._dirty}
+                          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-[11px] font-bold text-primary-foreground text-uppercase-wide disabled:opacity-40">
+                          {memberBusy === m.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Guardar
+                        </button>
+                        {m.account_role !== "owner" && (
+                          <button type="button" onClick={() => promoteMember(m)} disabled={memberBusy === m.id}
+                            className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-2.5 py-1.5 text-[11px] font-bold text-primary text-uppercase-wide hover:bg-primary/20 disabled:opacity-40">
+                            <Crown className="h-3.5 w-3.5" /> Hacer admin
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1.5">Edita inline el cargo y datos de cualquier responsable. Para cambiar contraseña usa el campo de arriba editando ese usuario individual.</p>
+              </section>
+            )}
+
+
+
 
 
             {hasAccount && role !== "super_admin" && accountRole === "owner" && (
