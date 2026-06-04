@@ -106,12 +106,21 @@ export const createMeeting = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.userId);
+    // Resolve account ids for both sides so dashboards can filter by account
+    const { data: pr } = await supabaseAdmin
+      .from("profiles")
+      .select("id, account_id")
+      .in("id", [data.empresa_user_id, data.sponsor_user_id]);
+    const accMap = new Map((pr ?? []).map((p: any) => [p.id, p.account_id]));
+
     const { data: m, error } = await supabaseAdmin
       .from("meetings_1to1")
       .insert({
         event_id: data.event_id ?? null,
         empresa_user_id: data.empresa_user_id,
         sponsor_user_id: data.sponsor_user_id,
+        empresa_account_id: accMap.get(data.empresa_user_id) ?? null,
+        sponsor_account_id: accMap.get(data.sponsor_user_id) ?? null,
         scheduled_time: data.scheduled_time ?? null,
         room: data.room ?? null,
         duration_minutes: data.duration_minutes ?? 15,
