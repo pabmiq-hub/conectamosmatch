@@ -121,11 +121,14 @@ export const listAllParticipants = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertSuperAdmin(context.userId);
     const [{ data: emps }, { data: sps }] = await Promise.all([
-      supabaseAdmin.from("empresa_profiles").select("user_id, company_name").order("company_name"),
-      supabaseAdmin.from("sponsor_profiles").select("user_id, company_name").order("company_name"),
+      supabaseAdmin.from("empresa_profiles").select("user_id, company_name, responsables").order("company_name"),
+      supabaseAdmin.from("sponsor_profiles").select("user_id, company_name, responsables").order("company_name"),
     ]);
+    const mapResp = (r: any) => (Array.isArray(r) ? r : []).filter((x: any) => x && x.full_name).map((x: any) => ({
+      full_name: x.full_name, role: x.role ?? "", email: x.email ?? "",
+    }));
     return {
-      empresas: (emps ?? []).filter((e: any) => e.user_id).map((e: any) => ({ user_id: e.user_id, name: e.company_name })),
-      sponsors: (sps ?? []).filter((s: any) => s.user_id).map((s: any) => ({ user_id: s.user_id, name: s.company_name })),
+      empresas: (emps ?? []).filter((e: any) => e.user_id).map((e: any) => ({ user_id: e.user_id, name: e.company_name, responsables: mapResp(e.responsables) })),
+      sponsors: (sps ?? []).filter((s: any) => s.user_id).map((s: any) => ({ user_id: s.user_id, name: s.company_name, responsables: mapResp(s.responsables) })),
     };
   });
