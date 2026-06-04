@@ -84,6 +84,12 @@ export const deleteMeeting = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const responsableSchema = z.object({
+  full_name: z.string().min(1).max(200),
+  role: z.string().max(200).optional().nullable(),
+  email: z.string().max(200).optional().nullable(),
+}).nullable().optional();
+
 export const createMeeting = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
@@ -94,6 +100,8 @@ export const createMeeting = createServerFn({ method: "POST" })
       scheduled_time: z.string().optional().nullable(),
       room: z.string().max(120).optional().nullable(),
       duration_minutes: z.number().int().min(5).max(180).optional(),
+      empresa_responsable: responsableSchema,
+      sponsor_responsable: responsableSchema,
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -109,6 +117,8 @@ export const createMeeting = createServerFn({ method: "POST" })
         duration_minutes: data.duration_minutes ?? 15,
         status: data.scheduled_time ? "confirmed" : "pending",
         assigned_by: context.userId,
+        empresa_responsable: data.empresa_responsable ?? null,
+        sponsor_responsable: data.sponsor_responsable ?? null,
       })
       .select()
       .single();
