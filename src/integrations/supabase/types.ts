@@ -451,6 +451,7 @@ export type Database = {
           created_at: string | null
           duration_minutes: number | null
           empresa_account_id: string | null
+          empresa_responsable: Json | null
           empresa_user_id: string | null
           event_id: string | null
           id: string
@@ -459,6 +460,7 @@ export type Database = {
           room: string | null
           scheduled_time: string | null
           sponsor_account_id: string | null
+          sponsor_responsable: Json | null
           sponsor_user_id: string | null
           status: Database["public"]["Enums"]["meeting_status_t"] | null
         }
@@ -467,6 +469,7 @@ export type Database = {
           created_at?: string | null
           duration_minutes?: number | null
           empresa_account_id?: string | null
+          empresa_responsable?: Json | null
           empresa_user_id?: string | null
           event_id?: string | null
           id?: string
@@ -475,6 +478,7 @@ export type Database = {
           room?: string | null
           scheduled_time?: string | null
           sponsor_account_id?: string | null
+          sponsor_responsable?: Json | null
           sponsor_user_id?: string | null
           status?: Database["public"]["Enums"]["meeting_status_t"] | null
         }
@@ -483,6 +487,7 @@ export type Database = {
           created_at?: string | null
           duration_minutes?: number | null
           empresa_account_id?: string | null
+          empresa_responsable?: Json | null
           empresa_user_id?: string | null
           event_id?: string | null
           id?: string
@@ -491,6 +496,7 @@ export type Database = {
           room?: string | null
           scheduled_time?: string | null
           sponsor_account_id?: string | null
+          sponsor_responsable?: Json | null
           sponsor_user_id?: string | null
           status?: Database["public"]["Enums"]["meeting_status_t"] | null
         }
