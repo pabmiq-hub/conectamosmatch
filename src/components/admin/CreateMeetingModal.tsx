@@ -70,9 +70,9 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
           </Field>
           {empresa && (
             <Field label="Responsable empresa (opcional)">
-              <select value={empResp} onChange={(e) => setEmpResp(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm" disabled={empRespList.length === 0}>
-                <option value="">{empRespList.length === 0 ? "— Sin responsables —" : "— Sin asignar —"}</option>
-                {empRespList.map((r, i) => <option key={i} value={String(i)}>{r.full_name}{r.role ? ` · ${r.role}` : ""}</option>)}
+              <select value={empResp} onChange={(e) => setEmpResp(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
+                <option value="">{empRespList.length === 0 ? "— Sin equipo registrado —" : "— Sin asignar —"}</option>
+                {empRespList.map((r) => <option key={r.profile_id} value={r.profile_id}>{r.full_name}{r.role ? ` · ${r.role}` : ""}</option>)}
               </select>
             </Field>
           )}
@@ -84,9 +84,9 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
           </Field>
           {sponsor && (
             <Field label="Responsable solución (opcional)">
-              <select value={spResp} onChange={(e) => setSpResp(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm" disabled={spRespList.length === 0}>
-                <option value="">{spRespList.length === 0 ? "— Sin responsables —" : "— Sin asignar —"}</option>
-                {spRespList.map((r, i) => <option key={i} value={String(i)}>{r.full_name}{r.role ? ` · ${r.role}` : ""}</option>)}
+              <select value={spResp} onChange={(e) => setSpResp(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
+                <option value="">{spRespList.length === 0 ? "— Sin equipo registrado —" : "— Sin asignar —"}</option>
+                {spRespList.map((r) => <option key={r.profile_id} value={r.profile_id}>{r.full_name}{r.role ? ` · ${r.role}` : ""}</option>)}
               </select>
             </Field>
           )}
