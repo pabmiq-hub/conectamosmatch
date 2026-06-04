@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { toast } from "sonner";
 import { createMeeting, listAllParticipants } from "@/lib/admin-meetings.functions";
 
-type Responsable = { full_name: string; role?: string | null; email?: string | null };
+type Responsable = { profile_id: string; full_name: string; role?: string | null; email?: string | null };
 type Party = { user_id: string; name: string; responsables: Responsable[] };
 
 export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: string | null; onClose: () => void; onCreated: () => void }) {
@@ -21,8 +21,10 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
 
   useEffect(() => { list().then(setParts as any).catch(() => setParts({ empresas: [], sponsors: [] })); }, []);
 
-  const empRespList = useMemo(() => parts?.empresas.find((e) => e.user_id === empresa)?.responsables ?? [], [parts, empresa]);
-  const spRespList = useMemo(() => parts?.sponsors.find((s) => s.user_id === sponsor)?.responsables ?? [], [parts, sponsor]);
+  const empParty = useMemo(() => parts?.empresas.find((e) => e.user_id === empresa), [parts, empresa]);
+  const spParty = useMemo(() => parts?.sponsors.find((s) => s.user_id === sponsor), [parts, sponsor]);
+  const empRespList = empParty?.responsables ?? [];
+  const spRespList = spParty?.responsables ?? [];
 
   useEffect(() => { setEmpResp(""); }, [empresa]);
   useEffect(() => { setSpResp(""); }, [sponsor]);
@@ -31,12 +33,13 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
     if (!empresa || !sponsor) return toast.error("Elige empresa y solución");
     setBusy(true);
     try {
-      const ep = empRespList[Number(empResp)];
-      const sp = spRespList[Number(spResp)];
+      const ep = empRespList.find((r) => r.profile_id === empResp);
+      const sp = spRespList.find((r) => r.profile_id === spResp);
       await create({ data: {
         event_id: eventId,
-        empresa_user_id: empresa,
-        sponsor_user_id: sponsor,
+        // If a responsable is chosen, the meeting belongs to that profile so it shows in their agenda
+        empresa_user_id: ep?.profile_id ?? empresa,
+        sponsor_user_id: sp?.profile_id ?? sponsor,
         scheduled_time: time ? new Date(time).toISOString() : null,
         room: room || null,
         empresa_responsable: ep ? { full_name: ep.full_name, role: ep.role ?? "", email: ep.email ?? "" } : null,
