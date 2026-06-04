@@ -48,7 +48,7 @@ function AdminEventos() {
       {events.length === 0 ? <EmptyState icon={Calendar} title="Sin eventos" hint="Crea el primero" /> : (
         <div className="grid gap-4 md:grid-cols-2">
           {events.map((e) => (
-            <div key={e.id} className="rounded-xl border border-border bg-card overflow-hidden card-hover">
+            <div key={e.id} className="rounded-xl border border-border bg-card overflow-hidden transition-colors hover:border-primary/40">
               {e.cover_image_url && <div className="h-32 bg-cover bg-center" style={{ backgroundImage: `url(${e.cover_image_url})` }} />}
               <div className="p-5 space-y-3">
                 <div className="flex items-start justify-between gap-2">
