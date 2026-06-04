@@ -130,15 +130,42 @@ export const listAllParticipants = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertSuperAdmin(context.userId);
-    const [{ data: emps }, { data: sps }] = await Promise.all([
-      supabaseAdmin.from("empresa_profiles").select("user_id, company_name, responsables").order("company_name"),
-      supabaseAdmin.from("sponsor_profiles").select("user_id, company_name, responsables").order("company_name"),
+    const [{ data: emps }, { data: sps }, { data: profs }] = await Promise.all([
+      supabaseAdmin.from("empresa_profiles").select("user_id, company_name").order("company_name"),
+      supabaseAdmin.from("sponsor_profiles").select("user_id, company_name").order("company_name"),
+      supabaseAdmin.from("profiles").select("id, account_id, full_name, email, account_role, role, is_active"),
     ]);
-    const mapResp = (r: any) => (Array.isArray(r) ? r : []).filter((x: any) => x && x.full_name).map((x: any) => ({
-      full_name: x.full_name, role: x.role ?? "", email: x.email ?? "",
-    }));
+
+    const ownerAccount = new Map<string, string>();
+    const byAccount = new Map<string, any[]>();
+    (profs ?? []).forEach((p: any) => {
+      if (!p.account_id) return;
+      if (p.is_active === false) return;
+      const arr = byAccount.get(p.account_id) ?? [];
+      arr.push(p);
+      byAccount.set(p.account_id, arr);
+      ownerAccount.set(p.id, p.account_id);
+    });
+
+    const buildResp = (ownerUserId: string) => {
+      const accId = ownerAccount.get(ownerUserId);
+      if (!accId) return [];
+      const members = (byAccount.get(accId) ?? []).slice();
+      members.sort((a, b) => (a.account_role === "owner" ? -1 : b.account_role === "owner" ? 1 : 0));
+      return members.map((m: any) => ({
+        profile_id: m.id,
+        full_name: m.full_name ?? "(sin nombre)",
+        role: m.account_role ?? "",
+        email: m.email ?? "",
+      }));
+    };
+
     return {
-      empresas: (emps ?? []).filter((e: any) => e.user_id).map((e: any) => ({ user_id: e.user_id, name: e.company_name, responsables: mapResp(e.responsables) })),
-      sponsors: (sps ?? []).filter((s: any) => s.user_id).map((s: any) => ({ user_id: s.user_id, name: s.company_name, responsables: mapResp(s.responsables) })),
+      empresas: (emps ?? []).filter((e: any) => e.user_id).map((e: any) => ({
+        user_id: e.user_id, name: e.company_name, responsables: buildResp(e.user_id),
+      })),
+      sponsors: (sps ?? []).filter((s: any) => s.user_id).map((s: any) => ({
+        user_id: s.user_id, name: s.company_name, responsables: buildResp(s.user_id),
+      })),
     };
   });
