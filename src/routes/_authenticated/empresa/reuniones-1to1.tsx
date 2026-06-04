@@ -23,15 +23,36 @@ function ReunionesEmpresa() {
       const { data: meetings } = teamIds.length
         ? await supabase.from("meetings_1to1").select("*").in("empresa_user_id", teamIds).order("scheduled_time")
         : { data: [] as any[] };
-      const ids = Array.from(new Set((meetings ?? []).map((m: any) => m.sponsor_user_id).filter(Boolean)));
-      const { data: sps } = ids.length
-        ? await supabase.from("sponsor_profiles").select("user_id, company_name, responsables").in("user_id", ids)
+      const sponsorIds = Array.from(new Set((meetings ?? []).map((m: any) => m.sponsor_user_id).filter(Boolean)));
+      const sponsorAccIds = Array.from(new Set((meetings ?? []).map((m: any) => m.sponsor_account_id).filter(Boolean)));
+      const { data: sponsorProfs } = sponsorIds.length
+        ? await supabase.from("profiles").select("id, account_id").in("id", sponsorIds)
         : { data: [] as any[] };
-      const map = new Map((sps ?? []).map((s: any) => [s.user_id, s]));
+      const sponsorProfAcc = new Map((sponsorProfs ?? []).map((p: any) => [p.id, p.account_id]));
+      const allSpAcc = Array.from(new Set([...sponsorAccIds, ...Array.from(sponsorProfAcc.values())].filter(Boolean)));
+      const { data: spOwnersAll } = allSpAcc.length
+        ? await supabase.from("profiles").select("id, account_id").eq("account_role", "owner").in("account_id", allSpAcc as string[])
+        : { data: [] as any[] };
+      const accToOwner = new Map((spOwnersAll ?? []).map((p: any) => [p.account_id, p.id]));
+      const ownerIds = Array.from(new Set((spOwnersAll ?? []).map((p: any) => p.id)));
+      const { data: sps } = ownerIds.length
+        ? await supabase.from("sponsor_profiles").select("user_id, company_name").in("user_id", ownerIds)
+        : { data: [] as any[] };
+      const ownerToCompany = new Map((sps ?? []).map((s: any) => [s.user_id, s.company_name]));
+
       setRows((meetings ?? []).map((m: any) => {
-        const sp = map.get(m.sponsor_user_id);
-        const resp = Array.isArray(sp?.responsables) ? sp.responsables[0] : null;
-        return { ...m, partner_name: sp?.company_name ?? "Solución", responsable: resp?.full_name ?? null, responsable_role: resp?.role ?? null };
+        const accId = m.sponsor_account_id ?? sponsorProfAcc.get(m.sponsor_user_id);
+        const ownerId = accId ? accToOwner.get(accId) : null;
+        const company = ownerId ? ownerToCompany.get(ownerId) : null;
+        const resp = m.sponsor_responsable && typeof m.sponsor_responsable === "object" ? m.sponsor_responsable : null;
+        const myProf = teamMap.get(m.empresa_user_id) as any;
+        return {
+          ...m,
+          partner_name: company ?? "Solución",
+          responsable: resp?.full_name ?? null,
+          responsable_role: resp?.role ?? null,
+          my_attendee: myProf?.full_name ?? null,
+        };
       }));
     })();
   }, []);
