@@ -14,11 +14,15 @@ function ReunionesEmpresa() {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data: meetings } = await supabase
-        .from("meetings_1to1")
-        .select("*")
-        .eq("empresa_user_id", user.id)
-        .order("scheduled_time");
+      const { data: me } = await supabase.from("profiles").select("account_id").eq("id", user.id).maybeSingle();
+      const { data: teamProfiles } = me?.account_id
+        ? await supabase.from("profiles").select("id, full_name, account_role").eq("account_id", me.account_id)
+        : { data: [] as any[] };
+      const teamIds = (teamProfiles ?? []).map((p: any) => p.id);
+      const teamMap = new Map((teamProfiles ?? []).map((p: any) => [p.id, p]));
+      const { data: meetings } = teamIds.length
+        ? await supabase.from("meetings_1to1").select("*").in("empresa_user_id", teamIds).order("scheduled_time")
+        : { data: [] as any[] };
       const ids = Array.from(new Set((meetings ?? []).map((m: any) => m.sponsor_user_id).filter(Boolean)));
       const { data: sps } = ids.length
         ? await supabase.from("sponsor_profiles").select("user_id, company_name, responsables").in("user_id", ids)
