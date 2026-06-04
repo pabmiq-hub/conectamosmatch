@@ -16,20 +16,30 @@ export const listMeetings = createServerFn({ method: "POST" })
     const { data: meetings, error } = await q;
     if (error) throw new Response(error.message, { status: 400 });
 
-    const empIds = Array.from(new Set((meetings ?? []).map((m: any) => m.empresa_user_id).filter(Boolean)));
-    const spIds = Array.from(new Set((meetings ?? []).map((m: any) => m.sponsor_user_id).filter(Boolean)));
-    const [{ data: emps }, { data: sps }] = await Promise.all([
-      supabaseAdmin.from("empresa_profiles").select("user_id, company_name").in("user_id", empIds.length ? empIds : ["00000000-0000-0000-0000-000000000000"]),
-      supabaseAdmin.from("sponsor_profiles").select("user_id, company_name").in("user_id", spIds.length ? spIds : ["00000000-0000-0000-0000-000000000000"]),
+    // Build account_id -> company_name maps via owners
+    const [{ data: emps }, { data: sps }, { data: profs }] = await Promise.all([
+      supabaseAdmin.from("empresa_profiles").select("user_id, company_name"),
+      supabaseAdmin.from("sponsor_profiles").select("user_id, company_name"),
+      supabaseAdmin.from("profiles").select("id, account_id"),
     ]);
-    const eMap = new Map((emps ?? []).map((e: any) => [e.user_id, e]));
-    const sMap = new Map((sps ?? []).map((s: any) => [s.user_id, s]));
+    const profAcc = new Map((profs ?? []).map((p: any) => [p.id, p.account_id]));
+    const empAccName = new Map<string, string>();
+    (emps ?? []).forEach((e: any) => { const a = profAcc.get(e.user_id); if (a) empAccName.set(a, e.company_name); });
+    const spAccName = new Map<string, string>();
+    (sps ?? []).forEach((s: any) => { const a = profAcc.get(s.user_id); if (a) spAccName.set(a, s.company_name); });
+    const empOwnerName = new Map((emps ?? []).map((e: any) => [e.user_id, e.company_name]));
+    const spOwnerName = new Map((sps ?? []).map((s: any) => [s.user_id, s.company_name]));
+
     return {
-      meetings: (meetings ?? []).map((m: any) => ({
-        ...m,
-        empresa_name: eMap.get(m.empresa_user_id)?.company_name ?? "—",
-        sponsor_name: sMap.get(m.sponsor_user_id)?.company_name ?? "—",
-      })),
+      meetings: (meetings ?? []).map((m: any) => {
+        const eAcc = m.empresa_account_id ?? profAcc.get(m.empresa_user_id);
+        const sAcc = m.sponsor_account_id ?? profAcc.get(m.sponsor_user_id);
+        return {
+          ...m,
+          empresa_name: (eAcc && empAccName.get(eAcc)) ?? empOwnerName.get(m.empresa_user_id) ?? "—",
+          sponsor_name: (sAcc && spAccName.get(sAcc)) ?? spOwnerName.get(m.sponsor_user_id) ?? "—",
+        };
+      }),
     };
   });
 
