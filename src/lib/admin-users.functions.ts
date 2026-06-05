@@ -1065,8 +1065,12 @@ export const likeEmpresaAccount = createServerFn({ method: "POST" })
     let inserted = 0;
     for (const row of rows) {
       const { error } = await supabase.from("likes").insert(row);
-      if (!error) inserted++;
-      // Silently ignore duplicates/conflicts
+      if (!error) { inserted++; continue; }
+      // Silently ignore duplicate-key conflicts; surface any other error
+      const code = (error as any).code;
+      const msg = error.message || "";
+      const isDuplicate = code === "23505" || /duplicate key/i.test(msg);
+      if (!isDuplicate) throw new Error(msg || "No se pudo registrar el like");
     }
     return { ok: true, count: inserted };
   });
