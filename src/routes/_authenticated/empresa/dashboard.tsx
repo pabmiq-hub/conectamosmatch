@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { AgendaTable } from "@/components/dashboard/AgendaTable";
 import { Bookmark, Heart, Calendar, Search } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { listMyLikedAccountIds } from "@/lib/admin-users.functions";
 
 export const Route = createFileRoute("/_authenticated/empresa/dashboard")({
   component: EmpresaDashboard,
