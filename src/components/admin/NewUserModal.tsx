@@ -88,8 +88,8 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
     !!o.full_name && !!o.cargo && /\S+@\S+\.\S+/.test(o.email) && !!o.phone && o.password.length >= 8;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
-      <div className="w-full max-w-2xl rounded-xl border border-border bg-card p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="w-full max-w-2xl rounded-xl border border-border bg-card p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="font-display text-lg font-bold text-uppercase-wide">
