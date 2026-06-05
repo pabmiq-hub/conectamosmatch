@@ -17,6 +17,7 @@ function EmpresaDashboard() {
   const [stats, setStats] = useState({ likes: 0, matches: 0, meetings: 0 });
   const [eventTitle, setEventTitle] = useState<string>("");
   const [agenda, setAgenda] = useState<any[]>([]);
+  const getLikedAccounts = useServerFn(listMyLikedAccountIds);
 
   useEffect(() => {
     (async () => {
@@ -32,12 +33,14 @@ function EmpresaDashboard() {
         setAgenda(ag ?? []);
       }
 
-      const { count: likes } = await supabase.from("likes").select("*", { count: "exact", head: true }).eq("from_user_id", user.id);
+      const liked = await getLikedAccounts({ data: { eventId: ev?.id ?? null } });
+      const likes = liked.accountIds.length;
       const { count: matches } = await supabase.from("matches").select("*", { count: "exact", head: true }).eq("empresa_user_id", user.id).eq("status","mutual");
       const { count: meetings } = await supabase.from("meetings_1to1").select("*", { count: "exact", head: true }).eq("empresa_user_id", user.id);
-      setStats({ likes: likes ?? 0, matches: matches ?? 0, meetings: meetings ?? 0 });
+      setStats({ likes, matches: matches ?? 0, meetings: meetings ?? 0 });
     })();
   }, []);
+
 
   return (
     <div className="space-y-8">
