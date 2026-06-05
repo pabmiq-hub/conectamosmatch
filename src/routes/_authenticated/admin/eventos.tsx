@@ -8,6 +8,14 @@ import { listEvents, deleteEvent } from "@/lib/admin-events.functions";
 import { listAgenda, deleteAgendaItem } from "@/lib/admin-agenda.functions";
 import { EventModal } from "@/components/admin/EventModal";
 import { AgendaItemModal } from "@/components/admin/AgendaItemModal";
+import { groupAgendaByDay } from "@/components/dashboard/AgendaTable";
+
+function dayLabel(date: string | null, idx: number) {
+  if (!date) return `Día ${idx + 1} · Sin fecha`;
+  const d = new Date(date + "T00:00:00");
+  const s = d.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+  return `Día ${idx + 1} · ${s.charAt(0).toUpperCase() + s.slice(1)}`;
+}
 
 export const Route = createFileRoute("/_authenticated/admin/eventos")({
   component: AdminEventos,
@@ -130,32 +138,41 @@ function AgendaInlinePanel({ eventId }: { eventId: string }) {
       ) : items.length === 0 ? (
         <p className="text-xs text-muted-foreground">Sin items en la agenda. Añade el primero.</p>
       ) : (
-        <ul className="space-y-2">
-          {items.map((it) => (
-            <li key={it.id} className="flex items-start justify-between gap-2 rounded-md border border-border bg-card p-2.5">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-[10px] text-muted-foreground">
-                    {it.time_start ?? "—"}{it.time_end ? `–${it.time_end}` : ""}
-                  </span>
-                  {it.agenda_type && <span className="rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-bold text-uppercase-wide">{it.agenda_type}</span>}
-                </div>
-                <div className="text-xs font-semibold truncate">{it.title}</div>
-                <div className="text-[10px] text-muted-foreground truncate">
-                  {it.room ? `${it.room} · ` : ""}{it.speaker_name ?? ""}
-                </div>
+        <div className="space-y-4">
+          {groupAgendaByDay(items).map((g, gi) => (
+            <div key={g.date ?? "none"} className="space-y-2">
+              <div className="text-[10px] font-bold text-uppercase-wide text-primary border-b border-border pb-1">
+                {dayLabel(g.date, gi)} <span className="text-muted-foreground font-normal normal-case">· {g.items.length} {g.items.length === 1 ? "item" : "items"}</span>
               </div>
-              <div className="flex items-center gap-0.5 shrink-0">
-                <button onClick={() => { setEditing(it); setShowModal(true); }} className="p-1.5 text-muted-foreground hover:text-foreground"><Edit3 className="h-3.5 w-3.5" /></button>
-                <button onClick={async () => {
-                  if (!window.confirm("¿Eliminar este item?")) return;
-                  try { await del({ data: { id: it.id } }); toast.success("Eliminado"); load(); }
-                  catch (e: any) { toast.error(e?.message ?? "Error"); }
-                }} className="p-1.5 text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
-              </div>
-            </li>
+              <ul className="space-y-2">
+                {g.items.map((it) => (
+                  <li key={it.id} className="flex items-start justify-between gap-2 rounded-md border border-border bg-card p-2.5">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-[10px] text-muted-foreground">
+                          {it.time_start ?? "—"}{it.time_end ? `–${it.time_end}` : ""}
+                        </span>
+                        {it.agenda_type && <span className="rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-bold text-uppercase-wide">{it.agenda_type}</span>}
+                      </div>
+                      <div className="text-xs font-semibold truncate">{it.title}</div>
+                      <div className="text-[10px] text-muted-foreground truncate">
+                        {it.room ? `${it.room} · ` : ""}{it.speaker_name ?? ""}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <button onClick={() => { setEditing(it); setShowModal(true); }} className="p-1.5 text-muted-foreground hover:text-foreground"><Edit3 className="h-3.5 w-3.5" /></button>
+                      <button onClick={async () => {
+                        if (!window.confirm("¿Eliminar este item?")) return;
+                        try { await del({ data: { id: it.id } }); toast.success("Eliminado"); load(); }
+                        catch (e: any) { toast.error(e?.message ?? "Error"); }
+                      }} className="p-1.5 text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );
