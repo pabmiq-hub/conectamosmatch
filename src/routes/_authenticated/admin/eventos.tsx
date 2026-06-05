@@ -8,6 +8,14 @@ import { listEvents, deleteEvent } from "@/lib/admin-events.functions";
 import { listAgenda, deleteAgendaItem } from "@/lib/admin-agenda.functions";
 import { EventModal } from "@/components/admin/EventModal";
 import { AgendaItemModal } from "@/components/admin/AgendaItemModal";
+import { groupAgendaByDay } from "@/components/dashboard/AgendaTable";
+
+function dayLabel(date: string | null, idx: number) {
+  if (!date) return `Día ${idx + 1} · Sin fecha`;
+  const d = new Date(date + "T00:00:00");
+  const s = d.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+  return `Día ${idx + 1} · ${s.charAt(0).toUpperCase() + s.slice(1)}`;
+}
 
 export const Route = createFileRoute("/_authenticated/admin/eventos")({
   component: AdminEventos,
