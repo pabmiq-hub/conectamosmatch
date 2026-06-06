@@ -287,33 +287,43 @@ function FlatMeetingsTable({ rows, onUpdate, onDelete, reload, compact }: { rows
                 <td className="px-4 py-3 font-medium text-xs">{r.sponsor_name}</td>
               </>}
               <td className="px-4 py-3">
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold text-uppercase-wide ${r.match_id ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`}>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold text-uppercase-wide ${r.match_id ? "bg-success/15 text-success" : "bg-primary/10 text-primary"}`}>
                   {r.match_id ? "Match" : "Manual"}
                 </span>
+                {r.virtual && <span className="ml-1 rounded-full bg-warning/15 text-warning px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">Sin asignar</span>}
               </td>
               <td className="px-4 py-3">
-                <input type="datetime-local" defaultValue={r.scheduled_time ? new Date(r.scheduled_time).toISOString().slice(0, 16) : ""} onBlur={async (e) => {
-                  const v = e.target.value ? new Date(e.target.value).toISOString() : null;
-                  if (v === r.scheduled_time) return;
-                  try { await onUpdate({ data: { id: r.id, patch: { scheduled_time: v } } }); toast.success("Hora actualizada"); reload(); }
-                  catch (err: any) { toast.error(err?.message ?? "Error"); }
-                }} className="rounded-md border border-border bg-input px-2 py-1 text-xs" />
+                {r.virtual ? (
+                  <span className="text-[11px] text-muted-foreground">Usa "Auto-asignar slots"</span>
+                ) : (
+                  <input type="datetime-local" defaultValue={r.scheduled_time ? new Date(r.scheduled_time).toISOString().slice(0, 16) : ""} onBlur={async (e) => {
+                    const v = e.target.value ? new Date(e.target.value).toISOString() : null;
+                    if (v === r.scheduled_time) return;
+                    try { await onUpdate({ data: { id: r.id, patch: { scheduled_time: v } } }); toast.success("Hora actualizada"); reload(); }
+                    catch (err: any) { toast.error(err?.message ?? "Error"); }
+                  }} className="rounded-md border border-border bg-input px-2 py-1 text-xs" />
+                )}
               </td>
               <td className="px-4 py-3">
-                <input defaultValue={r.room ?? ""} onBlur={async (e) => {
-                  if (e.target.value === (r.room ?? "")) return;
-                  try { await onUpdate({ data: { id: r.id, patch: { room: e.target.value || null } } }); toast.success("Mesa actualizada"); reload(); }
-                  catch (err: any) { toast.error(err?.message ?? "Error"); }
-                }} className="w-24 rounded-md border border-border bg-input px-2 py-1 text-xs" />
+                {r.virtual ? <span className="text-[11px] text-muted-foreground">—</span> : (
+                  <input defaultValue={r.room ?? ""} onBlur={async (e) => {
+                    if (e.target.value === (r.room ?? "")) return;
+                    try { await onUpdate({ data: { id: r.id, patch: { room: e.target.value || null } } }); toast.success("Mesa actualizada"); reload(); }
+                    catch (err: any) { toast.error(err?.message ?? "Error"); }
+                  }} className="w-24 rounded-md border border-border bg-input px-2 py-1 text-xs" />
+                )}
               </td>
               <td className="px-4 py-3">
-                <select value={r.status} onChange={async (e) => {
-                  try { await onUpdate({ data: { id: r.id, patch: { status: e.target.value as any } } }); toast.success("Estado actualizado"); reload(); }
-                  catch (err: any) { toast.error(err?.message ?? "Error"); }
-                }} className="rounded-md border border-border bg-input px-2 py-1 text-xs">
-                  {["pending", "confirmed", "completed", "cancelled"].map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
+                {r.virtual ? <span className="text-[11px] text-muted-foreground">pending</span> : (
+                  <select value={r.status} onChange={async (e) => {
+                    try { await onUpdate({ data: { id: r.id, patch: { status: e.target.value as any } } }); toast.success("Estado actualizado"); reload(); }
+                    catch (err: any) { toast.error(err?.message ?? "Error"); }
+                  }} className="rounded-md border border-border bg-input px-2 py-1 text-xs">
+                    {["pending", "confirmed", "completed", "cancelled"].map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                )}
               </td>
+
               <td className="px-4 py-3 text-right">
                 <button onClick={async () => {
                   if (!window.confirm("¿Eliminar reunión?")) return;
