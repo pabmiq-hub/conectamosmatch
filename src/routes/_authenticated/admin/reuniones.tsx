@@ -223,25 +223,22 @@ function AdminReuniones() {
   );
 }
 
-function DiagnosticCard({ icon: Icon, title, count, tone, items }: { icon: any; title: string; count: number; tone: "warning" | "info" | "muted"; items: string[] }) {
-  const [open, setOpen] = useState(false);
-  const colors = tone === "warning" ? "border-warning/30 bg-warning/5 text-warning" : tone === "info" ? "border-primary/30 bg-primary/5 text-primary" : "border-border bg-muted/30 text-muted-foreground";
+function FilterTab({ active, onClick, icon: Icon, label, count, tone }: { active: boolean; onClick: () => void; icon: any; label: string; count: number; tone: "warning" | "info" | "muted" | "success" }) {
+  const toneActive =
+    tone === "warning" ? "border-warning bg-warning/10 text-warning"
+    : tone === "info" ? "border-primary bg-primary/10 text-primary"
+    : tone === "success" ? "border-success bg-success/10 text-success"
+    : "border-foreground bg-muted text-foreground";
+  const toneIdle = "border-border bg-card text-muted-foreground hover:bg-muted/50";
   return (
-    <div className={`rounded-xl border ${colors} p-3`}>
-      <button onClick={() => setOpen(!open)} className="w-full flex items-center gap-2 text-left">
-        <Icon className="h-4 w-4" />
-        <span className="text-[11px] font-bold text-uppercase-wide flex-1">{title}</span>
-        <span className="rounded-full bg-card px-2 py-0.5 text-[10px] font-bold">{count}</span>
-      </button>
-      {open && items.length > 0 && (
-        <ul className="mt-2 max-h-40 overflow-y-auto space-y-1 text-[11px] text-foreground">
-          {items.map((it, i) => <li key={i} className="truncate">· {it}</li>)}
-        </ul>
-      )}
-      {open && items.length === 0 && <div className="mt-2 text-[11px] text-muted-foreground">Nada por aquí ✓</div>}
-    </div>
+    <button onClick={onClick} className={`flex items-center gap-2 rounded-xl border p-3 text-left transition ${active ? toneActive : toneIdle}`}>
+      <Icon className="h-4 w-4" />
+      <span className="text-[11px] font-bold text-uppercase-wide flex-1">{label}</span>
+      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? "bg-card" : "bg-muted"}`}>{count}</span>
+    </button>
   );
 }
+
 
 function GroupedMeetingsView({ rows, onUpdate, onDelete, reload }: { rows: any[]; onUpdate: any; onDelete: any; reload: () => void }) {
   const groups = useMemo(() => {
