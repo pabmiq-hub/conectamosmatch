@@ -292,13 +292,38 @@ export const getUserActivity = createServerFn({ method: "POST" })
     (matches ?? []).forEach((m: any) => { m.empresa_user_id && allUserIds.add(m.empresa_user_id); m.sponsor_user_id && allUserIds.add(m.sponsor_user_id); });
     (meetings ?? []).forEach((m: any) => { m.empresa_user_id && allUserIds.add(m.empresa_user_id); m.sponsor_user_id && allUserIds.add(m.sponsor_user_id); });
     const idArr = Array.from(allUserIds);
-    const [{ data: emps }, { data: sps }] = await Promise.all([
-      supabaseAdmin.from("empresa_profiles").select("user_id, company_name").in("user_id", idArr.length ? idArr : ["00000000-0000-0000-0000-000000000000"]),
-      supabaseAdmin.from("sponsor_profiles").select("user_id, company_name").in("user_id", idArr.length ? idArr : ["00000000-0000-0000-0000-000000000000"]),
+    const safeIds = idArr.length ? idArr : ["00000000-0000-0000-0000-000000000000"];
+    // Likes/matches/meetings can target either the account owner's user_id OR a responsable's profile id.
+    // We resolve names through both empresa/sponsor_profiles directly AND via profiles.account_id.
+    const [{ data: emps }, { data: sps }, { data: profs }] = await Promise.all([
+      supabaseAdmin.from("empresa_profiles").select("id, user_id, company_name").in("user_id", safeIds),
+      supabaseAdmin.from("sponsor_profiles").select("id, user_id, company_name").in("user_id", safeIds),
+      supabaseAdmin.from("profiles").select("id, account_id, role").in("id", safeIds),
     ]);
+    const accountIdsNeeded = new Set<string>();
+    (profs ?? []).forEach((p: any) => { if (p.account_id) accountIdsNeeded.add(p.account_id); });
+    const accArr = Array.from(accountIdsNeeded);
+    const safeAcc = accArr.length ? accArr : ["00000000-0000-0000-0000-000000000000"];
+    const [{ data: empsByAcc }, { data: spsByAcc }] = await Promise.all([
+      supabaseAdmin.from("empresa_profiles").select("id, company_name").in("id", safeAcc),
+      supabaseAdmin.from("sponsor_profiles").select("id, company_name").in("id", safeAcc),
+    ]);
+    const empAccount = new Map<string, string>();
+    const spAccount = new Map<string, string>();
+    (empsByAcc ?? []).forEach((e: any) => empAccount.set(e.id, e.company_name));
+    (spsByAcc ?? []).forEach((s: any) => spAccount.set(s.id, s.company_name));
+
     const nameMap = new Map<string, { name: string; kind: "empresa" | "sponsor" }>();
     (emps ?? []).forEach((e: any) => nameMap.set(e.user_id, { name: e.company_name, kind: "empresa" }));
     (sps ?? []).forEach((s: any) => nameMap.set(s.user_id, { name: s.company_name, kind: "sponsor" }));
+    (profs ?? []).forEach((p: any) => {
+      if (nameMap.has(p.id)) return;
+      if (p.account_id && empAccount.has(p.account_id)) {
+        nameMap.set(p.id, { name: empAccount.get(p.account_id)!, kind: "empresa" });
+      } else if (p.account_id && spAccount.has(p.account_id)) {
+        nameMap.set(p.id, { name: spAccount.get(p.account_id)!, kind: "sponsor" });
+      }
+    });
     const nameOf = (id?: string | null) => (id ? nameMap.get(id)?.name ?? "—" : "—");
     const kindOf = (id?: string | null) => (id ? nameMap.get(id)?.kind ?? null : null);
 
