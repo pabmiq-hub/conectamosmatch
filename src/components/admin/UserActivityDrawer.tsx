@@ -122,19 +122,30 @@ export function UserActivityDrawer({ userId, userLabel, onClose, onChanged }: { 
             </div>
 
             <div className="flex-1 overflow-y-auto p-5 space-y-6">
-              {tab === "likes" && (
-                <>
-                  <Section title="Ha seleccionado" icon={ArrowRight} count={data.likesOut?.length ?? 0}>
-                    <GroupedLikes items={data.likesOut ?? []} nameField="target_name" kindField="target_kind" emptyText="Aún no ha seleccionado a nadie" />
-                  </Section>
-                  <Section title="Le han seleccionado" icon={ArrowLeft} count={data.likesIn?.length ?? 0}>
-                    <GroupedLikes items={data.likesIn ?? []} nameField="source_name" kindField="source_kind" emptyText="Nadie le ha seleccionado todavía" />
-                  </Section>
-                </>
-              )}
+              {tab === "likes" && (() => {
+                const countAccts = (items: any[], field: string) => {
+                  const s = new Set<string>();
+                  (items ?? []).forEach((it) => {
+                    const raw = String(it[field] ?? "—");
+                    const idx = raw.indexOf(" · ");
+                    const c = idx >= 0 ? raw.slice(idx + 3).trim() : raw.trim();
+                    if (c && c !== "—") s.add(c);
+                  });
+                  return s.size;
+                };
+                return (
+                  <>
+                    <Section title="Ha seleccionado (cuentas únicas)" icon={ArrowRight} count={countAccts(data.likesOut ?? [], "target_name")}>
+                      <GroupedLikes items={data.likesOut ?? []} nameField="target_name" kindField="target_kind" emptyText="Aún no ha seleccionado a nadie" />
+                    </Section>
+                    <Section title="Le han seleccionado (cuentas únicas)" icon={ArrowLeft} count={countAccts(data.likesIn ?? [], "source_name")}>
+                      <GroupedLikes items={data.likesIn ?? []} nameField="source_name" kindField="source_kind" emptyText="Nadie le ha seleccionado todavía" />
+                    </Section>
+                  </>
+                );
+              })()}
 
               {tab === "matches" && (
-
                 <Section title="Matches mutuos" icon={Sparkles} count={data.matches?.length ?? 0}>
                   {(data.matches ?? []).map((m: any) => (
                     <div key={m.id} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 py-2.5">
@@ -151,6 +162,7 @@ export function UserActivityDrawer({ userId, userLabel, onClose, onChanged }: { 
                   {data.matches?.length === 0 && <Empty text="Sin matches todavía" />}
                 </Section>
               )}
+
 
               {tab === "meetings" && (
                 <Section title="Reuniones 1to1" icon={Calendar} count={data.meetings?.length ?? 0}>
