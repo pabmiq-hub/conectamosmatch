@@ -84,7 +84,7 @@ export function UserActivityDrawer({ userId, userLabel, onClose, onChanged }: { 
           <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">No se pudo cargar la actividad.</div>
         ) : (
           <>
-            {(() => null)()}
+            
             <div className="flex border-b border-border px-2">
               {(() => {
                 const uniqAccounts = (items: any[], field: string) => {
