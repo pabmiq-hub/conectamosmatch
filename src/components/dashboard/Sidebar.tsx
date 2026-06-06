@@ -14,6 +14,7 @@ export const navByRole: Record<AppRole, NavItem[]> = {
     { to: "/admin/usuarios", label: "Usuarios", icon: Users },
     { to: "/admin/eventos", label: "Eventos", icon: Calendar },
     { to: "/admin/matches", label: "Matches", icon: Heart },
+    { to: "/admin/selecciones", label: "Selecciones", icon: BookmarkCheck },
     { to: "/admin/reuniones", label: "Reuniones 1to1", icon: ClipboardList },
     { to: "/admin/tablon", label: "Tablón", icon: Megaphone },
   ],
