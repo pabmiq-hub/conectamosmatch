@@ -99,8 +99,8 @@ function MisSeleccionesEmpresa() {
                 description={s.description}
                 logoUrl={s.logo_url}
                 sector={s.sector}
-                recommended={String(s.sponsorship_level ?? "").toUpperCase() === "GOLD"}
                 liked
+
                 actions={
                   <>
                     <ActionButton icon={Eye} label={matchedSet.has(s.user_id) ? "MATCH ✓" : "Ver"} onClick={() => setSelected(s)} />
