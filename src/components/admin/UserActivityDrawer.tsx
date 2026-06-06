@@ -100,16 +100,10 @@ export function UserActivityDrawer({ userId, userLabel, onClose, onChanged }: { 
               {tab === "likes" && (
                 <>
                   <Section title="Ha seleccionado" icon={ArrowRight} count={data.likesOut?.length ?? 0}>
-                    {(data.likesOut ?? []).map((l: any, i: number) => (
-                      <Row key={i} kind={l.target_kind} name={l.target_name} date={l.created_at} />
-                    ))}
-                    {data.likesOut?.length === 0 && <Empty text="Aún no ha seleccionado a nadie" />}
+                    <GroupedLikes items={data.likesOut ?? []} nameField="target_name" kindField="target_kind" emptyText="Aún no ha seleccionado a nadie" />
                   </Section>
                   <Section title="Le han seleccionado" icon={ArrowLeft} count={data.likesIn?.length ?? 0}>
-                    {(data.likesIn ?? []).map((l: any, i: number) => (
-                      <Row key={i} kind={l.source_kind} name={l.source_name} date={l.created_at} />
-                    ))}
-                    {data.likesIn?.length === 0 && <Empty text="Nadie le ha seleccionado todavía" />}
+                    <GroupedLikes items={data.likesIn ?? []} nameField="source_name" kindField="source_kind" emptyText="Nadie le ha seleccionado todavía" />
                   </Section>
                 </>
               )}
