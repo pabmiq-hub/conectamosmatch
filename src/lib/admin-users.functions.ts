@@ -298,7 +298,7 @@ export const getUserActivity = createServerFn({ method: "POST" })
     const [{ data: emps }, { data: sps }, { data: profs }] = await Promise.all([
       supabaseAdmin.from("empresa_profiles").select("id, user_id, company_name").in("user_id", safeIds),
       supabaseAdmin.from("sponsor_profiles").select("id, user_id, company_name").in("user_id", safeIds),
-      supabaseAdmin.from("profiles").select("id, account_id, role").in("id", safeIds),
+      supabaseAdmin.from("profiles").select("id, account_id, role, full_name, account_role").in("id", safeIds),
     ]);
     const accountIdsNeeded = new Set<string>();
     (profs ?? []).forEach((p: any) => { if (p.account_id) accountIdsNeeded.add(p.account_id); });
@@ -314,14 +314,17 @@ export const getUserActivity = createServerFn({ method: "POST" })
     (spsByAcc ?? []).forEach((s: any) => spAccount.set(s.id, s.company_name));
 
     const nameMap = new Map<string, { name: string; kind: "empresa" | "sponsor" }>();
+    // Owners (their user_id matches an empresa/sponsor_profile row) → show company name directly
     (emps ?? []).forEach((e: any) => nameMap.set(e.user_id, { name: e.company_name, kind: "empresa" }));
     (sps ?? []).forEach((s: any) => nameMap.set(s.user_id, { name: s.company_name, kind: "sponsor" }));
+    // Responsables → show "Nombre del responsable · Empresa"
     (profs ?? []).forEach((p: any) => {
       if (nameMap.has(p.id)) return;
+      const respName = (p.full_name && String(p.full_name).trim()) || "Responsable";
       if (p.account_id && empAccount.has(p.account_id)) {
-        nameMap.set(p.id, { name: empAccount.get(p.account_id)!, kind: "empresa" });
+        nameMap.set(p.id, { name: `${respName} · ${empAccount.get(p.account_id)}`, kind: "empresa" });
       } else if (p.account_id && spAccount.has(p.account_id)) {
-        nameMap.set(p.id, { name: spAccount.get(p.account_id)!, kind: "sponsor" });
+        nameMap.set(p.id, { name: `${respName} · ${spAccount.get(p.account_id)}`, kind: "sponsor" });
       }
     });
     const nameOf = (id?: string | null) => (id ? nameMap.get(id)?.name ?? "—" : "—");
