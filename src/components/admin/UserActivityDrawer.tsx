@@ -84,29 +84,43 @@ export function UserActivityDrawer({ userId, userLabel, onClose, onChanged }: { 
           <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">No se pudo cargar la actividad.</div>
         ) : (
           <>
+            {(() => null)()}
             <div className="flex border-b border-border px-2">
-              {([
-                ["likes", `Selecciones (${(data.likesOut?.length ?? 0) + (data.likesIn?.length ?? 0)})`, Heart],
-                ["matches", `Matches (${data.matches?.length ?? 0})`, Sparkles],
-                ["meetings", `1to1 (${data.meetings?.length ?? 0})`, ClipboardList],
-              ] as const).map(([k, label, Icon]) => (
-                <button key={k} onClick={() => setTab(k)} className={`inline-flex items-center gap-2 px-4 py-3 text-[11px] font-bold text-uppercase-wide border-b-2 transition-colors ${tab === k ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
-                  <Icon className="h-3.5 w-3.5" /> {label}
-                </button>
-              ))}
+              {(() => {
+                const uniqAccounts = (items: any[], field: string) => {
+                  const set = new Set<string>();
+                  (items ?? []).forEach((it) => {
+                    const raw = String(it[field] ?? "—");
+                    const sepIdx = raw.indexOf(" · ");
+                    const company = sepIdx >= 0 ? raw.slice(sepIdx + 3).trim() : raw.trim();
+                    if (company && company !== "—") set.add(company);
+                  });
+                  return set.size;
+                };
+                const uniqMatchAccounts = new Set<string>();
+                (data.matches ?? []).forEach((m: any) => {
+                  const key = `${m.empresa_account_id ?? m.empresa_user_id}::${m.sponsor_account_id ?? m.sponsor_user_id}`;
+                  uniqMatchAccounts.add(key);
+                });
+                const uniqMeetingAccounts = new Set<string>();
+                (data.meetings ?? []).forEach((m: any) => {
+                  const key = `${m.empresa_account_id ?? m.empresa_user_id}::${m.sponsor_account_id ?? m.sponsor_user_id}`;
+                  uniqMeetingAccounts.add(key);
+                });
+                const likeOutCount = uniqAccounts(data.likesOut ?? [], "target_name");
+                const likeInCount = uniqAccounts(data.likesIn ?? [], "source_name");
+                return ([
+                  ["likes", `Selecciones (${likeOutCount + likeInCount})`, Heart],
+                  ["matches", `Matches (${uniqMatchAccounts.size})`, Sparkles],
+                  ["meetings", `1to1 (${uniqMeetingAccounts.size})`, ClipboardList],
+                ] as const).map(([k, label, Icon]) => (
+                  <button key={k} onClick={() => setTab(k as any)} className={`inline-flex items-center gap-2 px-4 py-3 text-[11px] font-bold text-uppercase-wide border-b-2 transition-colors ${tab === k ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+                    <Icon className="h-3.5 w-3.5" /> {label}
+                  </button>
+                ));
+              })()}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5 space-y-6">
-              {tab === "likes" && (
-                <>
-                  <Section title="Ha seleccionado" icon={ArrowRight} count={data.likesOut?.length ?? 0}>
-                    <GroupedLikes items={data.likesOut ?? []} nameField="target_name" kindField="target_kind" emptyText="Aún no ha seleccionado a nadie" />
-                  </Section>
-                  <Section title="Le han seleccionado" icon={ArrowLeft} count={data.likesIn?.length ?? 0}>
-                    <GroupedLikes items={data.likesIn ?? []} nameField="source_name" kindField="source_kind" emptyText="Nadie le ha seleccionado todavía" />
-                  </Section>
-                </>
-              )}
 
               {tab === "matches" && (
                 <Section title="Matches mutuos" icon={Sparkles} count={data.matches?.length ?? 0}>
