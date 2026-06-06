@@ -35,6 +35,7 @@ import { Route as AuthenticatedEmpresaDashboardRouteImport } from './routes/_aut
 import { Route as AuthenticatedEmpresaAgendaRouteImport } from './routes/_authenticated/empresa/agenda'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin/usuarios'
 import { Route as AuthenticatedAdminTablonRouteImport } from './routes/_authenticated/admin/tablon'
+import { Route as AuthenticatedAdminSeleccionesRouteImport } from './routes/_authenticated/admin/selecciones'
 import { Route as AuthenticatedAdminReunionesRouteImport } from './routes/_authenticated/admin/reuniones'
 import { Route as AuthenticatedAdminMatchesRouteImport } from './routes/_authenticated/admin/matches'
 import { Route as AuthenticatedAdminEventosRouteImport } from './routes/_authenticated/admin/eventos'
@@ -192,6 +193,12 @@ const AuthenticatedAdminTablonRoute =
     path: '/admin/tablon',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAdminSeleccionesRoute =
+  AuthenticatedAdminSeleccionesRouteImport.update({
+    id: '/admin/selecciones',
+    path: '/admin/selecciones',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedAdminReunionesRoute =
   AuthenticatedAdminReunionesRouteImport.update({
     id: '/admin/reuniones',
@@ -237,6 +244,7 @@ export interface FileRoutesByFullPath {
   '/admin/eventos': typeof AuthenticatedAdminEventosRouteWithChildren
   '/admin/matches': typeof AuthenticatedAdminMatchesRoute
   '/admin/reuniones': typeof AuthenticatedAdminReunionesRoute
+  '/admin/selecciones': typeof AuthenticatedAdminSeleccionesRoute
   '/admin/tablon': typeof AuthenticatedAdminTablonRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/empresa/agenda': typeof AuthenticatedEmpresaAgendaRoute
@@ -270,6 +278,7 @@ export interface FileRoutesByTo {
   '/admin/eventos': typeof AuthenticatedAdminEventosRouteWithChildren
   '/admin/matches': typeof AuthenticatedAdminMatchesRoute
   '/admin/reuniones': typeof AuthenticatedAdminReunionesRoute
+  '/admin/selecciones': typeof AuthenticatedAdminSeleccionesRoute
   '/admin/tablon': typeof AuthenticatedAdminTablonRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/empresa/agenda': typeof AuthenticatedEmpresaAgendaRoute
@@ -305,6 +314,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/eventos': typeof AuthenticatedAdminEventosRouteWithChildren
   '/_authenticated/admin/matches': typeof AuthenticatedAdminMatchesRoute
   '/_authenticated/admin/reuniones': typeof AuthenticatedAdminReunionesRoute
+  '/_authenticated/admin/selecciones': typeof AuthenticatedAdminSeleccionesRoute
   '/_authenticated/admin/tablon': typeof AuthenticatedAdminTablonRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/_authenticated/empresa/agenda': typeof AuthenticatedEmpresaAgendaRoute
@@ -340,6 +350,7 @@ export interface FileRouteTypes {
     | '/admin/eventos'
     | '/admin/matches'
     | '/admin/reuniones'
+    | '/admin/selecciones'
     | '/admin/tablon'
     | '/admin/usuarios'
     | '/empresa/agenda'
@@ -373,6 +384,7 @@ export interface FileRouteTypes {
     | '/admin/eventos'
     | '/admin/matches'
     | '/admin/reuniones'
+    | '/admin/selecciones'
     | '/admin/tablon'
     | '/admin/usuarios'
     | '/empresa/agenda'
@@ -407,6 +419,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/eventos'
     | '/_authenticated/admin/matches'
     | '/_authenticated/admin/reuniones'
+    | '/_authenticated/admin/selecciones'
     | '/_authenticated/admin/tablon'
     | '/_authenticated/admin/usuarios'
     | '/_authenticated/empresa/agenda'
@@ -624,6 +637,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminTablonRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/admin/selecciones': {
+      id: '/_authenticated/admin/selecciones'
+      path: '/admin/selecciones'
+      fullPath: '/admin/selecciones'
+      preLoaderRoute: typeof AuthenticatedAdminSeleccionesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/admin/reuniones': {
       id: '/_authenticated/admin/reuniones'
       path: '/admin/reuniones'
@@ -692,6 +712,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminEventosRoute: typeof AuthenticatedAdminEventosRouteWithChildren
   AuthenticatedAdminMatchesRoute: typeof AuthenticatedAdminMatchesRoute
   AuthenticatedAdminReunionesRoute: typeof AuthenticatedAdminReunionesRoute
+  AuthenticatedAdminSeleccionesRoute: typeof AuthenticatedAdminSeleccionesRoute
   AuthenticatedAdminTablonRoute: typeof AuthenticatedAdminTablonRoute
   AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRoute
   AuthenticatedEmpresaAgendaRoute: typeof AuthenticatedEmpresaAgendaRoute
@@ -721,6 +742,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminEventosRoute: AuthenticatedAdminEventosRouteWithChildren,
   AuthenticatedAdminMatchesRoute: AuthenticatedAdminMatchesRoute,
   AuthenticatedAdminReunionesRoute: AuthenticatedAdminReunionesRoute,
+  AuthenticatedAdminSeleccionesRoute: AuthenticatedAdminSeleccionesRoute,
   AuthenticatedAdminTablonRoute: AuthenticatedAdminTablonRoute,
   AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRoute,
   AuthenticatedEmpresaAgendaRoute: AuthenticatedEmpresaAgendaRoute,
@@ -762,13 +784,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

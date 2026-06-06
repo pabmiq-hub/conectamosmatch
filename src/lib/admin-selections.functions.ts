@@ -76,7 +76,7 @@ export const listAccountSelections = createServerFn({ method: "POST" })
           account_id: targetId,
           company_name: ref?.company_name ?? "—",
           kind: v.kind,
-          responsables: Array.from(v.names).sort((a, b) => a.localeCompare(b, "es")),
+          responsables: (Array.from(v.names) as string[]).sort((a, b) => a.localeCompare(b, "es")),
           created_at: v.created_at,
         });
       });
