@@ -325,12 +325,15 @@ function FlatMeetingsTable({ rows, onUpdate, onDelete, reload, compact }: { rows
               </td>
 
               <td className="px-4 py-3 text-right">
-                <button onClick={async () => {
-                  if (!window.confirm("¿Eliminar reunión?")) return;
-                  try { await onDelete({ data: { id: r.id } }); toast.success("Eliminada"); reload(); }
-                  catch (e: any) { toast.error(e?.message ?? "Error"); }
-                }} className="p-1.5 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
+                {!r.virtual && (
+                  <button onClick={async () => {
+                    if (!window.confirm("¿Eliminar reunión?")) return;
+                    try { await onDelete({ data: { id: r.id } }); toast.success("Eliminada"); reload(); }
+                    catch (e: any) { toast.error(e?.message ?? "Error"); }
+                  }} className="p-1.5 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
+                )}
               </td>
+
             </tr>
           ))}
         </tbody>
