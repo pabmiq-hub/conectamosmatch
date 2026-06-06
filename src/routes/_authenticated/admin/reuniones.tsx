@@ -197,45 +197,20 @@ function AdminReuniones() {
           <option value="">Todas</option>
           {participants.sponsors.map((s) => <option key={s.user_id} value={s.user_id}>{s.name}</option>)}
         </select>
-        <label className="text-[10px] text-uppercase-wide text-muted-foreground">Origen</label>
-        <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value as any)} className="rounded-md border border-border bg-card px-3 py-1.5 text-xs">
-          <option value="all">Todas</option>
-          <option value="match">Desde match</option>
-          <option value="manual">Manual (sin match)</option>
-        </select>
         <label className="ml-auto inline-flex items-center gap-2 text-xs">
           <input type="checkbox" checked={grouped} onChange={(e) => setGrouped(e.target.checked)} /> Agrupar por cuenta
         </label>
-        <span className="text-xs text-muted-foreground">{filtered.length} reunión{filtered.length === 1 ? "" : "es"}</span>
+        <span className="text-xs text-muted-foreground">{filtered.length} resultado{filtered.length === 1 ? "" : "s"}</span>
       </div>
 
-      {/* Diagnostic panels */}
-      <div className="grid gap-3 md:grid-cols-3">
-        <DiagnosticCard
-          icon={Heart}
-          title="Matches sin reunión"
-          count={matchesSinReunion.length}
-          tone="warning"
-          items={matchesSinReunion.map((m) => `${m.empresa?.company_name ?? "—"} ↔ ${m.sponsor?.company_name ?? "—"}`)}
-        />
-        <DiagnosticCard
-          icon={Wand2}
-          title="Reuniones manuales (sin match)"
-          count={manualMeetings.length}
-          tone="info"
-          items={manualMeetings.map((m) => `${m.empresa_name} ↔ ${m.sponsor_name}`)}
-        />
-        <DiagnosticCard
-          icon={AlertTriangle}
-          title="Cuentas sin reuniones"
-          count={accountsWithoutMeetings.empresas.length + accountsWithoutMeetings.sponsors.length}
-          tone="muted"
-          items={[
-            ...accountsWithoutMeetings.empresas.map((e) => `🏢 ${e.name}`),
-            ...accountsWithoutMeetings.sponsors.map((s) => `✨ ${s.name}`),
-          ]}
-        />
+      {/* View-switching tabs */}
+      <div className="grid gap-3 md:grid-cols-4">
+        <FilterTab active={viewFilter === "all"} onClick={() => setViewFilter("all")} icon={ClipboardList} label="Todas" count={allRows.length} tone="muted" />
+        <FilterTab active={viewFilter === "sin-reunion"} onClick={() => setViewFilter("sin-reunion")} icon={Heart} label="Matches sin reunión" count={counts.sinReunion} tone="warning" />
+        <FilterTab active={viewFilter === "manual"} onClick={() => setViewFilter("manual")} icon={Wand2} label="Reuniones manuales" count={counts.manual} tone="info" />
+        <FilterTab active={viewFilter === "agendadas"} onClick={() => setViewFilter("agendadas")} icon={CalendarCheck} label="Reuniones agendadas" count={counts.agendadas} tone="success" />
       </div>
+
 
       {filtered.length === 0 ? (
         <EmptyState icon={ClipboardList} title="Sin reuniones" hint="Ajusta filtros o crea una reunión manual" />
