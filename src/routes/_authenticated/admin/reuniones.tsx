@@ -36,7 +36,7 @@ function AdminReuniones() {
   // Filters
   const [empresaFilter, setEmpresaFilter] = useState<string>("");
   const [sponsorFilter, setSponsorFilter] = useState<string>("");
-  const [originFilter, setOriginFilter] = useState<"all" | "match" | "manual">("all");
+  const [viewFilter, setViewFilter] = useState<"all" | "sin-reunion" | "manual" | "agendadas">("all");
   const [grouped, setGrouped] = useState<boolean>(true);
 
   useEffect(() => {
