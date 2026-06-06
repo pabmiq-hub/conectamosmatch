@@ -63,16 +63,6 @@ function AdminReuniones() {
   }
   useEffect(() => { load(); }, [eventId]);
 
-  const filtered = useMemo(() => {
-    return rows.filter((r) => {
-      if (empresaFilter && (r.empresa_account_id ?? r.empresa_user_id) !== empresaFilter) return false;
-      if (sponsorFilter && (r.sponsor_account_id ?? r.sponsor_user_id) !== sponsorFilter) return false;
-      if (originFilter === "match" && !r.match_id) return false;
-      if (originFilter === "manual" && r.match_id) return false;
-      return true;
-    });
-  }, [rows, empresaFilter, sponsorFilter, originFilter]);
-
   // Account-pair key helpers
   const pairKey = (e: string | null | undefined, s: string | null | undefined) => `${e ?? "_"}::${s ?? "_"}`;
   const meetingPairs = useMemo(() => {
@@ -81,27 +71,49 @@ function AdminReuniones() {
     return set;
   }, [rows]);
 
-  // Matches without any meeting
-  const matchesSinReunion = useMemo(() => {
-    return matches.filter((m) => !meetingPairs.has(pairKey(m.empresa_account_id ?? m.empresa_user_id, m.sponsor_account_id ?? m.sponsor_user_id)));
+  // Matches with NO meeting row at all → render as virtual rows so admin can act on them
+  const virtualMatchRows = useMemo(() => {
+    return matches
+      .filter((m) => !meetingPairs.has(pairKey(m.empresa_account_id ?? m.empresa_user_id, m.sponsor_account_id ?? m.sponsor_user_id)))
+      .map((m) => ({
+        id: `virtual-${m.id}`,
+        virtual: true,
+        match_id: m.id,
+        event_id: m.event_id,
+        empresa_user_id: m.empresa_user_id,
+        sponsor_user_id: m.sponsor_user_id,
+        empresa_account_id: m.empresa_account_id,
+        sponsor_account_id: m.sponsor_account_id,
+        empresa_name: m.empresa?.company_name ?? "—",
+        sponsor_name: m.sponsor?.company_name ?? "—",
+        scheduled_time: null,
+        room: null,
+        status: "pending",
+      }));
   }, [matches, meetingPairs]);
 
-  // Manual meetings (no match_id)
-  const manualMeetings = useMemo(() => rows.filter((r) => !r.match_id), [rows]);
+  // Combined universe: real meetings + virtual match rows
+  const allRows = useMemo(() => [...rows, ...virtualMatchRows], [rows, virtualMatchRows]);
 
-  // Accounts with no meetings at all in this event
-  const accountsWithoutMeetings = useMemo(() => {
-    const empWith = new Set<string>();
-    const spWith = new Set<string>();
-    rows.forEach((r) => {
-      if (r.empresa_account_id ?? r.empresa_user_id) empWith.add(r.empresa_account_id ?? r.empresa_user_id);
-      if (r.sponsor_account_id ?? r.sponsor_user_id) spWith.add(r.sponsor_account_id ?? r.sponsor_user_id);
+  // Counts for the three filter buttons
+  const counts = useMemo(() => {
+    const sinReunion = allRows.filter((r) => !!r.match_id && !r.scheduled_time).length;
+    const manual = allRows.filter((r) => !r.match_id && !r.virtual).length;
+    const agendadas = allRows.filter((r) => !!r.scheduled_time).length;
+    return { sinReunion, manual, agendadas };
+  }, [allRows]);
+
+  const filtered = useMemo(() => {
+    return allRows.filter((r) => {
+      if (empresaFilter && (r.empresa_account_id ?? r.empresa_user_id) !== empresaFilter) return false;
+      if (sponsorFilter && (r.sponsor_account_id ?? r.sponsor_user_id) !== sponsorFilter) return false;
+      if (viewFilter === "sin-reunion" && !(!!r.match_id && !r.scheduled_time)) return false;
+      if (viewFilter === "manual" && (r.match_id || r.virtual)) return false;
+      if (viewFilter === "agendadas" && !r.scheduled_time) return false;
+      return true;
     });
-    return {
-      empresas: participants.empresas.filter((e) => !empWith.has(e.user_id)),
-      sponsors: participants.sponsors.filter((s) => !spWith.has(s.user_id)),
-    };
-  }, [rows, participants]);
+  }, [allRows, empresaFilter, sponsorFilter, viewFilter]);
+
 
   async function runAuto() {
     if (!eventId) return;
