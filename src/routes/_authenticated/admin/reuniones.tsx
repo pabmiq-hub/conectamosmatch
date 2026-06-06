@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
-import { ClipboardList, Wand2, Trash2, Plus, FileSpreadsheet, FileText, AlertTriangle, Heart, Sparkles, Building2 } from "lucide-react";
+import { ClipboardList, Wand2, Trash2, Plus, FileSpreadsheet, FileText, Heart, Sparkles, Building2, CalendarCheck } from "lucide-react";
 import { toast } from "sonner";
 import { listEvents } from "@/lib/admin-events.functions";
 import { listMeetings, autoAssignSlots, updateMeeting, deleteMeeting } from "@/lib/admin-meetings.functions";
@@ -36,7 +36,7 @@ function AdminReuniones() {
   // Filters
   const [empresaFilter, setEmpresaFilter] = useState<string>("");
   const [sponsorFilter, setSponsorFilter] = useState<string>("");
-  const [originFilter, setOriginFilter] = useState<"all" | "match" | "manual">("all");
+  const [viewFilter, setViewFilter] = useState<"all" | "sin-reunion" | "manual" | "agendadas">("all");
   const [grouped, setGrouped] = useState<boolean>(true);
 
   useEffect(() => {
@@ -63,16 +63,6 @@ function AdminReuniones() {
   }
   useEffect(() => { load(); }, [eventId]);
 
-  const filtered = useMemo(() => {
-    return rows.filter((r) => {
-      if (empresaFilter && (r.empresa_account_id ?? r.empresa_user_id) !== empresaFilter) return false;
-      if (sponsorFilter && (r.sponsor_account_id ?? r.sponsor_user_id) !== sponsorFilter) return false;
-      if (originFilter === "match" && !r.match_id) return false;
-      if (originFilter === "manual" && r.match_id) return false;
-      return true;
-    });
-  }, [rows, empresaFilter, sponsorFilter, originFilter]);
-
   // Account-pair key helpers
   const pairKey = (e: string | null | undefined, s: string | null | undefined) => `${e ?? "_"}::${s ?? "_"}`;
   const meetingPairs = useMemo(() => {
@@ -81,27 +71,49 @@ function AdminReuniones() {
     return set;
   }, [rows]);
 
-  // Matches without any meeting
-  const matchesSinReunion = useMemo(() => {
-    return matches.filter((m) => !meetingPairs.has(pairKey(m.empresa_account_id ?? m.empresa_user_id, m.sponsor_account_id ?? m.sponsor_user_id)));
+  // Matches with NO meeting row at all → render as virtual rows so admin can act on them
+  const virtualMatchRows = useMemo(() => {
+    return matches
+      .filter((m) => !meetingPairs.has(pairKey(m.empresa_account_id ?? m.empresa_user_id, m.sponsor_account_id ?? m.sponsor_user_id)))
+      .map((m) => ({
+        id: `virtual-${m.id}`,
+        virtual: true,
+        match_id: m.id,
+        event_id: m.event_id,
+        empresa_user_id: m.empresa_user_id,
+        sponsor_user_id: m.sponsor_user_id,
+        empresa_account_id: m.empresa_account_id,
+        sponsor_account_id: m.sponsor_account_id,
+        empresa_name: m.empresa?.company_name ?? "—",
+        sponsor_name: m.sponsor?.company_name ?? "—",
+        scheduled_time: null,
+        room: null,
+        status: "pending",
+      }));
   }, [matches, meetingPairs]);
 
-  // Manual meetings (no match_id)
-  const manualMeetings = useMemo(() => rows.filter((r) => !r.match_id), [rows]);
+  // Combined universe: real meetings + virtual match rows
+  const allRows = useMemo(() => [...rows, ...virtualMatchRows], [rows, virtualMatchRows]);
 
-  // Accounts with no meetings at all in this event
-  const accountsWithoutMeetings = useMemo(() => {
-    const empWith = new Set<string>();
-    const spWith = new Set<string>();
-    rows.forEach((r) => {
-      if (r.empresa_account_id ?? r.empresa_user_id) empWith.add(r.empresa_account_id ?? r.empresa_user_id);
-      if (r.sponsor_account_id ?? r.sponsor_user_id) spWith.add(r.sponsor_account_id ?? r.sponsor_user_id);
+  // Counts for the three filter buttons
+  const counts = useMemo(() => {
+    const sinReunion = allRows.filter((r) => !!r.match_id && !r.scheduled_time).length;
+    const manual = allRows.filter((r) => !r.match_id && !r.virtual).length;
+    const agendadas = allRows.filter((r) => !!r.scheduled_time).length;
+    return { sinReunion, manual, agendadas };
+  }, [allRows]);
+
+  const filtered = useMemo(() => {
+    return allRows.filter((r) => {
+      if (empresaFilter && (r.empresa_account_id ?? r.empresa_user_id) !== empresaFilter) return false;
+      if (sponsorFilter && (r.sponsor_account_id ?? r.sponsor_user_id) !== sponsorFilter) return false;
+      if (viewFilter === "sin-reunion" && !(!!r.match_id && !r.scheduled_time)) return false;
+      if (viewFilter === "manual" && (r.match_id || r.virtual)) return false;
+      if (viewFilter === "agendadas" && !r.scheduled_time) return false;
+      return true;
     });
-    return {
-      empresas: participants.empresas.filter((e) => !empWith.has(e.user_id)),
-      sponsors: participants.sponsors.filter((s) => !spWith.has(s.user_id)),
-    };
-  }, [rows, participants]);
+  }, [allRows, empresaFilter, sponsorFilter, viewFilter]);
+
 
   async function runAuto() {
     if (!eventId) return;
@@ -185,45 +197,20 @@ function AdminReuniones() {
           <option value="">Todas</option>
           {participants.sponsors.map((s) => <option key={s.user_id} value={s.user_id}>{s.name}</option>)}
         </select>
-        <label className="text-[10px] text-uppercase-wide text-muted-foreground">Origen</label>
-        <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value as any)} className="rounded-md border border-border bg-card px-3 py-1.5 text-xs">
-          <option value="all">Todas</option>
-          <option value="match">Desde match</option>
-          <option value="manual">Manual (sin match)</option>
-        </select>
         <label className="ml-auto inline-flex items-center gap-2 text-xs">
           <input type="checkbox" checked={grouped} onChange={(e) => setGrouped(e.target.checked)} /> Agrupar por cuenta
         </label>
-        <span className="text-xs text-muted-foreground">{filtered.length} reunión{filtered.length === 1 ? "" : "es"}</span>
+        <span className="text-xs text-muted-foreground">{filtered.length} resultado{filtered.length === 1 ? "" : "s"}</span>
       </div>
 
-      {/* Diagnostic panels */}
-      <div className="grid gap-3 md:grid-cols-3">
-        <DiagnosticCard
-          icon={Heart}
-          title="Matches sin reunión"
-          count={matchesSinReunion.length}
-          tone="warning"
-          items={matchesSinReunion.map((m) => `${m.empresa?.company_name ?? "—"} ↔ ${m.sponsor?.company_name ?? "—"}`)}
-        />
-        <DiagnosticCard
-          icon={Wand2}
-          title="Reuniones manuales (sin match)"
-          count={manualMeetings.length}
-          tone="info"
-          items={manualMeetings.map((m) => `${m.empresa_name} ↔ ${m.sponsor_name}`)}
-        />
-        <DiagnosticCard
-          icon={AlertTriangle}
-          title="Cuentas sin reuniones"
-          count={accountsWithoutMeetings.empresas.length + accountsWithoutMeetings.sponsors.length}
-          tone="muted"
-          items={[
-            ...accountsWithoutMeetings.empresas.map((e) => `🏢 ${e.name}`),
-            ...accountsWithoutMeetings.sponsors.map((s) => `✨ ${s.name}`),
-          ]}
-        />
+      {/* View-switching tabs */}
+      <div className="grid gap-3 md:grid-cols-4">
+        <FilterTab active={viewFilter === "all"} onClick={() => setViewFilter("all")} icon={ClipboardList} label="Todas" count={allRows.length} tone="muted" />
+        <FilterTab active={viewFilter === "sin-reunion"} onClick={() => setViewFilter("sin-reunion")} icon={Heart} label="Matches sin reunión" count={counts.sinReunion} tone="warning" />
+        <FilterTab active={viewFilter === "manual"} onClick={() => setViewFilter("manual")} icon={Wand2} label="Reuniones manuales" count={counts.manual} tone="info" />
+        <FilterTab active={viewFilter === "agendadas"} onClick={() => setViewFilter("agendadas")} icon={CalendarCheck} label="Reuniones agendadas" count={counts.agendadas} tone="success" />
       </div>
+
 
       {filtered.length === 0 ? (
         <EmptyState icon={ClipboardList} title="Sin reuniones" hint="Ajusta filtros o crea una reunión manual" />
@@ -236,25 +223,22 @@ function AdminReuniones() {
   );
 }
 
-function DiagnosticCard({ icon: Icon, title, count, tone, items }: { icon: any; title: string; count: number; tone: "warning" | "info" | "muted"; items: string[] }) {
-  const [open, setOpen] = useState(false);
-  const colors = tone === "warning" ? "border-warning/30 bg-warning/5 text-warning" : tone === "info" ? "border-primary/30 bg-primary/5 text-primary" : "border-border bg-muted/30 text-muted-foreground";
+function FilterTab({ active, onClick, icon: Icon, label, count, tone }: { active: boolean; onClick: () => void; icon: any; label: string; count: number; tone: "warning" | "info" | "muted" | "success" }) {
+  const toneActive =
+    tone === "warning" ? "border-warning bg-warning/10 text-warning"
+    : tone === "info" ? "border-primary bg-primary/10 text-primary"
+    : tone === "success" ? "border-success bg-success/10 text-success"
+    : "border-foreground bg-muted text-foreground";
+  const toneIdle = "border-border bg-card text-muted-foreground hover:bg-muted/50";
   return (
-    <div className={`rounded-xl border ${colors} p-3`}>
-      <button onClick={() => setOpen(!open)} className="w-full flex items-center gap-2 text-left">
-        <Icon className="h-4 w-4" />
-        <span className="text-[11px] font-bold text-uppercase-wide flex-1">{title}</span>
-        <span className="rounded-full bg-card px-2 py-0.5 text-[10px] font-bold">{count}</span>
-      </button>
-      {open && items.length > 0 && (
-        <ul className="mt-2 max-h-40 overflow-y-auto space-y-1 text-[11px] text-foreground">
-          {items.map((it, i) => <li key={i} className="truncate">· {it}</li>)}
-        </ul>
-      )}
-      {open && items.length === 0 && <div className="mt-2 text-[11px] text-muted-foreground">Nada por aquí ✓</div>}
-    </div>
+    <button onClick={onClick} className={`flex items-center gap-2 rounded-xl border p-3 text-left transition ${active ? toneActive : toneIdle}`}>
+      <Icon className="h-4 w-4" />
+      <span className="text-[11px] font-bold text-uppercase-wide flex-1">{label}</span>
+      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? "bg-card" : "bg-muted"}`}>{count}</span>
+    </button>
   );
 }
+
 
 function GroupedMeetingsView({ rows, onUpdate, onDelete, reload }: { rows: any[]; onUpdate: any; onDelete: any; reload: () => void }) {
   const groups = useMemo(() => {
@@ -303,40 +287,53 @@ function FlatMeetingsTable({ rows, onUpdate, onDelete, reload, compact }: { rows
                 <td className="px-4 py-3 font-medium text-xs">{r.sponsor_name}</td>
               </>}
               <td className="px-4 py-3">
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold text-uppercase-wide ${r.match_id ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`}>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold text-uppercase-wide ${r.match_id ? "bg-success/15 text-success" : "bg-primary/10 text-primary"}`}>
                   {r.match_id ? "Match" : "Manual"}
                 </span>
+                {r.virtual && <span className="ml-1 rounded-full bg-warning/15 text-warning px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">Sin asignar</span>}
               </td>
               <td className="px-4 py-3">
-                <input type="datetime-local" defaultValue={r.scheduled_time ? new Date(r.scheduled_time).toISOString().slice(0, 16) : ""} onBlur={async (e) => {
-                  const v = e.target.value ? new Date(e.target.value).toISOString() : null;
-                  if (v === r.scheduled_time) return;
-                  try { await onUpdate({ data: { id: r.id, patch: { scheduled_time: v } } }); toast.success("Hora actualizada"); reload(); }
-                  catch (err: any) { toast.error(err?.message ?? "Error"); }
-                }} className="rounded-md border border-border bg-input px-2 py-1 text-xs" />
+                {r.virtual ? (
+                  <span className="text-[11px] text-muted-foreground">Usa "Auto-asignar slots"</span>
+                ) : (
+                  <input type="datetime-local" defaultValue={r.scheduled_time ? new Date(r.scheduled_time).toISOString().slice(0, 16) : ""} onBlur={async (e) => {
+                    const v = e.target.value ? new Date(e.target.value).toISOString() : null;
+                    if (v === r.scheduled_time) return;
+                    try { await onUpdate({ data: { id: r.id, patch: { scheduled_time: v } } }); toast.success("Hora actualizada"); reload(); }
+                    catch (err: any) { toast.error(err?.message ?? "Error"); }
+                  }} className="rounded-md border border-border bg-input px-2 py-1 text-xs" />
+                )}
               </td>
               <td className="px-4 py-3">
-                <input defaultValue={r.room ?? ""} onBlur={async (e) => {
-                  if (e.target.value === (r.room ?? "")) return;
-                  try { await onUpdate({ data: { id: r.id, patch: { room: e.target.value || null } } }); toast.success("Mesa actualizada"); reload(); }
-                  catch (err: any) { toast.error(err?.message ?? "Error"); }
-                }} className="w-24 rounded-md border border-border bg-input px-2 py-1 text-xs" />
+                {r.virtual ? <span className="text-[11px] text-muted-foreground">—</span> : (
+                  <input defaultValue={r.room ?? ""} onBlur={async (e) => {
+                    if (e.target.value === (r.room ?? "")) return;
+                    try { await onUpdate({ data: { id: r.id, patch: { room: e.target.value || null } } }); toast.success("Mesa actualizada"); reload(); }
+                    catch (err: any) { toast.error(err?.message ?? "Error"); }
+                  }} className="w-24 rounded-md border border-border bg-input px-2 py-1 text-xs" />
+                )}
               </td>
               <td className="px-4 py-3">
-                <select value={r.status} onChange={async (e) => {
-                  try { await onUpdate({ data: { id: r.id, patch: { status: e.target.value as any } } }); toast.success("Estado actualizado"); reload(); }
-                  catch (err: any) { toast.error(err?.message ?? "Error"); }
-                }} className="rounded-md border border-border bg-input px-2 py-1 text-xs">
-                  {["pending", "confirmed", "completed", "cancelled"].map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
+                {r.virtual ? <span className="text-[11px] text-muted-foreground">pending</span> : (
+                  <select value={r.status} onChange={async (e) => {
+                    try { await onUpdate({ data: { id: r.id, patch: { status: e.target.value as any } } }); toast.success("Estado actualizado"); reload(); }
+                    catch (err: any) { toast.error(err?.message ?? "Error"); }
+                  }} className="rounded-md border border-border bg-input px-2 py-1 text-xs">
+                    {["pending", "confirmed", "completed", "cancelled"].map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                )}
               </td>
+
               <td className="px-4 py-3 text-right">
-                <button onClick={async () => {
-                  if (!window.confirm("¿Eliminar reunión?")) return;
-                  try { await onDelete({ data: { id: r.id } }); toast.success("Eliminada"); reload(); }
-                  catch (e: any) { toast.error(e?.message ?? "Error"); }
-                }} className="p-1.5 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
+                {!r.virtual && (
+                  <button onClick={async () => {
+                    if (!window.confirm("¿Eliminar reunión?")) return;
+                    try { await onDelete({ data: { id: r.id } }); toast.success("Eliminada"); reload(); }
+                    catch (e: any) { toast.error(e?.message ?? "Error"); }
+                  }} className="p-1.5 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
+                )}
               </td>
+
             </tr>
           ))}
         </tbody>
