@@ -272,6 +272,25 @@ export const getUserActivity = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.userId);
     const userId = data.userId;
+    // Resolve which account the user belongs to and fetch ALL members of that account
+    // so the activity view aggregates the whole account (owner + responsables).
+    const { data: meProf } = await supabaseAdmin
+      .from("profiles")
+      .select("id, account_id, role")
+      .eq("id", userId)
+      .maybeSingle();
+    const accountId = meProf?.account_id ?? null;
+    let memberIds: string[] = [userId];
+    if (accountId) {
+      const { data: members } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("account_id", accountId);
+      const set = new Set<string>(memberIds);
+      (members ?? []).forEach((m: any) => m.id && set.add(m.id));
+      memberIds = Array.from(set);
+    }
+    const inList = memberIds.length ? memberIds : [userId];
     const [
       { data: profile },
       { data: likesOut },
@@ -280,11 +299,12 @@ export const getUserActivity = createServerFn({ method: "POST" })
       { data: meetings },
     ] = await Promise.all([
       supabaseAdmin.from("profiles").select("id, full_name, email, role, account_id, account_role").eq("id", userId).maybeSingle(),
-      supabaseAdmin.from("likes").select("to_user_id, created_at, event_id").eq("from_user_id", userId).order("created_at", { ascending: false }),
-      supabaseAdmin.from("likes").select("from_user_id, created_at, event_id").eq("to_user_id", userId).order("created_at", { ascending: false }),
-      supabaseAdmin.from("matches").select("*").or(`empresa_user_id.eq.${userId},sponsor_user_id.eq.${userId}`).order("created_at", { ascending: false }),
-      supabaseAdmin.from("meetings_1to1").select("*").or(`empresa_user_id.eq.${userId},sponsor_user_id.eq.${userId}`).order("scheduled_time", { ascending: true, nullsFirst: false }),
+      supabaseAdmin.from("likes").select("to_user_id, from_user_id, created_at, event_id").in("from_user_id", inList).order("created_at", { ascending: false }),
+      supabaseAdmin.from("likes").select("from_user_id, to_user_id, created_at, event_id").in("to_user_id", inList).order("created_at", { ascending: false }),
+      supabaseAdmin.from("matches").select("*").or(`empresa_user_id.in.(${inList.join(",")}),sponsor_user_id.in.(${inList.join(",")})`).order("created_at", { ascending: false }),
+      supabaseAdmin.from("meetings_1to1").select("*").or(`empresa_user_id.in.(${inList.join(",")}),sponsor_user_id.in.(${inList.join(",")})`).order("scheduled_time", { ascending: true, nullsFirst: false }),
     ]);
+
 
     const allUserIds = new Set<string>();
     (likesOut ?? []).forEach((l: any) => l.to_user_id && allUserIds.add(l.to_user_id));
