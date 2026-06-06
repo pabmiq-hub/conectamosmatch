@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { X, Heart, Sparkles, Calendar, ClipboardList, Building2, ArrowRight, ArrowLeft, Pencil, Shield, ArrowRightLeft, UserPlus } from "lucide-react";
+import { X, Heart, Sparkles, Calendar, ClipboardList, Building2, ArrowRight, ArrowLeft, Pencil, Shield, ArrowRightLeft, UserPlus, ChevronDown, ChevronRight, User } from "lucide-react";
 import { getUserActivity, transferAccountAdmin } from "@/lib/admin-users.functions";
 import { toast } from "sonner";
 import { EditUserModal } from "./EditUserModal";
@@ -100,16 +100,10 @@ export function UserActivityDrawer({ userId, userLabel, onClose, onChanged }: { 
               {tab === "likes" && (
                 <>
                   <Section title="Ha seleccionado" icon={ArrowRight} count={data.likesOut?.length ?? 0}>
-                    {(data.likesOut ?? []).map((l: any, i: number) => (
-                      <Row key={i} kind={l.target_kind} name={l.target_name} date={l.created_at} />
-                    ))}
-                    {data.likesOut?.length === 0 && <Empty text="Aún no ha seleccionado a nadie" />}
+                    <GroupedLikes items={data.likesOut ?? []} nameField="target_name" kindField="target_kind" emptyText="Aún no ha seleccionado a nadie" />
                   </Section>
                   <Section title="Le han seleccionado" icon={ArrowLeft} count={data.likesIn?.length ?? 0}>
-                    {(data.likesIn ?? []).map((l: any, i: number) => (
-                      <Row key={i} kind={l.source_kind} name={l.source_name} date={l.created_at} />
-                    ))}
-                    {data.likesIn?.length === 0 && <Empty text="Nadie le ha seleccionado todavía" />}
+                    <GroupedLikes items={data.likesIn ?? []} nameField="source_name" kindField="source_kind" emptyText="Nadie le ha seleccionado todavía" />
                   </Section>
                 </>
               )}
@@ -180,4 +174,64 @@ function Row({ kind, name, date }: { kind: "empresa" | "sponsor" | null; name: s
 }
 function Empty({ text }: { text: string }) {
   return <div className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-[11px] text-muted-foreground">{text}</div>;
+}
+
+function GroupedLikes({ items, nameField, kindField, emptyText }: { items: any[]; nameField: string; kindField: string; emptyText: string }) {
+  const groups = useMemo(() => {
+    const map = new Map<string, { company: string; kind: "empresa" | "sponsor" | null; companyDate?: string; responsables: { name: string; date: string }[] }>();
+    for (const it of items) {
+      const raw = String(it[nameField] ?? "—");
+      const kind = it[kindField] ?? null;
+      const sepIdx = raw.indexOf(" · ");
+      const isResp = sepIdx >= 0;
+      const company = isResp ? raw.slice(sepIdx + 3).trim() : raw.trim();
+      const respName = isResp ? raw.slice(0, sepIdx).trim() : null;
+      const key = `${kind ?? "?"}::${company}`;
+      if (!map.has(key)) map.set(key, { company, kind, responsables: [] });
+      const g = map.get(key)!;
+      if (respName) g.responsables.push({ name: respName, date: it.created_at });
+      else g.companyDate = it.created_at;
+    }
+    return Array.from(map.values()).sort((a, b) => a.company.localeCompare(b.company, "es"));
+  }, [items, nameField, kindField]);
+
+  if (!items.length) return <Empty text={emptyText} />;
+  return <>{groups.map((g, i) => <AccountGroup key={i} group={g} />)}</>;
+}
+
+function AccountGroup({ group }: { group: { company: string; kind: "empresa" | "sponsor" | null; companyDate?: string; responsables: { name: string; date: string }[] } }) {
+  const [open, setOpen] = useState(true);
+  const Icon = group.kind === "sponsor" ? Sparkles : Building2;
+  const total = (group.companyDate ? 1 : 0) + group.responsables.length;
+  return (
+    <div className="rounded-lg border border-border bg-background overflow-hidden">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-muted/40">
+        <div className="flex items-center gap-2 min-w-0">
+          {open ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
+          <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <span className="text-xs font-semibold truncate">{group.company}</span>
+        </div>
+        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{total}</span>
+      </button>
+      {open && (
+        <div className="border-t border-border divide-y divide-border">
+          {group.companyDate && (
+            <div className="flex items-center justify-between gap-3 px-3 py-1.5 pl-9">
+              <span className="text-[11px] text-muted-foreground">Cuenta (titular)</span>
+              <span className="text-[10px] text-muted-foreground">{new Date(group.companyDate).toLocaleDateString("es-ES")}</span>
+            </div>
+          )}
+          {group.responsables.map((r, i) => (
+            <div key={i} className="flex items-center justify-between gap-3 px-3 py-1.5 pl-9">
+              <div className="flex items-center gap-2 min-w-0">
+                <User className="h-3 w-3 text-muted-foreground shrink-0" />
+                <span className="text-[11px] truncate">{r.name}</span>
+              </div>
+              <span className="text-[10px] text-muted-foreground">{new Date(r.date).toLocaleDateString("es-ES")}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
