@@ -70,15 +70,19 @@ function EmpresasQueMeHanSeleccionado() {
         <EmptyState icon={Inbox} title="Aún no te ha seleccionado ninguna empresa" hint="Te avisaremos cuando una empresa muestre interés." />
       ) : (
         <>
-          <div className="relative max-w-md">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar empresa…"
-              className="w-full rounded-md border border-border bg-card pl-9 pr-3 py-2 text-sm"
-            />
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Buscar empresa…"
+                className="w-full rounded-md border border-border bg-card pl-9 pr-3 py-2 text-sm"
+              />
+            </div>
+            <SortToggle value={dir} onChange={setDir} />
           </div>
+
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filtered.map((e) => {
