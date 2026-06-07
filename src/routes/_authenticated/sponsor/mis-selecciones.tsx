@@ -8,6 +8,7 @@ import { AccountInterestButton, ActionButton, Eye } from "@/components/dashboard
 import { PartnerDetailModal, type PartnerDetail } from "@/components/dashboard/PartnerDetailModal";
 import { listMyLikedAccountIds } from "@/lib/admin-users.functions";
 import { Heart, Search } from "lucide-react";
+import { SortToggle, sortByName, type SortDir } from "@/components/dashboard/SortToggle";
 
 export const Route = createFileRoute("/_authenticated/sponsor/mis-selecciones")({
   component: MisSeleccionesSponsor,
