@@ -90,10 +90,14 @@ function MisSeleccionesEmpresa() {
         <EmptyState icon={Heart} title="Aún no has seleccionado ninguna solución" hint="Ve a 'Ver Soluciones' para empezar a dar like" />
       ) : (
         <>
-          <div className="relative max-w-md">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar en tus selecciones…" className="w-full rounded-md border border-border bg-card pl-9 pr-3 py-2 text-sm" />
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar en tus selecciones…" className="w-full rounded-md border border-border bg-card pl-9 pr-3 py-2 text-sm" />
+            </div>
+            <SortToggle value={dir ?? "asc"} onChange={setDir} />
           </div>
+
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filtered.map((s) => (
