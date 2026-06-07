@@ -27,6 +27,7 @@ function EmpresasQueMeHanSeleccionado() {
   const [selected, setSelected] = useState<PartnerDetail | null>(null);
   const [likeTarget, setLikeTarget] = useState<{ userId: string; name: string } | null>(null);
   const [q, setQ] = useState("");
+  const [dir, setDir] = useState<SortDir>("asc");
 
   async function load() {
     try {
