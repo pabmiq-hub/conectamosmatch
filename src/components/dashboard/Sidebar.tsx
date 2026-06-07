@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { signOut, type AppRole } from "@/lib/auth";
-import { LayoutDashboard, User, Search, Users, Heart, Calendar, Megaphone, ClipboardList, LogOut, Settings, Building2, UsersRound, BookmarkCheck } from "lucide-react";
+import { LayoutDashboard, User, Search, Users, Heart, Calendar, Megaphone, ClipboardList, LogOut, Settings, Building2, UsersRound, BookmarkCheck, Inbox } from "lucide-react";
 
 export interface NavItem {
   to: string;
@@ -35,6 +35,8 @@ export const navByRole: Record<AppRole, NavItem[]> = {
     { to: "/sponsor/mi-ficha", label: "Mi Ficha", icon: User },
     { to: "/sponsor/ver-empresas", label: "Ver Empresas", icon: Search },
     { to: "/sponsor/mis-selecciones", label: "Mis Selecciones", icon: BookmarkCheck },
+    { to: "/sponsor/me-han-seleccionado", label: "Me han seleccionado", icon: Inbox },
+
     { to: "/sponsor/mis-matches", label: "Mis Matches", icon: Heart },
     { to: "/sponsor/reuniones-1to1", label: "Reuniones 1to1", icon: ClipboardList },
     { to: "/sponsor/equipo", label: "Mi Equipo", icon: UsersRound },
