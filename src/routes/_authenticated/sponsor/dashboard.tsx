@@ -32,7 +32,7 @@ function SponsorDashboard() {
       }
       const [m, mt] = await Promise.all([
         supabase.from("matches").select("*", { count: "exact", head: true }).eq("sponsor_user_id", user.id).eq("status","mutual"),
-        supabase.from("meetings_1to1").select("*", { count: "exact", head: true }).eq("sponsor_user_id", user.id),
+        supabase.from("meetings_1to1").select("*", { count: "exact", head: true }).eq("sponsor_user_id", user.id).not("scheduled_time", "is", null).neq("status", "cancelled"),
       ]);
       setStats({ matches: m.count ?? 0, meetings: mt.count ?? 0 });
     })();
