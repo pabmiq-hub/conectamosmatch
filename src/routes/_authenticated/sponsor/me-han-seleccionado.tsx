@@ -47,11 +47,12 @@ function EmpresasQueMeHanSeleccionado() {
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
-    if (!term) return items;
-    return items.filter((e) =>
+    const base = !term ? items : items.filter((e) =>
       `${e.company_name ?? ""} ${e.sector ?? ""} ${e.location_city ?? ""}`.toLowerCase().includes(term),
     );
-  }, [items, q]);
+    return sortByName(base, (e: any) => e.company_name, dir);
+  }, [items, q, dir]);
+
 
   return (
     <div className="space-y-6">
