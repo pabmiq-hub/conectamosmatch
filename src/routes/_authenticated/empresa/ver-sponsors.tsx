@@ -28,6 +28,7 @@ function VerSponsors() {
   const [q, setQ] = useState("");
   const [activeCats, setActiveCats] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [dir, setDir] = useState<SortDir | null>(null);
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser();
