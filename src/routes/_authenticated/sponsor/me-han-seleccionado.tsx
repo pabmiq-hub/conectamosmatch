@@ -66,31 +66,31 @@ function EmpresasQueMeHanSeleccionado() {
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filtered.map((e) => (
-              <PartnerCard
-                key={e.account_id}
-                name={e.company_name}
-                description={e.description}
-                logoUrl={e.logo_url}
-                sector={e.sector}
-                size={e.company_size}
-                liked={e.matched}
-                actions={
-                  <ActionButton icon={Eye} label={e.matched ? "MATCH ✓" : "Ver"} onClick={() => setSelected(e)} />
-                }
-                footer={
-                  <div className="space-y-1 text-[11px] text-muted-foreground">
-                    {e.via_responsables?.length > 0 && (
-                      <div><span className="font-bold text-foreground/80">Vía:</span> {e.via_responsables.join(", ")}</div>
-                    )}
-                    {e.liked_responsables?.length > 0 && (
-                      <div><span className="font-bold text-foreground/80">Interés en:</span> {e.liked_responsables.join(", ")}</div>
-                    )}
-                    {e.created_at && (
-                      <div>{new Date(e.created_at).toLocaleDateString("es-ES")}</div>
-                    )}
-                  </div>
-                }
-              />
+              <div key={e.account_id} className="flex flex-col gap-2">
+                <PartnerCard
+                  name={e.company_name}
+                  description={e.description}
+                  logoUrl={e.logo_url}
+                  sector={e.sector}
+                  size={e.company_size}
+                  liked={e.matched}
+                  actions={
+                    <ActionButton icon={Eye} label={e.matched ? "MATCH ✓" : "Ver"} onClick={() => setSelected(e)} />
+                  }
+                />
+                <div className="space-y-1 rounded-md border border-border bg-card px-3 py-2 text-[11px] text-muted-foreground">
+                  {e.via_responsables?.length > 0 && (
+                    <div><span className="font-bold text-foreground/80">Vía:</span> {e.via_responsables.join(", ")}</div>
+                  )}
+                  {e.liked_responsables?.length > 0 && (
+                    <div><span className="font-bold text-foreground/80">Interés en:</span> {e.liked_responsables.join(", ")}</div>
+                  )}
+                  {e.created_at && (
+                    <div>{new Date(e.created_at).toLocaleDateString("es-ES")}</div>
+                  )}
+                </div>
+              </div>
+
             ))}
             {filtered.length === 0 && (
               <div className="col-span-full text-center text-sm text-muted-foreground py-12">
