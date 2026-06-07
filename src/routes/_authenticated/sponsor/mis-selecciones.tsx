@@ -22,6 +22,7 @@ function MisSeleccionesSponsor() {
   const [matchedSet, setMatchedSet] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<PartnerDetail | null>(null);
   const [q, setQ] = useState("");
+  const [dir, setDir] = useState<SortDir>("asc");
 
   useEffect(() => {
     (async () => {
