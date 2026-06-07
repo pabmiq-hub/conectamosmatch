@@ -86,7 +86,9 @@ function VerSponsors() {
         {activeCats.length > 0 && (
           <button onClick={() => setActiveCats([])} className="text-[11px] text-muted-foreground underline">Limpiar</button>
         )}
+        <SortToggle value={dir ?? "asc"} onChange={setDir} />
       </div>
+
 
       {showFilters && availableCats.length > 0 && (
         <div className="rounded-md border border-border bg-card p-3">
