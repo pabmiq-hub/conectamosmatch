@@ -9,6 +9,7 @@ import { EmpresaLikeModal } from "@/components/sponsor/EmpresaLikeModal";
 import { listMyLikedAccountIds } from "@/lib/admin-users.functions";
 import { PRESET_SPONSOR_CATEGORIES } from "@/lib/sponsor-categories";
 import { Search, Filter, X } from "lucide-react";
+import { SortToggle, sortByName, type SortDir } from "@/components/dashboard/SortToggle";
 
 export const Route = createFileRoute("/_authenticated/empresa/ver-sponsors")({
   component: VerSponsors,
