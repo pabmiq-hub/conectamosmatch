@@ -30,7 +30,7 @@ export const listAccountSelections = createServerFn({ method: "POST" })
       supabaseAdmin.from("empresa_profiles").select("id, user_id, company_name, logo_url"),
       supabaseAdmin.from("sponsor_profiles").select("id, user_id, company_name, logo_url"),
       supabaseAdmin.from("profiles").select("id, account_id, role, full_name"),
-      supabaseAdmin.from("likes").select("from_user_id, to_user_id, created_at").order("created_at", { ascending: false }),
+      supabaseAdmin.from("likes").select("from_user_id, to_user_id, created_at").order("created_at", { ascending: false }).range(0, 99999),
     ]);
 
     // user_id -> { account_id, kind, responsable_name }
