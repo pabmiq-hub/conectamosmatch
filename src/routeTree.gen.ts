@@ -20,6 +20,7 @@ import { Route as AuthenticatedSponsorReuniones1to1RouteImport } from './routes/
 import { Route as AuthenticatedSponsorMisSeleccionesRouteImport } from './routes/_authenticated/sponsor/mis-selecciones'
 import { Route as AuthenticatedSponsorMisMatchesRouteImport } from './routes/_authenticated/sponsor/mis-matches'
 import { Route as AuthenticatedSponsorMiFichaRouteImport } from './routes/_authenticated/sponsor/mi-ficha'
+import { Route as AuthenticatedSponsorMeHanSeleccionadoRouteImport } from './routes/_authenticated/sponsor/me-han-seleccionado'
 import { Route as AuthenticatedSponsorEquipoRouteImport } from './routes/_authenticated/sponsor/equipo'
 import { Route as AuthenticatedSponsorDashboardRouteImport } from './routes/_authenticated/sponsor/dashboard'
 import { Route as AuthenticatedSponsorAgendaRouteImport } from './routes/_authenticated/sponsor/agenda'
@@ -101,6 +102,12 @@ const AuthenticatedSponsorMiFichaRoute =
   AuthenticatedSponsorMiFichaRouteImport.update({
     id: '/sponsor/mi-ficha',
     path: '/sponsor/mi-ficha',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedSponsorMeHanSeleccionadoRoute =
+  AuthenticatedSponsorMeHanSeleccionadoRouteImport.update({
+    id: '/sponsor/me-han-seleccionado',
+    path: '/sponsor/me-han-seleccionado',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedSponsorEquipoRoute =
@@ -260,6 +267,7 @@ export interface FileRoutesByFullPath {
   '/sponsor/agenda': typeof AuthenticatedSponsorAgendaRoute
   '/sponsor/dashboard': typeof AuthenticatedSponsorDashboardRoute
   '/sponsor/equipo': typeof AuthenticatedSponsorEquipoRoute
+  '/sponsor/me-han-seleccionado': typeof AuthenticatedSponsorMeHanSeleccionadoRoute
   '/sponsor/mi-ficha': typeof AuthenticatedSponsorMiFichaRoute
   '/sponsor/mis-matches': typeof AuthenticatedSponsorMisMatchesRoute
   '/sponsor/mis-selecciones': typeof AuthenticatedSponsorMisSeleccionesRoute
@@ -294,6 +302,7 @@ export interface FileRoutesByTo {
   '/sponsor/agenda': typeof AuthenticatedSponsorAgendaRoute
   '/sponsor/dashboard': typeof AuthenticatedSponsorDashboardRoute
   '/sponsor/equipo': typeof AuthenticatedSponsorEquipoRoute
+  '/sponsor/me-han-seleccionado': typeof AuthenticatedSponsorMeHanSeleccionadoRoute
   '/sponsor/mi-ficha': typeof AuthenticatedSponsorMiFichaRoute
   '/sponsor/mis-matches': typeof AuthenticatedSponsorMisMatchesRoute
   '/sponsor/mis-selecciones': typeof AuthenticatedSponsorMisSeleccionesRoute
@@ -330,6 +339,7 @@ export interface FileRoutesById {
   '/_authenticated/sponsor/agenda': typeof AuthenticatedSponsorAgendaRoute
   '/_authenticated/sponsor/dashboard': typeof AuthenticatedSponsorDashboardRoute
   '/_authenticated/sponsor/equipo': typeof AuthenticatedSponsorEquipoRoute
+  '/_authenticated/sponsor/me-han-seleccionado': typeof AuthenticatedSponsorMeHanSeleccionadoRoute
   '/_authenticated/sponsor/mi-ficha': typeof AuthenticatedSponsorMiFichaRoute
   '/_authenticated/sponsor/mis-matches': typeof AuthenticatedSponsorMisMatchesRoute
   '/_authenticated/sponsor/mis-selecciones': typeof AuthenticatedSponsorMisSeleccionesRoute
@@ -366,6 +376,7 @@ export interface FileRouteTypes {
     | '/sponsor/agenda'
     | '/sponsor/dashboard'
     | '/sponsor/equipo'
+    | '/sponsor/me-han-seleccionado'
     | '/sponsor/mi-ficha'
     | '/sponsor/mis-matches'
     | '/sponsor/mis-selecciones'
@@ -400,6 +411,7 @@ export interface FileRouteTypes {
     | '/sponsor/agenda'
     | '/sponsor/dashboard'
     | '/sponsor/equipo'
+    | '/sponsor/me-han-seleccionado'
     | '/sponsor/mi-ficha'
     | '/sponsor/mis-matches'
     | '/sponsor/mis-selecciones'
@@ -435,6 +447,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sponsor/agenda'
     | '/_authenticated/sponsor/dashboard'
     | '/_authenticated/sponsor/equipo'
+    | '/_authenticated/sponsor/me-han-seleccionado'
     | '/_authenticated/sponsor/mi-ficha'
     | '/_authenticated/sponsor/mis-matches'
     | '/_authenticated/sponsor/mis-selecciones'
@@ -530,6 +543,13 @@ declare module '@tanstack/react-router' {
       path: '/sponsor/mi-ficha'
       fullPath: '/sponsor/mi-ficha'
       preLoaderRoute: typeof AuthenticatedSponsorMiFichaRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/sponsor/me-han-seleccionado': {
+      id: '/_authenticated/sponsor/me-han-seleccionado'
+      path: '/sponsor/me-han-seleccionado'
+      fullPath: '/sponsor/me-han-seleccionado'
+      preLoaderRoute: typeof AuthenticatedSponsorMeHanSeleccionadoRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/sponsor/equipo': {
@@ -728,6 +748,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSponsorAgendaRoute: typeof AuthenticatedSponsorAgendaRoute
   AuthenticatedSponsorDashboardRoute: typeof AuthenticatedSponsorDashboardRoute
   AuthenticatedSponsorEquipoRoute: typeof AuthenticatedSponsorEquipoRoute
+  AuthenticatedSponsorMeHanSeleccionadoRoute: typeof AuthenticatedSponsorMeHanSeleccionadoRoute
   AuthenticatedSponsorMiFichaRoute: typeof AuthenticatedSponsorMiFichaRoute
   AuthenticatedSponsorMisMatchesRoute: typeof AuthenticatedSponsorMisMatchesRoute
   AuthenticatedSponsorMisSeleccionesRoute: typeof AuthenticatedSponsorMisSeleccionesRoute
@@ -760,6 +781,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSponsorAgendaRoute: AuthenticatedSponsorAgendaRoute,
   AuthenticatedSponsorDashboardRoute: AuthenticatedSponsorDashboardRoute,
   AuthenticatedSponsorEquipoRoute: AuthenticatedSponsorEquipoRoute,
+  AuthenticatedSponsorMeHanSeleccionadoRoute:
+    AuthenticatedSponsorMeHanSeleccionadoRoute,
   AuthenticatedSponsorMiFichaRoute: AuthenticatedSponsorMiFichaRoute,
   AuthenticatedSponsorMisMatchesRoute: AuthenticatedSponsorMisMatchesRoute,
   AuthenticatedSponsorMisSeleccionesRoute:
