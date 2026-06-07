@@ -26,12 +26,26 @@ export const listAccountSelections = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     await assertSuperAdmin(context.userId);
 
-    const [{ data: emps }, { data: sps }, { data: profs }, { data: likes }] = await Promise.all([
+    const [{ data: emps }, { data: sps }, { data: profs }] = await Promise.all([
       supabaseAdmin.from("empresa_profiles").select("id, user_id, company_name, logo_url"),
       supabaseAdmin.from("sponsor_profiles").select("id, user_id, company_name, logo_url"),
       supabaseAdmin.from("profiles").select("id, account_id, role, full_name"),
-      supabaseAdmin.from("likes").select("from_user_id, to_user_id, created_at").order("created_at", { ascending: false }).range(0, 99999),
     ]);
+
+    // Paginated fetch of likes to avoid PostgREST row caps
+    const likes: { from_user_id: string; to_user_id: string; created_at: string | null }[] = [];
+    const PAGE = 1000;
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await supabaseAdmin
+        .from("likes")
+        .select("from_user_id, to_user_id, created_at")
+        .order("created_at", { ascending: false })
+        .range(from, from + PAGE - 1);
+      if (error) throw new Response(error.message, { status: 400 });
+      if (!data || data.length === 0) break;
+      likes.push(...(data as any));
+      if (data.length < PAGE) break;
+    }
 
     // user_id -> { account_id, kind, responsable_name }
     const userMap = new Map<string, { account_id: string; kind: AccountKind; name: string }>();
