@@ -9,6 +9,7 @@ import { PartnerDetailModal, type PartnerDetail } from "@/components/dashboard/P
 import { EmpresaLikeModal } from "@/components/sponsor/EmpresaLikeModal";
 import { listMyLikedAccountIds } from "@/lib/admin-users.functions";
 import { Inbox, Search } from "lucide-react";
+import { SortToggle, sortByName, type SortDir } from "@/components/dashboard/SortToggle";
 import { toast } from "sonner";
 import { listEmpresasWhoLikedMe } from "@/lib/sponsor-incoming.functions";
 
