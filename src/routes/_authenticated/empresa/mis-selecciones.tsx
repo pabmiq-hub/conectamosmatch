@@ -56,6 +56,7 @@ function MisSeleccionesEmpresa() {
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     const base = !term ? items : items.filter((s) => `${s.company_name ?? ""} ${s.sector ?? ""} ${s.location_city ?? ""}`.toLowerCase().includes(term));
+    if (dir) return sortByName(base, (s: any) => s.company_name, dir);
     const rank = (lvl?: string | null) => {
       const u = String(lvl ?? "").toUpperCase();
       if (u === "GOLD") return 0;
@@ -68,7 +69,8 @@ function MisSeleccionesEmpresa() {
       if (dr !== 0) return dr;
       return (a.company_name ?? "").localeCompare(b.company_name ?? "", "es", { sensitivity: "base" });
     });
-  }, [items, q]);
+  }, [items, q, dir]);
+
 
   const reachedMin = items.length >= MIN_REQUIRED;
 
