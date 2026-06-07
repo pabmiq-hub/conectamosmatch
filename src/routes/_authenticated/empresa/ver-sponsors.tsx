@@ -59,8 +59,10 @@ function VerSponsors() {
     let base = items;
     if (term) base = base.filter((s) => String(s.company_name ?? "").toLowerCase().includes(term));
     if (activeCats.length) base = base.filter((s) => Array.isArray(s.categories) && activeCats.every((c) => s.categories.includes(c)));
+    if (dir) return sortByName(base, (s: any) => s.company_name, dir);
     return [...base].sort((a, b) => (a.company_name ?? "").localeCompare(b.company_name ?? "", "es", { sensitivity: "base" }));
-  }, [items, q, activeCats]);
+  }, [items, q, activeCats, dir]);
+
 
   const reachedMin = likedAccountIds.size >= MIN_REQUIRED;
 
