@@ -9,6 +9,7 @@ import { EmpresaLikeModal } from "@/components/sponsor/EmpresaLikeModal";
 import { listMyLikedAccountIds } from "@/lib/admin-users.functions";
 import { PRESET_SPONSOR_CATEGORIES } from "@/lib/sponsor-categories";
 import { Search, Filter, X } from "lucide-react";
+import { SortToggle, sortByName, type SortDir } from "@/components/dashboard/SortToggle";
 
 export const Route = createFileRoute("/_authenticated/empresa/ver-sponsors")({
   component: VerSponsors,
@@ -27,6 +28,7 @@ function VerSponsors() {
   const [q, setQ] = useState("");
   const [activeCats, setActiveCats] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [dir, setDir] = useState<SortDir | null>(null);
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -57,8 +59,10 @@ function VerSponsors() {
     let base = items;
     if (term) base = base.filter((s) => String(s.company_name ?? "").toLowerCase().includes(term));
     if (activeCats.length) base = base.filter((s) => Array.isArray(s.categories) && activeCats.every((c) => s.categories.includes(c)));
+    if (dir) return sortByName(base, (s: any) => s.company_name, dir);
     return [...base].sort((a, b) => (a.company_name ?? "").localeCompare(b.company_name ?? "", "es", { sensitivity: "base" }));
-  }, [items, q, activeCats]);
+  }, [items, q, activeCats, dir]);
+
 
   const reachedMin = likedAccountIds.size >= MIN_REQUIRED;
 
@@ -82,7 +86,9 @@ function VerSponsors() {
         {activeCats.length > 0 && (
           <button onClick={() => setActiveCats([])} className="text-[11px] text-muted-foreground underline">Limpiar</button>
         )}
+        <SortToggle value={dir ?? "asc"} onChange={setDir} />
       </div>
+
 
       {showFilters && availableCats.length > 0 && (
         <div className="rounded-md border border-border bg-card p-3">

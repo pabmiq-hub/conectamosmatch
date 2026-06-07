@@ -8,6 +8,7 @@ import { AccountInterestButton, ActionButton, Eye } from "@/components/dashboard
 import { PartnerDetailModal, type PartnerDetail } from "@/components/dashboard/PartnerDetailModal";
 import { listMyLikedAccountIds } from "@/lib/admin-users.functions";
 import { Heart, Search } from "lucide-react";
+import { SortToggle, sortByName, type SortDir } from "@/components/dashboard/SortToggle";
 
 export const Route = createFileRoute("/_authenticated/empresa/mis-selecciones")({
   component: MisSeleccionesEmpresa,
@@ -23,6 +24,7 @@ function MisSeleccionesEmpresa() {
   const [matchedSet, setMatchedSet] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<PartnerDetail | null>(null);
   const [q, setQ] = useState("");
+  const [dir, setDir] = useState<SortDir | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -54,6 +56,7 @@ function MisSeleccionesEmpresa() {
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     const base = !term ? items : items.filter((s) => `${s.company_name ?? ""} ${s.sector ?? ""} ${s.location_city ?? ""}`.toLowerCase().includes(term));
+    if (dir) return sortByName(base, (s: any) => s.company_name, dir);
     const rank = (lvl?: string | null) => {
       const u = String(lvl ?? "").toUpperCase();
       if (u === "GOLD") return 0;
@@ -66,7 +69,8 @@ function MisSeleccionesEmpresa() {
       if (dr !== 0) return dr;
       return (a.company_name ?? "").localeCompare(b.company_name ?? "", "es", { sensitivity: "base" });
     });
-  }, [items, q]);
+  }, [items, q, dir]);
+
 
   const reachedMin = items.length >= MIN_REQUIRED;
 
@@ -86,10 +90,14 @@ function MisSeleccionesEmpresa() {
         <EmptyState icon={Heart} title="Aún no has seleccionado ninguna solución" hint="Ve a 'Ver Soluciones' para empezar a dar like" />
       ) : (
         <>
-          <div className="relative max-w-md">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar en tus selecciones…" className="w-full rounded-md border border-border bg-card pl-9 pr-3 py-2 text-sm" />
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar en tus selecciones…" className="w-full rounded-md border border-border bg-card pl-9 pr-3 py-2 text-sm" />
+            </div>
+            <SortToggle value={dir ?? "asc"} onChange={setDir} />
           </div>
+
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filtered.map((s) => (

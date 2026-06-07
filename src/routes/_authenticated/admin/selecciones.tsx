@@ -2,9 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
-import { BookmarkCheck, ChevronDown, ChevronRight, Building2, Sparkles, Search } from "lucide-react";
+import { BookmarkCheck, ChevronDown, ChevronRight, Building2, Sparkles, Search, FileSpreadsheet, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { listAccountSelections } from "@/lib/admin-selections.functions";
+import { SortToggle, sortByName, type SortDir } from "@/components/dashboard/SortToggle";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export const Route = createFileRoute("/_authenticated/admin/selecciones")({
   component: AdminSelecciones,
@@ -19,6 +23,7 @@ function AdminSelecciones() {
   const [side, setSide] = useState<Side>("empresa");
   const [q, setQ] = useState("");
   const [showZero, setShowZero] = useState(true);
+  const [dir, setDir] = useState<SortDir>("asc");
 
   useEffect(() => {
     (async () => {
@@ -35,21 +40,83 @@ function AdminSelecciones() {
   const accounts = side === "empresa" ? empresas : sponsors;
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
-    return accounts.filter((a) => {
+    const base = accounts.filter((a) => {
       if (!showZero && a.total === 0) return false;
       if (!term) return true;
       if ((a.company_name ?? "").toLowerCase().includes(term)) return true;
       return (a.targets ?? []).some((t: any) => (t.company_name ?? "").toLowerCase().includes(term));
     });
-  }, [accounts, q, showZero]);
+    return sortByName(base, (a: any) => a.company_name, dir);
+  }, [accounts, q, showZero, dir]);
 
   const totalSel = filtered.reduce((s, a) => s + a.total, 0);
+
+  function exportRows() {
+    const rows: Record<string, string | number>[] = [];
+    filtered.forEach((a: any) => {
+      if (!a.targets || a.targets.length === 0) {
+        rows.push({
+          [side === "empresa" ? "Empresa" : "Solución"]: a.company_name ?? "",
+          [side === "empresa" ? "Solución seleccionada" : "Empresa seleccionada"]: "",
+          "Vía responsables": "",
+          Fecha: "",
+        });
+        return;
+      }
+      a.targets.forEach((t: any) => {
+        rows.push({
+          [side === "empresa" ? "Empresa" : "Solución"]: a.company_name ?? "",
+          [side === "empresa" ? "Solución seleccionada" : "Empresa seleccionada"]: t.company_name ?? "",
+          "Vía responsables": (t.responsables ?? []).join(", "),
+          Fecha: t.created_at ? new Date(t.created_at).toLocaleString("es-ES") : "",
+        });
+      });
+    });
+    return rows;
+  }
+
+  function downloadExcel() {
+    const data = exportRows();
+    if (!data.length) { toast.error("Sin datos para exportar"); return; }
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Selecciones");
+    XLSX.writeFile(wb, `selecciones-${side}-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
+
+  function downloadPdf() {
+    const data = exportRows();
+    if (!data.length) { toast.error("Sin datos para exportar"); return; }
+    const doc = new jsPDF({ orientation: "landscape" });
+    doc.setFontSize(14);
+    doc.text(`Selecciones · ${side === "empresa" ? "Empresas" : "Soluciones"}`, 14, 14);
+    doc.setFontSize(9);
+    doc.text(`${filtered.length} cuentas · ${totalSel} selecciones · ${new Date().toLocaleString("es-ES")}`, 14, 20);
+    autoTable(doc, {
+      startY: 25,
+      head: [Object.keys(data[0])],
+      body: data.map((r) => Object.values(r) as string[]),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [107, 0, 255] },
+    });
+    doc.save(`selecciones-${side}-${new Date().toISOString().slice(0, 10)}.pdf`);
+  }
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Selecciones"
         subtitle="Cuántas cuentas únicas ha seleccionado cada empresa y cada solución"
+        right={
+          <div className="flex flex-wrap gap-2">
+            <button onClick={downloadExcel} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide hover:bg-muted">
+              <FileSpreadsheet className="h-4 w-4" /> Excel
+            </button>
+            <button onClick={downloadPdf} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide hover:bg-muted">
+              <FileText className="h-4 w-4" /> PDF
+            </button>
+          </div>
+        }
       />
       <div className="flex flex-wrap items-center gap-3">
         <div className="inline-flex rounded-md border border-border overflow-hidden">
@@ -77,6 +144,7 @@ function AdminSelecciones() {
             className="rounded-md border border-border bg-card pl-7 pr-3 py-1.5 text-xs min-w-[220px]"
           />
         </div>
+        <SortToggle value={dir} onChange={setDir} />
         <label className="flex items-center gap-1 text-[11px] text-muted-foreground">
           <input type="checkbox" checked={showZero} onChange={(e) => setShowZero(e.target.checked)} />
           Mostrar cuentas con 0 selecciones
@@ -90,19 +158,20 @@ function AdminSelecciones() {
         <EmptyState icon={BookmarkCheck} title="Sin cuentas" />
       ) : (
         <div className="space-y-2">
-          {filtered.map((a) => <AccountCard key={a.account_id} account={a} side={side} />)}
+          {filtered.map((a) => <AccountCard key={a.account_id} account={a} side={side} dir={dir} />)}
         </div>
       )}
     </div>
   );
 }
 
-function AccountCard({ account, side }: { account: any; side: Side }) {
+function AccountCard({ account, side, dir }: { account: any; side: Side; dir: SortDir }) {
   const [open, setOpen] = useState(false);
   const Icon = side === "empresa" ? Building2 : Sparkles;
   const TargetIcon = side === "empresa" ? Sparkles : Building2;
   const otherLabel = side === "empresa" ? "soluciones" : "empresas";
   const zero = account.total === 0;
+  const targets = useMemo(() => sortByName(account.targets ?? [], (t: any) => t.company_name, dir), [account.targets, dir]);
   return (
     <div className={`rounded-xl border border-border bg-card overflow-hidden ${zero ? "opacity-80" : ""}`}>
       <button onClick={() => setOpen((v) => !v)} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/40 text-left">
@@ -121,7 +190,7 @@ function AccountCard({ account, side }: { account: any; side: Side }) {
       </button>
       {open && account.total > 0 && (
         <ul className="divide-y divide-border border-t border-border">
-          {account.targets.map((t: any) => (
+          {targets.map((t: any) => (
             <li key={t.account_id} className="flex items-start gap-3 px-4 py-2.5 text-xs">
               <TargetIcon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
               <div className="min-w-0 flex-1">
