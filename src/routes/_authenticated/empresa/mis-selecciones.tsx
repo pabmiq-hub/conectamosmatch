@@ -7,6 +7,7 @@ import { PartnerCard } from "@/components/dashboard/PartnerCard";
 import { AccountInterestButton, ActionButton, Eye } from "@/components/dashboard/ActionButtons";
 import { PartnerDetailModal, type PartnerDetail } from "@/components/dashboard/PartnerDetailModal";
 import { listMyLikedAccountIds } from "@/lib/admin-users.functions";
+import { listMyAccountMatches } from "@/lib/account-matches.functions";
 import { Heart, Search } from "lucide-react";
 import { SortToggle, sortByName, type SortDir } from "@/components/dashboard/SortToggle";
 
