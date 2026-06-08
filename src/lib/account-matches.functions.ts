@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 // Returns mutual matches at the ACCOUNT level for the current user.
 // Any match involving any teammate of the user's account is included.
@@ -8,6 +7,7 @@ export const listMyAccountMatches = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: meProfile } = await supabaseAdmin
       .from("profiles")

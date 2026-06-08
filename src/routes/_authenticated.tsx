@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
 
 export const Route = createFileRoute("/_authenticated")({
+  ssr: false,
   component: AuthLayout,
 });
 

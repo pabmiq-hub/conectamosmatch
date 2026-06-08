@@ -26,6 +26,10 @@ function brandedErrorResponse(): Response {
 }
 
 function isCatastrophicSsrErrorBody(body: string, responseStatus: number): boolean {
+  if (responseStatus >= 500 && body.trim() === "Internal Server Error") {
+    return true;
+  }
+
   let payload: unknown;
   try {
     payload = JSON.parse(body);
@@ -55,7 +59,7 @@ function isCatastrophicSsrErrorBody(body: string, responseStatus: number): boole
 async function normalizeCatastrophicSsrResponse(response: Response): Promise<Response> {
   if (response.status < 500) return response;
   const contentType = response.headers.get("content-type") ?? "";
-  if (!contentType.includes("application/json")) return response;
+  if (!contentType.includes("application/json") && !contentType.includes("text/plain")) return response;
 
   const body = await response.clone().text();
   if (!isCatastrophicSsrErrorBody(body, response.status)) {
