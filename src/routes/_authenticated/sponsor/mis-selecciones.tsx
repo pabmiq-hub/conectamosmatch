@@ -17,10 +17,11 @@ export const Route = createFileRoute("/_authenticated/sponsor/mis-selecciones")(
 
 function MisSeleccionesSponsor() {
   const getLikedAccounts = useServerFn(listMyLikedAccountIds);
+  const getMatches = useServerFn(listMyAccountMatches);
   const [me, setMe] = useState<string | null>(null);
   const [eventId, setEventId] = useState<string | null>(null);
   const [items, setItems] = useState<any[]>([]);
-  const [matchedSet, setMatchedSet] = useState<Set<string>>(new Set());
+  const [matchedAccountSet, setMatchedAccountSet] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<PartnerDetail | null>(null);
   const [q, setQ] = useState("");
   const [dir, setDir] = useState<SortDir>("asc");
@@ -39,16 +40,12 @@ function MisSeleccionesSponsor() {
 
       const { data: emp } = await supabase
         .from("empresa_profiles")
-        .select("user_id, company_name, description, logo_url, sector, company_size, website, location_city, responsables")
+        .select("id, user_id, company_name, description, logo_url, sector, company_size, website, location_city, responsables")
         .in("id", ids);
       setItems(emp ?? []);
 
-      const { data: matches } = await supabase
-        .from("matches")
-        .select("empresa_user_id")
-        .eq("sponsor_user_id", user.id)
-        .eq("status", "mutual");
-      setMatchedSet(new Set((matches ?? []).map((m: any) => m.empresa_user_id)));
+      const { partnerAccountIds } = await getMatches({ data: undefined as any });
+      setMatchedAccountSet(new Set(partnerAccountIds));
     })();
   }, []);
 
