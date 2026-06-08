@@ -7,6 +7,7 @@ import { PartnerCard } from "@/components/dashboard/PartnerCard";
 import { AccountInterestButton, ActionButton, Eye } from "@/components/dashboard/ActionButtons";
 import { PartnerDetailModal, type PartnerDetail } from "@/components/dashboard/PartnerDetailModal";
 import { listMyLikedAccountIds } from "@/lib/admin-users.functions";
+import { listMyAccountMatches } from "@/lib/account-matches.functions";
 import { Heart, Search } from "lucide-react";
 import { SortToggle, sortByName, type SortDir } from "@/components/dashboard/SortToggle";
 
@@ -18,10 +19,11 @@ const MIN_REQUIRED = 12;
 
 function MisSeleccionesEmpresa() {
   const getLikedAccounts = useServerFn(listMyLikedAccountIds);
+  const getMatches = useServerFn(listMyAccountMatches);
   const [me, setMe] = useState<string | null>(null);
   const [eventId, setEventId] = useState<string | null>(null);
   const [items, setItems] = useState<any[]>([]);
-  const [matchedSet, setMatchedSet] = useState<Set<string>>(new Set());
+  const [matchedAccountSet, setMatchedAccountSet] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<PartnerDetail | null>(null);
   const [q, setQ] = useState("");
   const [dir, setDir] = useState<SortDir | null>(null);
@@ -40,16 +42,12 @@ function MisSeleccionesEmpresa() {
 
       const { data: sp } = await supabase
         .from("sponsor_profiles")
-        .select("user_id, company_name, description, logo_url, sector, sponsorship_level, website, location_city, responsables")
+        .select("id, user_id, company_name, description, logo_url, sector, sponsorship_level, website, location_city, responsables")
         .in("id", ids);
       setItems(sp ?? []);
 
-      const { data: matches } = await supabase
-        .from("matches")
-        .select("sponsor_user_id")
-        .eq("empresa_user_id", user.id)
-        .eq("status", "mutual");
-      setMatchedSet(new Set((matches ?? []).map((m: any) => m.sponsor_user_id)));
+      const { partnerAccountIds } = await getMatches({ data: undefined as any });
+      setMatchedAccountSet(new Set(partnerAccountIds));
     })();
   }, []);
 
@@ -111,7 +109,7 @@ function MisSeleccionesEmpresa() {
 
                 actions={
                   <>
-                    <ActionButton icon={Eye} label={matchedSet.has(s.user_id) ? "MATCH ✓" : "Ver"} onClick={() => setSelected(s)} />
+                    <ActionButton icon={Eye} label={matchedAccountSet.has(s.id) ? "MATCH ✓" : "Ver"} onClick={() => setSelected(s)} />
                     {me && <AccountInterestButton targetUserId={s.user_id} eventId={eventId} partnerName={s.company_name} liked onLike={() => {}} onUnliked={() => setItems((prev) => prev.filter((item) => item.user_id !== s.user_id))} />}
                   </>
                 }

@@ -1076,11 +1076,28 @@ export const listMyLikedAccountIds = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ eventId: z.string().uuid().nullable() }).parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    let likesQuery = supabaseAdmin.from("likes").select("to_user_id").eq("from_user_id", userId);
+
+    // Resolve my account and all teammates so likes are aggregated at account level
+    const { data: meProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("account_id")
+      .eq("id", userId)
+      .maybeSingle();
+    const myAccountId = meProfile?.account_id ?? null;
+    let teammateIds: string[] = [userId];
+    if (myAccountId) {
+      const { data: team } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("account_id", myAccountId);
+      teammateIds = Array.from(new Set([...(team ?? []).map((m: any) => m.id), userId]));
+    }
+
+    let likesQuery = supabaseAdmin.from("likes").select("to_user_id").in("from_user_id", teammateIds);
     likesQuery = data.eventId ? likesQuery.eq("event_id", data.eventId) : likesQuery.is("event_id", null);
     const { data: likes, error } = await likesQuery;
     if (error) throw new Error(error.message);
-    const targetIds = (likes ?? []).map((l: any) => l.to_user_id).filter(Boolean);
+    const targetIds = Array.from(new Set((likes ?? []).map((l: any) => l.to_user_id).filter(Boolean)));
     if (!targetIds.length) return { accountIds: [] as string[], userIds: [] as string[] };
 
     const { data: profiles, error: profileError } = await supabaseAdmin
@@ -1114,7 +1131,6 @@ export const likeEmpresaAccount = createServerFn({ method: "POST" })
     for (const row of rows) {
       const { error } = await supabase.from("likes").insert(row);
       if (!error) { inserted++; continue; }
-      // Silently ignore duplicate-key conflicts; surface any other error
       const code = (error as any).code;
       const msg = error.message || "";
       const isDuplicate = code === "23505" || /duplicate key/i.test(msg);
@@ -1133,23 +1149,33 @@ export const unlikeEmpresaAccount = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
+
     const { data: target } = await supabaseAdmin
       .from("profiles")
       .select("account_id")
       .eq("id", data.empresaUserId)
       .maybeSingle();
-
-    const memberIds = target?.account_id
+    const targetMemberIds = target?.account_id
       ? (await supabaseAdmin.from("profiles").select("id").eq("account_id", target.account_id)).data?.map((m: any) => m.id) ?? []
       : [data.empresaUserId];
+    if (!targetMemberIds.length) return { ok: true, count: 0 };
 
-    if (!memberIds.length) return { ok: true, count: 0 };
+    // Account-level: remove likes from any teammate of my account
+    const { data: meProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("account_id")
+      .eq("id", userId)
+      .maybeSingle();
+    const myAccountId = meProfile?.account_id ?? null;
+    const myMemberIds = myAccountId
+      ? (await supabaseAdmin.from("profiles").select("id").eq("account_id", myAccountId)).data?.map((m: any) => m.id) ?? [userId]
+      : [userId];
 
     let q = supabaseAdmin
       .from("likes")
       .delete()
-      .eq("from_user_id", userId)
-      .in("to_user_id", memberIds);
+      .in("from_user_id", myMemberIds)
+      .in("to_user_id", targetMemberIds);
     q = data.eventId ? q.eq("event_id", data.eventId) : q.is("event_id", null);
     const { data: deleted, error } = await q.select("id");
     if (error) throw new Error(error.message);

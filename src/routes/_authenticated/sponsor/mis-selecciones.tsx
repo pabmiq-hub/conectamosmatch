@@ -7,6 +7,7 @@ import { PartnerCard } from "@/components/dashboard/PartnerCard";
 import { AccountInterestButton, ActionButton, Eye } from "@/components/dashboard/ActionButtons";
 import { PartnerDetailModal, type PartnerDetail } from "@/components/dashboard/PartnerDetailModal";
 import { listMyLikedAccountIds } from "@/lib/admin-users.functions";
+import { listMyAccountMatches } from "@/lib/account-matches.functions";
 import { Heart, Search } from "lucide-react";
 import { SortToggle, sortByName, type SortDir } from "@/components/dashboard/SortToggle";
 
@@ -16,10 +17,11 @@ export const Route = createFileRoute("/_authenticated/sponsor/mis-selecciones")(
 
 function MisSeleccionesSponsor() {
   const getLikedAccounts = useServerFn(listMyLikedAccountIds);
+  const getMatches = useServerFn(listMyAccountMatches);
   const [me, setMe] = useState<string | null>(null);
   const [eventId, setEventId] = useState<string | null>(null);
   const [items, setItems] = useState<any[]>([]);
-  const [matchedSet, setMatchedSet] = useState<Set<string>>(new Set());
+  const [matchedAccountSet, setMatchedAccountSet] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<PartnerDetail | null>(null);
   const [q, setQ] = useState("");
   const [dir, setDir] = useState<SortDir>("asc");
@@ -38,16 +40,12 @@ function MisSeleccionesSponsor() {
 
       const { data: emp } = await supabase
         .from("empresa_profiles")
-        .select("user_id, company_name, description, logo_url, sector, company_size, website, location_city, responsables")
+        .select("id, user_id, company_name, description, logo_url, sector, company_size, website, location_city, responsables")
         .in("id", ids);
       setItems(emp ?? []);
 
-      const { data: matches } = await supabase
-        .from("matches")
-        .select("empresa_user_id")
-        .eq("sponsor_user_id", user.id)
-        .eq("status", "mutual");
-      setMatchedSet(new Set((matches ?? []).map((m: any) => m.empresa_user_id)));
+      const { partnerAccountIds } = await getMatches({ data: undefined as any });
+      setMatchedAccountSet(new Set(partnerAccountIds));
     })();
   }, []);
 
@@ -95,7 +93,7 @@ function MisSeleccionesSponsor() {
                 liked
                 actions={
                   <>
-                    <ActionButton icon={Eye} label={matchedSet.has(e.user_id) ? "MATCH ✓" : "Ver"} onClick={() => setSelected(e)} />
+                    <ActionButton icon={Eye} label={matchedAccountSet.has(e.id) ? "MATCH ✓" : "Ver"} onClick={() => setSelected(e)} />
                     {me && <AccountInterestButton targetUserId={e.user_id} eventId={eventId} partnerName={e.company_name} liked onLike={() => {}} onUnliked={() => setItems((prev) => prev.filter((item) => item.user_id !== e.user_id))} />}
                   </>
                 }
