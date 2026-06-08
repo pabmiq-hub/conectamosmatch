@@ -9,12 +9,47 @@ import { SortToggle, sortByName, type SortDir } from "@/components/dashboard/Sor
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/admin/selecciones")({
   component: AdminSelecciones,
 });
 
 type Side = "empresa" | "sponsor";
+
+type ExportChoice = "empresa" | "sponsor" | "both";
+
+function buildRows(accounts: any[], side: Side) {
+  const rows: Record<string, string | number>[] = [];
+  accounts.forEach((a: any) => {
+    if (!a.targets || a.targets.length === 0) {
+      rows.push({
+        [side === "empresa" ? "Empresa" : "Solución"]: a.company_name ?? "",
+        [side === "empresa" ? "Solución seleccionada" : "Empresa seleccionada"]: "",
+        "Vía responsables": "",
+        Fecha: "",
+      });
+      return;
+    }
+    a.targets.forEach((t: any) => {
+      rows.push({
+        [side === "empresa" ? "Empresa" : "Solución"]: a.company_name ?? "",
+        [side === "empresa" ? "Solución seleccionada" : "Empresa seleccionada"]: t.company_name ?? "",
+        "Vía responsables": (t.responsables ?? []).join(", "),
+        Fecha: t.created_at ? new Date(t.created_at).toLocaleString("es-ES") : "",
+      });
+    });
+  });
+  return rows;
+}
 
 function AdminSelecciones() {
   const fn = useServerFn(listAccountSelections);
@@ -24,6 +59,10 @@ function AdminSelecciones() {
   const [q, setQ] = useState("");
   const [showZero, setShowZero] = useState(true);
   const [dir, setDir] = useState<SortDir>("asc");
+
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [pendingFormat, setPendingFormat] = useState<"excel" | "pdf" | null>(null);
+  const [exportChoice, setExportChoice] = useState<ExportChoice>("both");
 
   useEffect(() => {
     (async () => {
@@ -51,55 +90,88 @@ function AdminSelecciones() {
 
   const totalSel = filtered.reduce((s, a) => s + a.total, 0);
 
-  function exportRows() {
-    const rows: Record<string, string | number>[] = [];
-    filtered.forEach((a: any) => {
-      if (!a.targets || a.targets.length === 0) {
-        rows.push({
-          [side === "empresa" ? "Empresa" : "Solución"]: a.company_name ?? "",
-          [side === "empresa" ? "Solución seleccionada" : "Empresa seleccionada"]: "",
-          "Vía responsables": "",
-          Fecha: "",
-        });
-        return;
-      }
-      a.targets.forEach((t: any) => {
-        rows.push({
-          [side === "empresa" ? "Empresa" : "Solución"]: a.company_name ?? "",
-          [side === "empresa" ? "Solución seleccionada" : "Empresa seleccionada"]: t.company_name ?? "",
-          "Vía responsables": (t.responsables ?? []).join(", "),
-          Fecha: t.created_at ? new Date(t.created_at).toLocaleString("es-ES") : "",
-        });
-      });
-    });
-    return rows;
+  function openExport(format: "excel" | "pdf") {
+    setPendingFormat(format);
+    setExportChoice("both");
+    setExportModalOpen(true);
   }
 
-  function downloadExcel() {
-    const data = exportRows();
-    if (!data.length) { toast.error("Sin datos para exportar"); return; }
-    const ws = XLSX.utils.json_to_sheet(data);
+  function confirmExport() {
+    if (!pendingFormat) return;
+    if (pendingFormat === "excel") {
+      doDownloadExcel(exportChoice);
+    } else {
+      doDownloadPdf(exportChoice);
+    }
+    setExportModalOpen(false);
+    setPendingFormat(null);
+  }
+
+  function doDownloadExcel(choice: ExportChoice) {
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Selecciones");
-    XLSX.writeFile(wb, `selecciones-${side}-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    const date = new Date().toISOString().slice(0, 10);
+
+    if (choice === "empresa" || choice === "both") {
+      const rows = buildRows(empresas, "empresa");
+      if (rows.length) {
+        const ws = XLSX.utils.json_to_sheet(rows);
+        XLSX.utils.book_append_sheet(wb, ws, "Empresas");
+      }
+    }
+    if (choice === "sponsor" || choice === "both") {
+      const rows = buildRows(sponsors, "sponsor");
+      if (rows.length) {
+        const ws = XLSX.utils.json_to_sheet(rows);
+        XLSX.utils.book_append_sheet(wb, ws, "Soluciones");
+      }
+    }
+
+    if (!wb.SheetNames.length) {
+      toast.error("Sin datos para exportar");
+      return;
+    }
+
+    const label = choice === "both" ? "ambos" : choice;
+    XLSX.writeFile(wb, `selecciones-${label}-${date}.xlsx`);
   }
 
-  function downloadPdf() {
-    const data = exportRows();
-    if (!data.length) { toast.error("Sin datos para exportar"); return; }
+  function doDownloadPdf(choice: ExportChoice) {
     const doc = new jsPDF({ orientation: "landscape" });
-    doc.setFontSize(14);
-    doc.text(`Selecciones · ${side === "empresa" ? "Empresas" : "Soluciones"}`, 14, 14);
-    doc.setFontSize(9);
-    doc.text(`${filtered.length} cuentas · ${totalSel} selecciones · ${new Date().toLocaleString("es-ES")}`, 14, 20);
-    autoTable(doc, {
-      startY: 25,
-      head: [Object.keys(data[0])],
-      body: data.map((r) => Object.values(r) as string[]),
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [107, 0, 255] },
-    });
-    doc.save(`selecciones-${side}-${new Date().toISOString().slice(0, 10)}.pdf`);
+    const date = new Date().toLocaleString("es-ES");
+    let startY = 14;
+
+    const addSection = (title: string, accountsList: any[], sideLabel: Side) => {
+      const rows = buildRows(accountsList, sideLabel);
+      if (!rows.length) return startY;
+      doc.setFontSize(14);
+      doc.text(title, 14, startY);
+      doc.setFontSize(9);
+      doc.text(`${accountsList.length} cuentas · ${rows.length} filas · ${date}`, 14, startY + 6);
+      autoTable(doc, {
+        startY: startY + 10,
+        head: [Object.keys(rows[0])],
+        body: rows.map((r) => Object.values(r) as string[]),
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [107, 0, 255] },
+      });
+      startY = (doc as any).lastAutoTable?.finalY + 14 || startY + 30;
+      return startY;
+    };
+
+    if (choice === "empresa" || choice === "both") {
+      startY = addSection("Selecciones · Empresas", empresas, "empresa");
+    }
+    if (choice === "sponsor" || choice === "both") {
+      startY = addSection("Selecciones · Soluciones", sponsors, "sponsor");
+    }
+
+    if (startY === 14) {
+      toast.error("Sin datos para exportar");
+      return;
+    }
+
+    const label = choice === "both" ? "ambos" : choice;
+    doc.save(`selecciones-${label}-${new Date().toISOString().slice(0, 10)}.pdf`);
   }
 
   return (
@@ -109,10 +181,10 @@ function AdminSelecciones() {
         subtitle="Cuántas cuentas únicas ha seleccionado cada empresa y cada solución"
         right={
           <div className="flex flex-wrap gap-2">
-            <button onClick={downloadExcel} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide hover:bg-muted">
+            <button onClick={() => openExport("excel")} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide hover:bg-muted">
               <FileSpreadsheet className="h-4 w-4" /> Excel
             </button>
-            <button onClick={downloadPdf} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide hover:bg-muted">
+            <button onClick={() => openExport("pdf")} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide hover:bg-muted">
               <FileText className="h-4 w-4" /> PDF
             </button>
           </div>
@@ -161,6 +233,51 @@ function AdminSelecciones() {
           {filtered.map((a) => <AccountCard key={a.account_id} account={a} side={side} dir={dir} />)}
         </div>
       )}
+
+      <Dialog open={exportModalOpen} onOpenChange={setExportModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Exportar selecciones</DialogTitle>
+            <DialogDescription>
+              Elige qué tipo de cuentas quieres incluir en la exportación.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            {([
+              { id: "empresa" as ExportChoice, label: "Empresas" },
+              { id: "sponsor" as ExportChoice, label: "Soluciones" },
+              { id: "both" as ExportChoice, label: "Ambos" },
+            ]).map((opt) => (
+              <label
+                key={opt.id}
+                className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                  exportChoice === opt.id
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:bg-muted"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="export-choice"
+                  value={opt.id}
+                  checked={exportChoice === opt.id}
+                  onChange={() => setExportChoice(opt.id)}
+                  className="h-4 w-4 text-primary"
+                />
+                <span className="text-sm font-medium">{opt.label}</span>
+              </label>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExportModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmExport}>
+              Exportar {pendingFormat === "excel" ? "Excel" : "PDF"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
