@@ -109,7 +109,7 @@ function MisSeleccionesEmpresa() {
 
                 actions={
                   <>
-                    <ActionButton icon={Eye} label={matchedSet.has(s.user_id) ? "MATCH ✓" : "Ver"} onClick={() => setSelected(s)} />
+                    <ActionButton icon={Eye} label={matchedAccountSet.has(s.id) ? "MATCH ✓" : "Ver"} onClick={() => setSelected(s)} />
                     {me && <AccountInterestButton targetUserId={s.user_id} eventId={eventId} partnerName={s.company_name} liked onLike={() => {}} onUnliked={() => setItems((prev) => prev.filter((item) => item.user_id !== s.user_id))} />}
                   </>
                 }
