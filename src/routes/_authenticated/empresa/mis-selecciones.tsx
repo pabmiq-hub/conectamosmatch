@@ -19,10 +19,11 @@ const MIN_REQUIRED = 12;
 
 function MisSeleccionesEmpresa() {
   const getLikedAccounts = useServerFn(listMyLikedAccountIds);
+  const getMatches = useServerFn(listMyAccountMatches);
   const [me, setMe] = useState<string | null>(null);
   const [eventId, setEventId] = useState<string | null>(null);
   const [items, setItems] = useState<any[]>([]);
-  const [matchedSet, setMatchedSet] = useState<Set<string>>(new Set());
+  const [matchedAccountSet, setMatchedAccountSet] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<PartnerDetail | null>(null);
   const [q, setQ] = useState("");
   const [dir, setDir] = useState<SortDir | null>(null);
@@ -41,16 +42,12 @@ function MisSeleccionesEmpresa() {
 
       const { data: sp } = await supabase
         .from("sponsor_profiles")
-        .select("user_id, company_name, description, logo_url, sector, sponsorship_level, website, location_city, responsables")
+        .select("id, user_id, company_name, description, logo_url, sector, sponsorship_level, website, location_city, responsables")
         .in("id", ids);
       setItems(sp ?? []);
 
-      const { data: matches } = await supabase
-        .from("matches")
-        .select("sponsor_user_id")
-        .eq("empresa_user_id", user.id)
-        .eq("status", "mutual");
-      setMatchedSet(new Set((matches ?? []).map((m: any) => m.sponsor_user_id)));
+      const { partnerAccountIds } = await getMatches({ data: undefined as any });
+      setMatchedAccountSet(new Set(partnerAccountIds));
     })();
   }, []);
 
