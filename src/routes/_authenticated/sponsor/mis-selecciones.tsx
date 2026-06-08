@@ -93,7 +93,7 @@ function MisSeleccionesSponsor() {
                 liked
                 actions={
                   <>
-                    <ActionButton icon={Eye} label={matchedSet.has(e.user_id) ? "MATCH ✓" : "Ver"} onClick={() => setSelected(e)} />
+                    <ActionButton icon={Eye} label={matchedAccountSet.has(e.id) ? "MATCH ✓" : "Ver"} onClick={() => setSelected(e)} />
                     {me && <AccountInterestButton targetUserId={e.user_id} eventId={eventId} partnerName={e.company_name} liked onLike={() => {}} onUnliked={() => setItems((prev) => prev.filter((item) => item.user_id !== e.user_id))} />}
                   </>
                 }
