@@ -323,6 +323,10 @@ export const importMeetingsFromExcel = createServerFn({ method: "POST" })
         status: "confirmed",
         assigned_by: context.userId,
         notes: r.notas?.trim() || null,
+        slot: r.slot?.trim() || null,
+        bloque: r.bloque?.trim() || null,
+        tipo_sponsor: r.tipo_sponsor?.trim() || null,
+        tipo_match: r.tipo_match?.trim() || null,
         empresa_responsable: { full_name: empResp.full_name ?? "", role: empResp.account_role ?? "", email: empResp.email ?? "" },
         sponsor_responsable: { full_name: spResp.full_name ?? "", role: spResp.account_role ?? "", email: spResp.email ?? "" },
       });
