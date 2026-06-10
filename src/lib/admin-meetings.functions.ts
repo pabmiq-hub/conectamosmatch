@@ -94,6 +94,19 @@ export const deleteMeeting = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const clearMeetings = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ event_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+    const { error, count } = await supabaseAdmin
+      .from("meetings_1to1")
+      .delete({ count: "exact" })
+      .eq("event_id", data.event_id);
+    if (error) throw new Response(error.message, { status: 400 });
+    return { ok: true, deleted: count ?? 0 };
+  });
+
 const responsableSchema = z.object({
   full_name: z.string().min(1).max(200),
   role: z.string().max(200).optional().nullable(),

@@ -5,7 +5,7 @@ import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { ClipboardList, Wand2, Trash2, Plus, FileSpreadsheet, FileText, Heart, Sparkles, Building2, CalendarCheck, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { listEvents } from "@/lib/admin-events.functions";
-import { listMeetings, autoAssignSlots, updateMeeting, deleteMeeting } from "@/lib/admin-meetings.functions";
+import { listMeetings, autoAssignSlots, updateMeeting, deleteMeeting, clearMeetings } from "@/lib/admin-meetings.functions";
 import { listMatches } from "@/lib/admin-matches.functions";
 import { listAllParticipants } from "@/lib/admin-meetings.functions";
 import { CreateMeetingModal } from "@/components/admin/CreateMeetingModal";
@@ -26,6 +26,7 @@ function AdminReuniones() {
   const autoAssign = useServerFn(autoAssignSlots);
   const upd = useServerFn(updateMeeting);
   const del = useServerFn(deleteMeeting);
+  const clearAll = useServerFn(clearMeetings);
   const [events, setEvents] = useState<any[]>([]);
   const [eventId, setEventId] = useState<string>("");
   const [rows, setRows] = useState<any[]>([]);
@@ -128,6 +129,18 @@ function AdminReuniones() {
     finally { setBusy(false); }
   }
 
+  async function runClear() {
+    if (!eventId) return;
+    if (!confirm("¿Eliminar TODAS las reuniones de este evento? Esta acción no se puede deshacer.")) return;
+    setBusy(true);
+    try {
+      const r = await clearAll({ data: { event_id: eventId } });
+      toast.success(`Eliminadas ${r.deleted} reuniones`);
+      load();
+    } catch (e: any) { toast.error(e?.message ?? "Error"); }
+    finally { setBusy(false); }
+  }
+
   function exportRows() {
     return filtered.map((r) => ({
       Empresa: r.empresa_name ?? "",
@@ -184,6 +197,9 @@ function AdminReuniones() {
           </button>
           <button onClick={() => setShowCreate(true)} className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide">
             <Plus className="h-4 w-4" /> Crear reunión
+          </button>
+          <button onClick={runClear} disabled={busy || !eventId} className="inline-flex items-center gap-2 rounded-md border border-destructive/40 px-4 py-2 text-xs font-bold text-destructive text-uppercase-wide hover:bg-destructive/10 disabled:opacity-50">
+            <Trash2 className="h-4 w-4" /> Limpiar reuniones
           </button>
           <button onClick={runAuto} disabled={busy || !eventId} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide disabled:opacity-50">
             <Wand2 className="h-4 w-4" /> {busy ? "Asignando…" : "Auto-asignar slots"}
