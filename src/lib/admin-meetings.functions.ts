@@ -308,11 +308,27 @@ function buildNameIndex<T extends { company_name: string }>(items: T[]) {
 }
 
 function madridIso(dateStr: string, timeStr: string): string {
+  // Compute Europe/Madrid UTC offset (in minutes) at the given local wall-clock time.
+  // We can't trust short timezone names ("CET"/"CEST") across runtimes — Workers/V8
+  // sometimes returns "GMT+2" which broke the previous CEST detection and shifted
+  // every imported meeting 1 hour back during DST.
   const probe = new Date(`${dateStr}T${timeStr}:00Z`);
-  const tzName = new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Madrid", timeZoneName: "short" })
-    .formatToParts(probe).find((p) => p.type === "timeZoneName")?.value ?? "CET";
-  const offset = tzName === "CEST" ? "+02:00" : "+01:00";
-  return new Date(`${dateStr}T${timeStr}:00${offset}`).toISOString();
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Madrid",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+  }).formatToParts(probe);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "00";
+  const asUtc = Date.UTC(
+    Number(get("year")), Number(get("month")) - 1, Number(get("day")),
+    Number(get("hour")) % 24, Number(get("minute")), Number(get("second")),
+  );
+  const offsetMin = Math.round((asUtc - probe.getTime()) / 60000); // +120 in CEST, +60 in CET
+  const sign = offsetMin >= 0 ? "+" : "-";
+  const abs = Math.abs(offsetMin);
+  const oh = String(Math.floor(abs / 60)).padStart(2, "0");
+  const om = String(abs % 60).padStart(2, "0");
+  return new Date(`${dateStr}T${timeStr}:00${sign}${oh}:${om}`).toISOString();
 }
 
 export const importMeetingsFromExcel = createServerFn({ method: "POST" })
