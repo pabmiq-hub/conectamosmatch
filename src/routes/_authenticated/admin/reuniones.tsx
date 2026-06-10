@@ -19,6 +19,34 @@ export const Route = createFileRoute("/_authenticated/admin/reuniones")({
   component: AdminReuniones,
 });
 
+// Format an ISO instant as the local Madrid wall-clock in the shape datetime-local expects: YYYY-MM-DDTHH:mm
+function madridLocalInputValue(iso: string): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Madrid",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+  }).formatToParts(new Date(iso));
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "00";
+  return `${get("year")}-${get("month")}-${get("day")}T${get("hour") === "24" ? "00" : get("hour")}:${get("minute")}`;
+}
+
+// Convert a datetime-local value (YYYY-MM-DDTHH:mm) typed as Madrid wall-clock back to UTC ISO
+function madridLocalToIso(local: string): string {
+  const [d, t] = local.split("T");
+  const [Y, M, D] = d.split("-").map(Number);
+  const [h, m] = t.split(":").map(Number);
+  const utcGuess = Date.UTC(Y, M - 1, D, h, m, 0);
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Madrid",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+  }).formatToParts(new Date(utcGuess));
+  const get = (k: string) => Number(parts.find((p) => p.type === k)?.value ?? 0);
+  const observed = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour") % 24, get("minute"), get("second"));
+  const offset = observed - utcGuess;
+  return new Date(utcGuess - offset).toISOString();
+}
+
 function AdminReuniones() {
   const listEv = useServerFn(listEvents);
   const list = useServerFn(listMeetings);
@@ -150,9 +178,9 @@ function AdminReuniones() {
       Empresa: r.empresa_name ?? "",
       "Responsable empresa": r.empresa_responsable?.full_name ?? "",
       Slot: r.slot ?? "",
-      Día: r.scheduled_time ? new Date(r.scheduled_time).toLocaleDateString("es-ES") : "",
+      Día: r.scheduled_time ? new Date(r.scheduled_time).toLocaleDateString("es-ES", { timeZone: "Europe/Madrid" }) : "",
       Bloque: r.bloque ?? "",
-      Hora: r.scheduled_time ? new Date(r.scheduled_time).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "",
+      Hora: r.scheduled_time ? new Date(r.scheduled_time).toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" }) : "",
       Mesa: r.room ?? "",
       Sponsor: r.sponsor_name ?? "",
       "Tipo Sponsor": r.tipo_sponsor ?? "",
@@ -386,8 +414,8 @@ function FlatMeetingsTable({ rows, onUpdate, onDelete, reload, compact }: { rows
                 {r.virtual ? (
                   <span className="text-[11px] text-muted-foreground">Usa "Auto-asignar slots"</span>
                 ) : (
-                  <input type="datetime-local" defaultValue={r.scheduled_time ? new Date(r.scheduled_time).toISOString().slice(0, 16) : ""} onBlur={async (e) => {
-                    const v = e.target.value ? new Date(e.target.value).toISOString() : null;
+                  <input type="datetime-local" defaultValue={r.scheduled_time ? madridLocalInputValue(r.scheduled_time) : ""} onBlur={async (e) => {
+                    const v = e.target.value ? madridLocalToIso(e.target.value) : null;
                     if (v === r.scheduled_time) return;
                     try { await onUpdate({ data: { id: r.id, patch: { scheduled_time: v } } }); toast.success("Hora actualizada"); reload(); }
                     catch (err: any) { toast.error(err?.message ?? "Error"); }
