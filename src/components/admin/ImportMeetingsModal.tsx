@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { X, Upload, FileSpreadsheet, AlertCircle, CheckCircle2 } from "lucide-react";
+import { X, Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { importMeetingsFromExcel } from "@/lib/admin-meetings.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 type ParsedRow = {
   empresa: string;
@@ -57,6 +58,33 @@ export function ImportMeetingsModal({ eventId, onClose, onImported }: { eventId:
 
   const maxDia = useMemo(() => rows.reduce((acc, r) => Math.max(acc, r.dia || 0), 0), [rows]);
   const [dayDates, setDayDates] = useState<Record<number, string>>({});
+  const [agendaDates, setAgendaDates] = useState<string[]>([]);
+  const [agendaLoaded, setAgendaLoaded] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("event_agenda")
+        .select("event_date")
+        .eq("event_id", eventId)
+        .not("event_date", "is", null)
+        .order("event_date", { ascending: true });
+      const uniq = Array.from(new Set((data ?? []).map((r: any) => r.event_date).filter(Boolean)));
+      // fallback to event.event_date / end_date if no agenda items
+      if (!uniq.length) {
+        const { data: ev } = await supabase.from("events").select("event_date,end_date").eq("id", eventId).maybeSingle();
+        if (ev?.event_date) {
+          const start = new Date(ev.event_date);
+          const end = ev.end_date ? new Date(ev.end_date) : start;
+          for (let t = start.getTime(); t <= end.getTime(); t += 86400000) {
+            uniq.push(new Date(t).toISOString().slice(0, 10));
+          }
+        }
+      }
+      setAgendaDates(uniq);
+      setAgendaLoaded(true);
+    })();
+  }, [eventId]);
 
   async function onFile(file: File) {
     setParseError(null);
@@ -107,14 +135,11 @@ export function ImportMeetingsModal({ eventId, onClose, onImported }: { eventId:
       }
       if (!parsed.length) throw new Error("No se encontraron filas válidas");
       setRows(parsed);
-      // initialize day dates with today + (n-1)
+      // map each Día N from the Excel to the Nth date in the event agenda
       const top = parsed.reduce((a, r) => Math.max(a, r.dia), 0);
-      const today = new Date();
       const init: Record<number, string> = {};
       for (let i = 1; i <= top; i++) {
-        const d = new Date(today);
-        d.setDate(today.getDate() + (i - 1));
-        init[i] = d.toISOString().slice(0, 10);
+        if (agendaDates[i - 1]) init[i] = agendaDates[i - 1];
       }
       setDayDates(init);
     } catch (e: any) {
@@ -176,15 +201,35 @@ export function ImportMeetingsModal({ eventId, onClose, onImported }: { eventId:
           {rows.length > 0 && (
             <>
               <div>
-                <label className="text-[10px] text-uppercase-wide text-muted-foreground">Fechas reales para cada día del Excel</label>
+                <label className="text-[10px] text-uppercase-wide text-muted-foreground flex items-center gap-1">
+                  <Calendar className="h-3 w-3" /> Fechas reales para cada día (desde la agenda del evento)
+                </label>
                 <div className="mt-2 grid grid-cols-2 gap-2">
-                  {Array.from({ length: maxDia }, (_, i) => i + 1).map((d) => (
-                    <div key={d} className="flex items-center gap-2 rounded-md border border-border bg-input px-3 py-2">
-                      <span className="text-xs font-bold w-12">Día {d}</span>
-                      <input type="date" value={dayDates[d] ?? ""} onChange={(e) => setDayDates((p) => ({ ...p, [d]: e.target.value }))} className="flex-1 bg-transparent text-xs" />
-                    </div>
-                  ))}
+                  {Array.from({ length: maxDia }, (_, i) => i + 1).map((d) => {
+                    const auto = agendaDates[d - 1];
+                    const value = dayDates[d] ?? "";
+                    const missing = !auto && agendaLoaded;
+                    return (
+                      <div key={d} className={`flex items-center gap-2 rounded-md border px-3 py-2 ${missing ? "border-warning bg-warning/10" : "border-border bg-input"}`}>
+                        <span className="text-xs font-bold w-12">Día {d}</span>
+                        <input
+                          type="date"
+                          value={value}
+                          onChange={(e) => setDayDates((p) => ({ ...p, [d]: e.target.value }))}
+                          className="flex-1 bg-transparent text-xs"
+                        />
+                        {auto && (
+                          <span className="text-[9px] text-muted-foreground text-uppercase-wide">Auto</span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
+                {agendaLoaded && agendaDates.length < maxDia && (
+                  <p className="text-[10px] text-warning mt-2">
+                    El Excel tiene {maxDia} días pero la agenda del evento solo define {agendaDates.length}. Añade los días faltantes a la agenda o ajusta las fechas manualmente.
+                  </p>
+                )}
               </div>
 
               <label className="flex items-center gap-2 text-xs">
