@@ -33,6 +33,7 @@ function AdminReuniones() {
   const [participants, setParticipants] = useState<{ empresas: any[]; sponsors: any[] }>({ empresas: [], sponsors: [] });
   const [busy, setBusy] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   // Filters
   const [empresaFilter, setEmpresaFilter] = useState<string>("");
