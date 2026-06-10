@@ -386,8 +386,8 @@ function FlatMeetingsTable({ rows, onUpdate, onDelete, reload, compact }: { rows
                 {r.virtual ? (
                   <span className="text-[11px] text-muted-foreground">Usa "Auto-asignar slots"</span>
                 ) : (
-                  <input type="datetime-local" defaultValue={r.scheduled_time ? new Date(r.scheduled_time).toISOString().slice(0, 16) : ""} onBlur={async (e) => {
-                    const v = e.target.value ? new Date(e.target.value).toISOString() : null;
+                  <input type="datetime-local" defaultValue={r.scheduled_time ? madridLocalInputValue(r.scheduled_time) : ""} onBlur={async (e) => {
+                    const v = e.target.value ? madridLocalToIso(e.target.value) : null;
                     if (v === r.scheduled_time) return;
                     try { await onUpdate({ data: { id: r.id, patch: { scheduled_time: v } } }); toast.success("Hora actualizada"); reload(); }
                     catch (err: any) { toast.error(err?.message ?? "Error"); }
