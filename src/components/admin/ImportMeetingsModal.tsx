@@ -8,11 +8,15 @@ import { importMeetingsFromExcel } from "@/lib/admin-meetings.functions";
 type ParsedRow = {
   empresa: string;
   responsable_empresa?: string | null;
+  slot?: string | null;
+  bloque?: string | null;
   dia: number;
   hora: string;
   mesa?: string | number | null;
   submesa?: string | null;
   sponsor: string;
+  tipo_sponsor?: string | null;
+  tipo_match?: string | null;
   notas?: string | null;
 };
 
@@ -20,18 +24,18 @@ const HEADER_ALIASES: Record<string, keyof ParsedRow | "ignore"> = {
   "empresa": "empresa",
   "responsable empresa": "responsable_empresa",
   "responsable": "responsable_empresa",
-  "slot": "ignore",
+  "slot": "slot",
   "dia": "dia",
   "día": "dia",
-  "bloque": "ignore",
+  "bloque": "bloque",
   "hora": "hora",
   "mesa": "mesa",
   "submesa": "submesa",
   "sponsor": "sponsor",
   "solucion": "sponsor",
   "solución": "sponsor",
-  "tipo sponsor": "ignore",
-  "tipo match": "ignore",
+  "tipo sponsor": "tipo_sponsor",
+  "tipo match": "tipo_match",
   "notas": "notas",
 };
 
