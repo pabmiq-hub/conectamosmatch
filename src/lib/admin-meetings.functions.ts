@@ -333,17 +333,27 @@ export const importMeetingsFromExcel = createServerFn({ method: "POST" })
     });
 
     let imported = 0;
-    // Insert in chunks; upsert by unique (empresa_user_id, sponsor_user_id, event_id)
-    const chunkSize = 200;
+    const chunkSize = 100;
     for (let i = 0; i < toInsert.length; i += chunkSize) {
       const chunk = toInsert.slice(i, i + chunkSize);
-      const { error } = await supabaseAdmin
+      const { data: ok, error } = await supabaseAdmin
         .from("meetings_1to1")
-        .upsert(chunk, { onConflict: "empresa_user_id,sponsor_user_id,event_id" });
+        .upsert(chunk, { onConflict: "empresa_user_id,sponsor_user_id,event_id" })
+        .select("id");
       if (error) {
-        errors.push({ row: 0, reason: `Error insertando lote ${i / chunkSize + 1}: ${error.message}` });
+        // Fallback row-by-row so a single bad record doesn't kill the whole batch
+        for (const row of chunk) {
+          const { error: e2 } = await supabaseAdmin
+            .from("meetings_1to1")
+            .upsert(row, { onConflict: "empresa_user_id,sponsor_user_id,event_id" });
+          if (e2) {
+            errors.push({ row: 0, reason: `${(row.empresa_responsable as any)?.full_name ?? ""} × ${(row.sponsor_responsable as any)?.full_name ?? ""}: ${e2.message}` });
+          } else {
+            imported += 1;
+          }
+        }
       } else {
-        imported += chunk.length;
+        imported += ok?.length ?? chunk.length;
       }
     }
 
