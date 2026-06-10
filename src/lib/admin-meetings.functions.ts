@@ -309,7 +309,7 @@ export const importMeetingsFromExcel = createServerFn({ method: "POST" })
 
       const mesaStr = r.mesa === null || r.mesa === undefined || r.mesa === "" ? "" : String(r.mesa);
       const submesaStr = (r.submesa ?? "").toString().trim();
-      const room = mesaStr ? `Mesa ${mesaStr}${submesaStr}` : null;
+      const room = mesaStr ? `${mesaStr}${submesaStr}` : null;
 
       toInsert.push({
         event_id: data.event_id,
