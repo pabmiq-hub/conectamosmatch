@@ -150,7 +150,7 @@ export function AgendaTable({ items, meetings = [] }: { items: AgendaRow[]; meet
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
