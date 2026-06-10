@@ -135,14 +135,11 @@ export function ImportMeetingsModal({ eventId, onClose, onImported }: { eventId:
       }
       if (!parsed.length) throw new Error("No se encontraron filas válidas");
       setRows(parsed);
-      // initialize day dates with today + (n-1)
+      // map each Día N from the Excel to the Nth date in the event agenda
       const top = parsed.reduce((a, r) => Math.max(a, r.dia), 0);
-      const today = new Date();
       const init: Record<number, string> = {};
       for (let i = 1; i <= top; i++) {
-        const d = new Date(today);
-        d.setDate(today.getDate() + (i - 1));
-        init[i] = d.toISOString().slice(0, 10);
+        if (agendaDates[i - 1]) init[i] = agendaDates[i - 1];
       }
       setDayDates(init);
     } catch (e: any) {
