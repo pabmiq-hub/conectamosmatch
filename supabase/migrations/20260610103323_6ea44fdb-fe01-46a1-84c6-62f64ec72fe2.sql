@@ -1,0 +1,2 @@
+DELETE FROM public.meetings_1to1 a USING public.meetings_1to1 b WHERE a.ctid < b.ctid AND a.empresa_user_id = b.empresa_user_id AND a.sponsor_user_id = b.sponsor_user_id AND a.event_id IS NOT DISTINCT FROM b.event_id;
+CREATE UNIQUE INDEX IF NOT EXISTS meetings_1to1_unique_pair_event ON public.meetings_1to1 (empresa_user_id, sponsor_user_id, event_id);
