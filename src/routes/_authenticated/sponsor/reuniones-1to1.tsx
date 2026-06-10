@@ -68,24 +68,19 @@ function ReunionesSponsor() {
             return (
               <div key={r.id} className="rounded-xl border border-border bg-card p-4 flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="h-14 w-14 shrink-0 rounded-md bg-primary/10 text-primary flex flex-col items-center justify-center">
-                  <span className="font-display text-sm font-bold leading-tight">{d ? d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "—"}</span>
-                  <span className="text-[9px] text-uppercase-wide">{d ? d.toLocaleDateString("es-ES", { day: "2-digit", month: "short" }) : "Por asignar"}</span>
+                  <span className="font-display text-sm font-bold leading-tight">{d ? d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }) : "—"}</span>
+                  <span className="text-[9px] text-uppercase-wide">{d ? d.toLocaleDateString("es-ES", { day: "2-digit", month: "short", timeZone: "Europe/Madrid" }) : "Por asignar"}</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-sm truncate">{r.partner_name}</div>
                   <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground mt-1">
                     {r.my_attendee && <span className="inline-flex items-center gap-1 text-primary"><User className="h-3 w-3" />Asiste: {r.my_attendee}</span>}
                     {r.responsable && <span className="inline-flex items-center gap-1"><User className="h-3 w-3" />{r.responsable}{r.responsable_role ? ` · ${r.responsable_role}` : ""}</span>}
-                    {d && <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3" />{d.toLocaleDateString("es-ES", { weekday: "short", day: "2-digit", month: "short" })}</span>}
-                    <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{r.duration_minutes ?? 15} min</span>
+                    {d && <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3" />{d.toLocaleDateString("es-ES", { weekday: "short", day: "2-digit", month: "short", timeZone: "Europe/Madrid" })}</span>}
+                    {r.bloque && <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{r.bloque}</span>}
                     <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{r.room ? `Mesa ${r.room}` : "Mesa por asignar"}</span>
-                    {r.bloque && <span className="inline-flex items-center gap-1">Bloque: {r.bloque}</span>}
-                    {r.slot && <span className="inline-flex items-center gap-1">Slot: {r.slot}</span>}
-                    {r.tipo_match && <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{r.tipo_match}</span>}
-                    {r.tipo_sponsor && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{r.tipo_sponsor}</span>}
                   </div>
                 </div>
-                <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-bold text-uppercase-wide self-start sm:self-center">{r.status}</span>
               </div>
             );
           })}
