@@ -50,39 +50,62 @@ function ReunionesEmpresa() {
 }
 
 export function MeetingsList({ rows }: { rows: any[] }) {
+  const grouped = new Map<string, any[]>();
+  for (const r of rows) {
+    const d = r.scheduled_time ? new Date(r.scheduled_time) : null;
+    const key = d
+      ? d.toLocaleDateString("es-ES", { weekday: "long", day: "2-digit", month: "long", timeZone: "Europe/Madrid" })
+      : "Sin fecha";
+    const list = grouped.get(key) ?? [];
+    list.push(r);
+    grouped.set(key, list);
+  }
+  const days = Array.from(grouped.entries());
+
   return (
     <div className="space-y-6">
       <PageHeader title="Mis reuniones 1to1" subtitle="Speed-meetings de 15 minutos asignadas por el organizador" />
       {rows.length === 0 ? <EmptyState icon={ClipboardList} title="Sin reuniones asignadas" hint="El organizador asignará tus 1to1 en base a tus matches" /> : (
-        <div className="space-y-3">
-          {rows.map((r) => {
-            const d = r.scheduled_time ? new Date(r.scheduled_time) : null;
-            const time = d ? d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }) : null;
-            const date = d ? d.toLocaleDateString("es-ES", { weekday: "short", day: "2-digit", month: "short", timeZone: "Europe/Madrid" }) : null;
-            return (
-              <div key={r.id} className="rounded-xl border border-border bg-card p-4 flex flex-col sm:flex-row sm:items-center gap-4">
-                <div className="h-16 w-16 shrink-0 rounded-md bg-muted overflow-hidden flex items-center justify-center border border-border">
-                  {r.partner_logo ? (
-                    <img src={r.partner_logo} alt={r.partner_name} className="h-full w-full object-contain" />
-                  ) : (
-                    <Building2 className="h-6 w-6 text-muted-foreground" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-base truncate">{r.partner_name}</div>
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground mt-1">
-                    {r.my_attendee && <span className="inline-flex items-center gap-1 text-primary"><User className="h-3 w-3" />Asiste: {r.my_attendee}</span>}
-                    {r.responsable && <span className="inline-flex items-center gap-1"><User className="h-3 w-3" />{r.responsable}{r.responsable_role ? ` · ${r.responsable_role}` : ""}</span>}
-                    <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{r.room ? `Mesa ${r.room}` : "Mesa por asignar"}</span>
-                  </div>
-                </div>
-                <div className="shrink-0 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-center min-w-[110px]">
-                  <div className="font-display text-lg font-bold leading-none">{time ?? "—"}</div>
-                  <div className="text-[10px] text-uppercase-wide mt-1 opacity-90">{date ?? "Por asignar"}</div>
-                </div>
+        <div className="space-y-8">
+          {days.map(([dayLabel, dayRows]) => (
+            <div key={dayLabel} className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">{dayLabel}</span>
+                <div className="h-px flex-1 bg-border" />
               </div>
-            );
-          })}
+              <div className="space-y-3">
+                {dayRows.map((r) => {
+                  const d = r.scheduled_time ? new Date(r.scheduled_time) : null;
+                  const time = d ? d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }) : null;
+                  const date = d ? d.toLocaleDateString("es-ES", { weekday: "short", day: "2-digit", month: "short", timeZone: "Europe/Madrid" }) : null;
+                  return (
+                    <div key={r.id} className="rounded-xl border border-border bg-card p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+                      <div className="h-16 w-16 shrink-0 rounded-md bg-muted overflow-hidden flex items-center justify-center border border-border">
+                        {r.partner_logo ? (
+                          <img src={r.partner_logo} alt={r.partner_name} className="h-full w-full object-contain" />
+                        ) : (
+                          <Building2 className="h-6 w-6 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-base truncate">{r.partner_name}</div>
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground mt-1">
+                          {r.my_attendee && <span className="inline-flex items-center gap-1 text-primary"><User className="h-3 w-3" />Asiste: {r.my_attendee}</span>}
+                          {r.responsable && <span className="inline-flex items-center gap-1"><User className="h-3 w-3" />{r.responsable}{r.responsable_role ? ` · ${r.responsable_role}` : ""}</span>}
+                          <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{r.room ? `Mesa ${r.room}` : "Mesa por asignar"}</span>
+                        </div>
+                      </div>
+                      <div className="shrink-0 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-center min-w-[110px]">
+                        <div className="font-display text-lg font-bold leading-none">{time ?? "—"}</div>
+                        <div className="text-[10px] text-uppercase-wide mt-1 opacity-90">{date ?? "Por asignar"}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
