@@ -13,6 +13,7 @@ import { ImportMeetingsModal } from "@/components/admin/ImportMeetingsModal";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/admin/reuniones")({
   component: AdminReuniones,
