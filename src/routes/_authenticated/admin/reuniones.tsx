@@ -26,6 +26,7 @@ function AdminReuniones() {
   const autoAssign = useServerFn(autoAssignSlots);
   const upd = useServerFn(updateMeeting);
   const del = useServerFn(deleteMeeting);
+  const clearAll = useServerFn(clearMeetings);
   const [events, setEvents] = useState<any[]>([]);
   const [eventId, setEventId] = useState<string>("");
   const [rows, setRows] = useState<any[]>([]);
