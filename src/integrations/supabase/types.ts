@@ -448,6 +448,7 @@ export type Database = {
       meetings_1to1: {
         Row: {
           assigned_by: string | null
+          bloque: string | null
           created_at: string | null
           duration_minutes: number | null
           empresa_account_id: string | null
@@ -459,13 +460,17 @@ export type Database = {
           notes: string | null
           room: string | null
           scheduled_time: string | null
+          slot: string | null
           sponsor_account_id: string | null
           sponsor_responsable: Json | null
           sponsor_user_id: string | null
           status: Database["public"]["Enums"]["meeting_status_t"] | null
+          tipo_match: string | null
+          tipo_sponsor: string | null
         }
         Insert: {
           assigned_by?: string | null
+          bloque?: string | null
           created_at?: string | null
           duration_minutes?: number | null
           empresa_account_id?: string | null
@@ -477,13 +482,17 @@ export type Database = {
           notes?: string | null
           room?: string | null
           scheduled_time?: string | null
+          slot?: string | null
           sponsor_account_id?: string | null
           sponsor_responsable?: Json | null
           sponsor_user_id?: string | null
           status?: Database["public"]["Enums"]["meeting_status_t"] | null
+          tipo_match?: string | null
+          tipo_sponsor?: string | null
         }
         Update: {
           assigned_by?: string | null
+          bloque?: string | null
           created_at?: string | null
           duration_minutes?: number | null
           empresa_account_id?: string | null
@@ -495,10 +504,13 @@ export type Database = {
           notes?: string | null
           room?: string | null
           scheduled_time?: string | null
+          slot?: string | null
           sponsor_account_id?: string | null
           sponsor_responsable?: Json | null
           sponsor_user_id?: string | null
           status?: Database["public"]["Enums"]["meeting_status_t"] | null
+          tipo_match?: string | null
+          tipo_sponsor?: string | null
         }
         Relationships: [
           {

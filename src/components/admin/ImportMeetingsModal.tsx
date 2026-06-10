@@ -8,11 +8,15 @@ import { importMeetingsFromExcel } from "@/lib/admin-meetings.functions";
 type ParsedRow = {
   empresa: string;
   responsable_empresa?: string | null;
+  slot?: string | null;
+  bloque?: string | null;
   dia: number;
   hora: string;
   mesa?: string | number | null;
   submesa?: string | null;
   sponsor: string;
+  tipo_sponsor?: string | null;
+  tipo_match?: string | null;
   notas?: string | null;
 };
 
@@ -20,18 +24,18 @@ const HEADER_ALIASES: Record<string, keyof ParsedRow | "ignore"> = {
   "empresa": "empresa",
   "responsable empresa": "responsable_empresa",
   "responsable": "responsable_empresa",
-  "slot": "ignore",
+  "slot": "slot",
   "dia": "dia",
   "día": "dia",
-  "bloque": "ignore",
+  "bloque": "bloque",
   "hora": "hora",
   "mesa": "mesa",
   "submesa": "submesa",
   "sponsor": "sponsor",
   "solucion": "sponsor",
   "solución": "sponsor",
-  "tipo sponsor": "ignore",
-  "tipo match": "ignore",
+  "tipo sponsor": "tipo_sponsor",
+  "tipo match": "tipo_match",
   "notas": "notas",
 };
 
@@ -89,11 +93,15 @@ export function ImportMeetingsModal({ eventId, onClose, onImported }: { eventId:
         parsed.push({
           empresa: String(obj.empresa).trim(),
           responsable_empresa: obj.responsable_empresa ? String(obj.responsable_empresa).trim() : null,
+          slot: obj.slot !== undefined && obj.slot !== null && obj.slot !== "" ? String(obj.slot).trim() : null,
+          bloque: obj.bloque !== undefined && obj.bloque !== null && obj.bloque !== "" ? String(obj.bloque).trim() : null,
           dia,
           hora: String(obj.hora).trim(),
           mesa: obj.mesa ?? null,
           submesa: obj.submesa ? String(obj.submesa).trim() : null,
           sponsor: String(obj.sponsor).trim(),
+          tipo_sponsor: obj.tipo_sponsor ? String(obj.tipo_sponsor).trim() : null,
+          tipo_match: obj.tipo_match ? String(obj.tipo_match).trim() : null,
           notas: obj.notas ? String(obj.notas).trim() : null,
         });
       }
@@ -149,7 +157,7 @@ export function ImportMeetingsModal({ eventId, onClose, onImported }: { eventId:
         <div className="space-y-4">
           <div className="rounded-lg border border-dashed border-border p-4 bg-muted/30">
             <p className="text-xs text-muted-foreground mb-3">
-              Columnas esperadas: <strong>Empresa</strong>, <strong>Responsable empresa</strong>, <strong>Día</strong>, <strong>Hora</strong>, <strong>Mesa</strong>, <strong>Submesa</strong>, <strong>Sponsor</strong>, <strong>Notas</strong> (opcional). Otras columnas (Slot, Bloque, Tipo sponsor, Tipo match) se ignoran.
+              Columnas esperadas: <strong>Empresa</strong>, <strong>Responsable empresa</strong>, <strong>Slot</strong>, <strong>Día</strong>, <strong>Bloque</strong>, <strong>Hora</strong>, <strong>Mesa</strong>, <strong>Submesa</strong>, <strong>Sponsor</strong>, <strong>Tipo Sponsor</strong>, <strong>Tipo Match</strong>, <strong>Notas</strong>. Todas se importan y conservan.
             </p>
             <label className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-xs font-bold text-uppercase-wide cursor-pointer hover:bg-muted">
               <Upload className="h-4 w-4" />

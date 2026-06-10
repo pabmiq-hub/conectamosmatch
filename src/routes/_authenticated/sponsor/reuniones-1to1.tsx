@@ -79,6 +79,10 @@ function ReunionesSponsor() {
                     {d && <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3" />{d.toLocaleDateString("es-ES", { weekday: "short", day: "2-digit", month: "short" })}</span>}
                     <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{r.duration_minutes ?? 15} min</span>
                     <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{r.room ? `Mesa ${r.room}` : "Mesa por asignar"}</span>
+                    {r.bloque && <span className="inline-flex items-center gap-1">Bloque: {r.bloque}</span>}
+                    {r.slot && <span className="inline-flex items-center gap-1">Slot: {r.slot}</span>}
+                    {r.tipo_match && <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{r.tipo_match}</span>}
+                    {r.tipo_sponsor && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{r.tipo_sponsor}</span>}
                   </div>
                 </div>
                 <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-bold text-uppercase-wide self-start sm:self-center">{r.status}</span>

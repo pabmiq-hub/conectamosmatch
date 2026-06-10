@@ -196,11 +196,15 @@ export const listAllParticipants = createServerFn({ method: "GET" })
 const importRowSchema = z.object({
   empresa: z.string().min(1),
   responsable_empresa: z.string().optional().nullable(),
+  slot: z.string().optional().nullable(),
+  bloque: z.string().optional().nullable(),
   dia: z.number().int().min(1).max(10),
-  hora: z.string().min(1), // "HH:MM" or "HH:MM - HH:MM"
+  hora: z.string().min(1),
   mesa: z.union([z.string(), z.number()]).optional().nullable(),
   submesa: z.string().optional().nullable(),
   sponsor: z.string().min(1),
+  tipo_sponsor: z.string().optional().nullable(),
+  tipo_match: z.string().optional().nullable(),
   notas: z.string().optional().nullable(),
 });
 
@@ -305,7 +309,7 @@ export const importMeetingsFromExcel = createServerFn({ method: "POST" })
 
       const mesaStr = r.mesa === null || r.mesa === undefined || r.mesa === "" ? "" : String(r.mesa);
       const submesaStr = (r.submesa ?? "").toString().trim();
-      const room = mesaStr ? `Mesa ${mesaStr}${submesaStr}` : null;
+      const room = mesaStr ? `${mesaStr}${submesaStr}` : null;
 
       toInsert.push({
         event_id: data.event_id,
@@ -319,6 +323,10 @@ export const importMeetingsFromExcel = createServerFn({ method: "POST" })
         status: "confirmed",
         assigned_by: context.userId,
         notes: r.notas?.trim() || null,
+        slot: r.slot?.trim() || null,
+        bloque: r.bloque?.trim() || null,
+        tipo_sponsor: r.tipo_sponsor?.trim() || null,
+        tipo_match: r.tipo_match?.trim() || null,
         empresa_responsable: { full_name: empResp.full_name ?? "", role: empResp.account_role ?? "", email: empResp.email ?? "" },
         sponsor_responsable: { full_name: spResp.full_name ?? "", role: spResp.account_role ?? "", email: spResp.email ?? "" },
       });
