@@ -129,6 +129,18 @@ function AdminReuniones() {
     finally { setBusy(false); }
   }
 
+  async function runClear() {
+    if (!eventId) return;
+    if (!confirm("¿Eliminar TODAS las reuniones de este evento? Esta acción no se puede deshacer.")) return;
+    setBusy(true);
+    try {
+      const r = await clearAll({ data: { event_id: eventId } });
+      toast.success(`Eliminadas ${r.deleted} reuniones`);
+      load();
+    } catch (e: any) { toast.error(e?.message ?? "Error"); }
+    finally { setBusy(false); }
+  }
+
   function exportRows() {
     return filtered.map((r) => ({
       Empresa: r.empresa_name ?? "",
