@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
-import { ClipboardList, Wand2, Trash2, Plus, FileSpreadsheet, FileText, Heart, Sparkles, Building2, CalendarCheck, Upload } from "lucide-react";
+import { ClipboardList, Wand2, Trash2, Plus, FileSpreadsheet, FileText, Heart, Sparkles, Building2, CalendarCheck, Upload, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { listEvents } from "@/lib/admin-events.functions";
 import { listMeetings, autoAssignSlots, updateMeeting, deleteMeeting, clearMeetings } from "@/lib/admin-meetings.functions";
@@ -13,6 +13,7 @@ import { ImportMeetingsModal } from "@/components/admin/ImportMeetingsModal";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/admin/reuniones")({
   component: AdminReuniones,
@@ -35,6 +36,8 @@ function AdminReuniones() {
   const [busy, setBusy] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showSortDialog, setShowSortDialog] = useState(false);
+  const [pendingExport, setPendingExport] = useState<"excel" | "pdf" | null>(null);
 
   // Filters
   const [empresaFilter, setEmpresaFilter] = useState<string>("");
@@ -141,8 +144,8 @@ function AdminReuniones() {
     finally { setBusy(false); }
   }
 
-  function exportRows() {
-    return filtered.map((r) => ({
+  function exportRows(sortBy: "empresa" | "sponsor" = "empresa") {
+    const data = filtered.map((r) => ({
       Empresa: r.empresa_name ?? "",
       "Responsable empresa": r.empresa_responsable?.full_name ?? "",
       Slot: r.slot ?? "",
@@ -157,29 +160,43 @@ function AdminReuniones() {
       Origen: r.match_id ? "Match" : "Manual",
       Estado: r.status ?? "",
     }));
-  }
-  function downloadExcel() {
-    const data = exportRows();
-    if (!data.length) { toast.error("Sin datos"); return; }
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Reuniones");
-    XLSX.writeFile(wb, `reuniones-${new Date().toISOString().slice(0, 10)}.xlsx`);
-  }
-  function downloadPdf() {
-    const data = exportRows();
-    if (!data.length) { toast.error("Sin datos"); return; }
-    const doc = new jsPDF({ orientation: "landscape" });
-    doc.setFontSize(14); doc.text("Reuniones 1to1", 14, 14);
-    doc.setFontSize(9); doc.text(`${data.length} registros · ${new Date().toLocaleString("es-ES")}`, 14, 20);
-    autoTable(doc, {
-      startY: 25,
-      head: [Object.keys(data[0])],
-      body: data.map((r) => Object.values(r) as string[]),
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [107, 0, 255] },
+    data.sort((a, b) => {
+      if (sortBy === "empresa") {
+        const cmp = (a.Empresa || "").localeCompare(b.Empresa || "", "es");
+        if (cmp !== 0) return cmp;
+        return (a.Sponsor || "").localeCompare(b.Sponsor || "", "es");
+      }
+      const cmp = (a.Sponsor || "").localeCompare(b.Sponsor || "", "es");
+      if (cmp !== 0) return cmp;
+      return (a.Empresa || "").localeCompare(b.Empresa || "", "es");
     });
-    doc.save(`reuniones-${new Date().toISOString().slice(0, 10)}.pdf`);
+    return data;
+  }
+  function downloadExcel() { setPendingExport("excel"); setShowSortDialog(true); }
+  function downloadPdf() { setPendingExport("pdf"); setShowSortDialog(true); }
+  function runExport(sortBy: "empresa" | "sponsor") {
+    setShowSortDialog(false);
+    const data = exportRows(sortBy);
+    if (!data.length) { toast.error("Sin datos"); setPendingExport(null); return; }
+    if (pendingExport === "excel") {
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Reuniones");
+      XLSX.writeFile(wb, `reuniones-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } else if (pendingExport === "pdf") {
+      const doc = new jsPDF({ orientation: "landscape" });
+      doc.setFontSize(14); doc.text("Reuniones 1to1", 14, 14);
+      doc.setFontSize(9); doc.text(`${data.length} registros · ${new Date().toLocaleString("es-ES")}`, 14, 20);
+      autoTable(doc, {
+        startY: 25,
+        head: [Object.keys(data[0])],
+        body: data.map((r) => Object.values(r) as string[]),
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [107, 0, 255] },
+      });
+      doc.save(`reuniones-${new Date().toISOString().slice(0, 10)}.pdf`);
+    }
+    setPendingExport(null);
   }
 
   return (
@@ -209,6 +226,25 @@ function AdminReuniones() {
 
       {showCreate && <CreateMeetingModal eventId={eventId || null} onClose={() => setShowCreate(false)} onCreated={load} />}
       {showImport && eventId && <ImportMeetingsModal eventId={eventId} onClose={() => setShowImport(false)} onImported={load} />}
+
+      <Dialog open={showSortDialog} onOpenChange={setShowSortDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ordenar exportación</DialogTitle>
+            <DialogDescription>¿Cómo quieres ordenar las reuniones antes de exportar?</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 py-4">
+            <button onClick={() => runExport("empresa")} className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-3 text-sm font-bold hover:bg-muted transition">
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+              Alfabéticamente por Empresa
+            </button>
+            <button onClick={() => runExport("sponsor")} className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-3 text-sm font-bold hover:bg-muted transition">
+              <Sparkles className="h-4 w-4 text-muted-foreground" />
+              Alfabéticamente por Solución
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-3">
