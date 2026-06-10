@@ -93,11 +93,15 @@ export function ImportMeetingsModal({ eventId, onClose, onImported }: { eventId:
         parsed.push({
           empresa: String(obj.empresa).trim(),
           responsable_empresa: obj.responsable_empresa ? String(obj.responsable_empresa).trim() : null,
+          slot: obj.slot !== undefined && obj.slot !== null && obj.slot !== "" ? String(obj.slot).trim() : null,
+          bloque: obj.bloque !== undefined && obj.bloque !== null && obj.bloque !== "" ? String(obj.bloque).trim() : null,
           dia,
           hora: String(obj.hora).trim(),
           mesa: obj.mesa ?? null,
           submesa: obj.submesa ? String(obj.submesa).trim() : null,
           sponsor: String(obj.sponsor).trim(),
+          tipo_sponsor: obj.tipo_sponsor ? String(obj.tipo_sponsor).trim() : null,
+          tipo_match: obj.tipo_match ? String(obj.tipo_match).trim() : null,
           notas: obj.notas ? String(obj.notas).trim() : null,
         });
       }
