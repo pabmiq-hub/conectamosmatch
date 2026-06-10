@@ -107,8 +107,8 @@ export function AgendaTable({ items, meetings = [] }: { items: AgendaRow[]; meet
                 const meta = typeMeta[it.agenda_type ?? ""] ?? { label: "", emoji: "", color: "bg-muted" };
                 const dayMeetings = it.agenda_type === "reuniones_1to1" && g.date ? meetingsByDate.get(g.date) ?? [] : [];
                 return (
-                  <>
-                    <tr key={it.id} className={i % 2 ? "bg-background" : "bg-card"}>
+                  <Fragment key={it.id}>
+                    <tr className={i % 2 ? "bg-background" : "bg-card"}>
                       <td className="px-4 py-3 font-mono text-xs">{it.time_start?.slice(0,5)} – {it.time_end?.slice(0,5)}</td>
                       <td className="px-4 py-3">
                         <div className="font-medium">{it.title}</div>
