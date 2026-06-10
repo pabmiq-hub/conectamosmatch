@@ -36,6 +36,8 @@ function AdminReuniones() {
   const [busy, setBusy] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showSortDialog, setShowSortDialog] = useState(false);
+  const [pendingExport, setPendingExport] = useState<"excel" | "pdf" | null>(null);
 
   // Filters
   const [empresaFilter, setEmpresaFilter] = useState<string>("");
