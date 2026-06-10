@@ -145,7 +145,8 @@ function AdminReuniones() {
   }
 
   function exportRows(sortBy: "empresa" | "sponsor" = "empresa") {
-    const data = filtered.map((r) => ({
+    const mapped = filtered.map((r) => ({
+      _scheduled: !!r.scheduled_time,
       Empresa: r.empresa_name ?? "",
       "Responsable empresa": r.empresa_responsable?.full_name ?? "",
       Slot: r.slot ?? "",
@@ -160,7 +161,7 @@ function AdminReuniones() {
       Origen: r.match_id ? "Match" : "Manual",
       Estado: r.status ?? "",
     }));
-    data.sort((a, b) => {
+    const sorter = (a: any, b: any) => {
       if (sortBy === "empresa") {
         const cmp = (a.Empresa || "").localeCompare(b.Empresa || "", "es");
         if (cmp !== 0) return cmp;
@@ -169,32 +170,56 @@ function AdminReuniones() {
       const cmp = (a.Sponsor || "").localeCompare(b.Sponsor || "", "es");
       if (cmp !== 0) return cmp;
       return (a.Empresa || "").localeCompare(b.Empresa || "", "es");
-    });
-    return data;
+    };
+    const strip = (r: any) => { const { _scheduled, ...rest } = r; return rest; };
+    const agendadas = mapped.filter((r) => r._scheduled).sort(sorter).map(strip);
+    const sinReunion = mapped.filter((r) => !r._scheduled).sort(sorter).map(strip);
+    return { agendadas, sinReunion };
   }
   function downloadExcel() { setPendingExport("excel"); setShowSortDialog(true); }
   function downloadPdf() { setPendingExport("pdf"); setShowSortDialog(true); }
   function runExport(sortBy: "empresa" | "sponsor") {
     setShowSortDialog(false);
-    const data = exportRows(sortBy);
-    if (!data.length) { toast.error("Sin datos"); setPendingExport(null); return; }
+    const { agendadas, sinReunion } = exportRows(sortBy);
+    if (!agendadas.length && !sinReunion.length) { toast.error("Sin datos"); setPendingExport(null); return; }
+    const stamp = new Date().toISOString().slice(0, 10);
     if (pendingExport === "excel") {
-      const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Reuniones");
-      XLSX.writeFile(wb, `reuniones-${new Date().toISOString().slice(0, 10)}.xlsx`);
+      const headers = Object.keys((agendadas[0] ?? sinReunion[0]) as object);
+      const empty = headers.reduce((acc, h) => ({ ...acc, [h]: "" }), {} as any);
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(agendadas.length ? agendadas : [empty]), "Reuniones agendadas");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sinReunion.length ? sinReunion : [empty]), "Matches sin reunión");
+      XLSX.writeFile(wb, `reuniones-${stamp}.xlsx`);
     } else if (pendingExport === "pdf") {
       const doc = new jsPDF({ orientation: "landscape" });
       doc.setFontSize(14); doc.text("Reuniones 1to1", 14, 14);
-      doc.setFontSize(9); doc.text(`${data.length} registros · ${new Date().toLocaleString("es-ES")}`, 14, 20);
-      autoTable(doc, {
-        startY: 25,
-        head: [Object.keys(data[0])],
-        body: data.map((r) => Object.values(r) as string[]),
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [107, 0, 255] },
-      });
-      doc.save(`reuniones-${new Date().toISOString().slice(0, 10)}.pdf`);
+      doc.setFontSize(9); doc.text(`${agendadas.length} agendadas · ${sinReunion.length} sin reunión · ${new Date().toLocaleString("es-ES")}`, 14, 20);
+
+      let cursorY = 28;
+      const renderSection = (title: string, rows: any[], fill: [number, number, number]) => {
+        doc.setFontSize(12);
+        doc.text(`${title} (${rows.length})`, 14, cursorY);
+        cursorY += 4;
+        if (!rows.length) {
+          doc.setFontSize(9);
+          doc.text("Sin registros", 14, cursorY + 4);
+          cursorY += 12;
+          return;
+        }
+        autoTable(doc, {
+          startY: cursorY,
+          head: [Object.keys(rows[0])],
+          body: rows.map((r) => Object.values(r) as string[]),
+          styles: { fontSize: 8 },
+          headStyles: { fillColor: fill },
+        });
+        cursorY = (doc as any).lastAutoTable.finalY + 10;
+      };
+      renderSection("Reuniones agendadas", agendadas, [107, 0, 255]);
+      if (cursorY > 180) { doc.addPage(); cursorY = 14; }
+      renderSection("Matches sin reunión", sinReunion, [200, 120, 0]);
+
+      doc.save(`reuniones-${stamp}.pdf`);
     }
     setPendingExport(null);
   }
