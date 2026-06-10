@@ -93,11 +93,3 @@ function ReunionesEmpresa() {
     </div>
   );
 }
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
