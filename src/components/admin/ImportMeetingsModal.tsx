@@ -58,6 +58,33 @@ export function ImportMeetingsModal({ eventId, onClose, onImported }: { eventId:
 
   const maxDia = useMemo(() => rows.reduce((acc, r) => Math.max(acc, r.dia || 0), 0), [rows]);
   const [dayDates, setDayDates] = useState<Record<number, string>>({});
+  const [agendaDates, setAgendaDates] = useState<string[]>([]);
+  const [agendaLoaded, setAgendaLoaded] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("event_agenda")
+        .select("event_date")
+        .eq("event_id", eventId)
+        .not("event_date", "is", null)
+        .order("event_date", { ascending: true });
+      const uniq = Array.from(new Set((data ?? []).map((r: any) => r.event_date).filter(Boolean)));
+      // fallback to event.event_date / end_date if no agenda items
+      if (!uniq.length) {
+        const { data: ev } = await supabase.from("events").select("event_date,end_date").eq("id", eventId).maybeSingle();
+        if (ev?.event_date) {
+          const start = new Date(ev.event_date);
+          const end = ev.end_date ? new Date(ev.end_date) : start;
+          for (let t = start.getTime(); t <= end.getTime(); t += 86400000) {
+            uniq.push(new Date(t).toISOString().slice(0, 10));
+          }
+        }
+      }
+      setAgendaDates(uniq);
+      setAgendaLoaded(true);
+    })();
+  }, [eventId]);
 
   async function onFile(file: File) {
     setParseError(null);
