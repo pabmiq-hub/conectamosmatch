@@ -5,7 +5,7 @@ import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { ClipboardList, Wand2, Trash2, Plus, FileSpreadsheet, FileText, Heart, Sparkles, Building2, CalendarCheck, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { listEvents } from "@/lib/admin-events.functions";
-import { listMeetings, autoAssignSlots, updateMeeting, deleteMeeting } from "@/lib/admin-meetings.functions";
+import { listMeetings, autoAssignSlots, updateMeeting, deleteMeeting, clearMeetings } from "@/lib/admin-meetings.functions";
 import { listMatches } from "@/lib/admin-matches.functions";
 import { listAllParticipants } from "@/lib/admin-meetings.functions";
 import { CreateMeetingModal } from "@/components/admin/CreateMeetingModal";
