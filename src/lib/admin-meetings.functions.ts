@@ -300,10 +300,8 @@ export const importMeetingsFromExcel = createServerFn({ method: "POST" })
       supabaseAdmin.from("profiles").select("id, account_id, full_name, email, account_role, role, is_active"),
     ]);
 
-    const empByName = new Map<string, any>();
-    (emps ?? []).forEach((e: any) => empByName.set(norm(e.company_name), e));
-    const spByName = new Map<string, any>();
-    (sps ?? []).forEach((s: any) => spByName.set(norm(s.company_name), s));
+    const findEmpresa = buildNameIndex(emps ?? []);
+    const findSponsor = buildNameIndex(sps ?? []);
 
     const profByAccount = new Map<string, any[]>();
     (profs ?? []).forEach((p: any) => {
@@ -340,9 +338,9 @@ export const importMeetingsFromExcel = createServerFn({ method: "POST" })
 
     data.rows.forEach((r, i) => {
       const rowNum = i + 2; // header is row 1
-      const emp = empByName.get(norm(r.empresa));
+      const emp = findEmpresa(r.empresa);
       if (!emp) return errors.push({ row: rowNum, reason: `Empresa no encontrada: "${r.empresa}"` });
-      const sp = spByName.get(norm(r.sponsor));
+      const sp = findSponsor(r.sponsor);
       if (!sp) return errors.push({ row: rowNum, reason: `Solución no encontrada: "${r.sponsor}"` });
 
       const dayDate = data.day_dates[r.dia - 1];
