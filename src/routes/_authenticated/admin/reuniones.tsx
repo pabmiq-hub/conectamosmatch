@@ -172,6 +172,9 @@ function AdminReuniones() {
           <button onClick={downloadPdf} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide hover:bg-muted">
             <FileText className="h-4 w-4" /> PDF
           </button>
+          <button onClick={() => setShowImport(true)} disabled={!eventId} className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide disabled:opacity-50">
+            <Upload className="h-4 w-4" /> Importar Excel
+          </button>
           <button onClick={() => setShowCreate(true)} className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide">
             <Plus className="h-4 w-4" /> Crear reunión
           </button>
