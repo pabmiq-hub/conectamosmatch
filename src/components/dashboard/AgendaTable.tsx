@@ -2,6 +2,16 @@ import type { Database } from "@/integrations/supabase/types";
 
 type AgendaRow = Database["public"]["Tables"]["event_agenda"]["Row"];
 
+export type AgendaMeeting = {
+  id: string;
+  scheduled_time: string | null;
+  partner_name: string | null;
+  my_attendee: string | null;
+  responsable: string | null;
+  responsable_role: string | null;
+  room: string | null;
+};
+
 const typeMeta: Record<string, { label: string; emoji: string; color: string }> = {
   bienvenida:    { label: "BIENVENIDA",    emoji: "👋", color: "bg-muted text-foreground" },
   charla:        { label: "CHARLA",        emoji: "🎤", color: "bg-primary/20 text-primary" },
@@ -43,11 +53,38 @@ export function groupAgendaByDay<T extends { event_date: string | null; time_sta
   }));
 }
 
-export function AgendaTable({ items }: { items: AgendaRow[] }) {
+function meetingMadridDate(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(d);
+  const y = parts.find(p => p.type === "year")?.value;
+  const m = parts.find(p => p.type === "month")?.value;
+  const day = parts.find(p => p.type === "day")?.value;
+  return y && m && day ? `${y}-${m}-${day}` : null;
+}
+
+function meetingTimeLabel(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" });
+}
+
+export function AgendaTable({ items, meetings = [] }: { items: AgendaRow[]; meetings?: AgendaMeeting[] }) {
   if (!items.length) {
     return <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">Aún no hay agenda publicada.</div>;
   }
   const groups = groupAgendaByDay(items);
+
+  const meetingsByDate = new Map<string, AgendaMeeting[]>();
+  for (const m of meetings) {
+    const key = meetingMadridDate(m.scheduled_time) ?? "__none__";
+    if (!meetingsByDate.has(key)) meetingsByDate.set(key, []);
+    meetingsByDate.get(key)!.push(m);
+  }
+  for (const arr of meetingsByDate.values()) {
+    arr.sort((a, b) => (a.scheduled_time ?? "").localeCompare(b.scheduled_time ?? ""));
+  }
+
   return (
     <div className="space-y-6">
       {groups.map((g, gi) => (
@@ -67,25 +104,52 @@ export function AgendaTable({ items }: { items: AgendaRow[] }) {
             <tbody>
               {g.items.map((it, i) => {
                 const meta = typeMeta[it.agenda_type ?? ""] ?? { label: "", emoji: "", color: "bg-muted" };
+                const dayMeetings = it.agenda_type === "reuniones_1to1" && g.date ? meetingsByDate.get(g.date) ?? [] : [];
                 return (
-                  <tr key={it.id} className={i % 2 ? "bg-background" : "bg-card"}>
-                    <td className="px-4 py-3 font-mono text-xs">{it.time_start?.slice(0,5)} – {it.time_end?.slice(0,5)}</td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium">{it.title}</div>
-                      {meta.label && (
-                        <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wider ${meta.color}`}>
-                          {meta.emoji} {meta.label}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-xs">
-                      {it.room && <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-primary" />{it.room}</span>}
-                    </td>
-                    <td className="px-4 py-3 text-xs">
-                      {it.speaker_name && <div className="font-medium">{it.speaker_name}</div>}
-                      {it.speaker_role && <div className="text-muted-foreground">{it.speaker_role}</div>}
-                    </td>
-                  </tr>
+                  <>
+                    <tr key={it.id} className={i % 2 ? "bg-background" : "bg-card"}>
+                      <td className="px-4 py-3 font-mono text-xs">{it.time_start?.slice(0,5)} – {it.time_end?.slice(0,5)}</td>
+                      <td className="px-4 py-3">
+                        <div className="font-medium">{it.title}</div>
+                        {meta.label && (
+                          <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wider ${meta.color}`}>
+                            {meta.emoji} {meta.label}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-xs">
+                        {it.room && <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-primary" />{it.room}</span>}
+                      </td>
+                      <td className="px-4 py-3 text-xs">
+                        {it.speaker_name && <div className="font-medium">{it.speaker_name}</div>}
+                        {it.speaker_role && <div className="text-muted-foreground">{it.speaker_role}</div>}
+                      </td>
+                    </tr>
+                    {dayMeetings.length > 0 && (
+                      <tr key={`${it.id}-meetings`} className="bg-primary/5">
+                        <td colSpan={4} className="px-4 py-3">
+                          <div className="space-y-2">
+                            <div className="text-[10px] font-bold text-uppercase-wide text-primary">Tus reuniones 1to1 ({dayMeetings.length})</div>
+                            <div className="grid gap-2">
+                              {dayMeetings.map((m) => {
+                                const franja = it.time_start && it.time_end ? `${it.time_start.slice(0,5)}-${it.time_end.slice(0,5)}` : null;
+                                return (
+                                  <div key={m.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-border bg-card px-3 py-2 text-xs">
+                                    <span className="font-mono font-bold text-primary">{meetingTimeLabel(m.scheduled_time)}</span>
+                                    <span className="font-medium">{m.partner_name ?? "—"}</span>
+                                    {m.responsable && <span className="text-muted-foreground">· {m.responsable}{m.responsable_role ? ` (${m.responsable_role})` : ""}</span>}
+                                    {m.my_attendee && <span className="text-muted-foreground">· Asiste: {m.my_attendee}</span>}
+                                    {m.room && <span className="text-muted-foreground">· Mesa {m.room}</span>}
+                                    {franja && <span className="text-muted-foreground">· Franja {franja}</span>}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 );
               })}
             </tbody>
