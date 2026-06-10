@@ -2,13 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
-import { ClipboardList, Wand2, Trash2, Plus, FileSpreadsheet, FileText, Heart, Sparkles, Building2, CalendarCheck } from "lucide-react";
+import { ClipboardList, Wand2, Trash2, Plus, FileSpreadsheet, FileText, Heart, Sparkles, Building2, CalendarCheck, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { listEvents } from "@/lib/admin-events.functions";
 import { listMeetings, autoAssignSlots, updateMeeting, deleteMeeting } from "@/lib/admin-meetings.functions";
 import { listMatches } from "@/lib/admin-matches.functions";
 import { listAllParticipants } from "@/lib/admin-meetings.functions";
 import { CreateMeetingModal } from "@/components/admin/CreateMeetingModal";
+import { ImportMeetingsModal } from "@/components/admin/ImportMeetingsModal";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -32,6 +33,7 @@ function AdminReuniones() {
   const [participants, setParticipants] = useState<{ empresas: any[]; sponsors: any[] }>({ empresas: [], sponsors: [] });
   const [busy, setBusy] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   // Filters
   const [empresaFilter, setEmpresaFilter] = useState<string>("");
@@ -170,6 +172,9 @@ function AdminReuniones() {
           <button onClick={downloadPdf} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide hover:bg-muted">
             <FileText className="h-4 w-4" /> PDF
           </button>
+          <button onClick={() => setShowImport(true)} disabled={!eventId} className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide disabled:opacity-50">
+            <Upload className="h-4 w-4" /> Importar Excel
+          </button>
           <button onClick={() => setShowCreate(true)} className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide">
             <Plus className="h-4 w-4" /> Crear reunión
           </button>
@@ -180,6 +185,7 @@ function AdminReuniones() {
       } />
 
       {showCreate && <CreateMeetingModal eventId={eventId || null} onClose={() => setShowCreate(false)} onCreated={load} />}
+      {showImport && eventId && <ImportMeetingsModal eventId={eventId} onClose={() => setShowImport(false)} onImported={load} />}
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-3">
