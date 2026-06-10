@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import type { Database } from "@/integrations/supabase/types";
 
 type AgendaRow = Database["public"]["Tables"]["event_agenda"]["Row"];
