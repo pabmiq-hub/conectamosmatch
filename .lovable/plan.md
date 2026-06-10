@@ -1,106 +1,45 @@
+## Diagnóstico
 
+El fallo no está en la fecha de la agenda: `Día 1` sí se está asociando al `11/06/2026`, que coincide con la agenda del evento.
 
-## Modelo de cuenta "empresa"
+El problema principal está en la conversión horaria y en cómo se pinta el campo `datetime-local`:
 
-Una **cuenta de empresa** = 1 fila en `empresa_profiles` con varios `profiles` enlazados por `account_id` (ya existe).
+- El Excel dice `Día 1`, `Hora 17:30 - 17:45`.
+- En base de datos se guarda como `2026-06-11 15:30:00+00`, que es correcto si se interpreta como `17:30` en Madrid.
+- Pero la pantalla usa `new Date(...).toISOString().slice(0,16)` para rellenar el input, y eso fuerza UTC, por eso aparece `15:30` en vez de `17:30`.
+- Además, el importador depende de parsing parcial de la columna `Hora`; conviene hacerlo explícito y consistente para rangos como `17:30 - 17:45`.
 
-Roles dentro de la cuenta (`profiles.account_role`):
-- `admin` — gestiona ficha, invita/expulsa responsables, ve actividad de todos. Es también responsable activo (puede dar likes).
-- `responsable` — puede dar likes, ver sus matches/reuniones, editar su propio perfil personal.
+## Plan de solución
 
-Solo puede haber **1 admin por cuenta**. El super admin puede transferir el rol o mover responsables entre cuentas.
+1. **Crear helpers de fecha/hora Madrid**
+   - Añadir funciones reutilizables para:
+     - Convertir `YYYY-MM-DD + HH:mm` de Madrid a ISO UTC para guardar.
+     - Convertir ISO guardado a valor `datetime-local` en hora Madrid.
+     - Convertir valor editado desde `datetime-local` como hora Madrid a ISO UTC.
+     - Formatear fecha y hora de exportación siempre en zona `Europe/Madrid`.
 
-## Importación desde Excel (mejorada)
+2. **Corregir el importador servidor**
+   - Sustituir la función actual `madridIso`, que aún puede calcular mal el offset porque usa una fecha “probe” UTC que no representa realmente la hora local deseada.
+   - Parsear la columna `Hora` tomando siempre la hora de inicio del rango (`17:30 - 17:45` → `17:30`).
+   - Guardar `scheduled_time` como UTC correcto para la hora local Madrid.
 
-Paso 1 — **Análisis previo**: el modal lee el Excel y agrupa filas por:
-- `company_name` normalizado (lower + trim + sin tildes)
-- dominio del email
-- y similitud > 0.85 (Levenshtein)
+3. **Corregir la tabla de administración**
+   - Cambiar el valor del input `datetime-local` para que muestre la hora Madrid, no UTC.
+   - Al editar manualmente una hora, convertirla desde hora Madrid a UTC antes de guardar.
 
-Paso 2 — **Confirmación de agrupaciones**: pantalla con cada grupo propuesto:
-```
-┌─ Acme S.L. (3 personas) ─────────────┐
-│ ○ Ana López (ana@acme.com)  [Admin]  │
-│ ○ Luis Pérez (luis@acme.com)         │
-│ ○ Marta Ruiz (marta@acme.com)        │
-│ [✂ Separar en cuentas distintas]     │
-└──────────────────────────────────────┘
-```
-El super admin puede:
-- Cambiar el admin (radio button)
-- Separar una persona a su propia cuenta
-- Mover una persona a otro grupo
-- Si 1 sola persona: es admin automáticamente
+4. **Corregir exportación Excel/PDF**
+   - Cambiar `toLocaleDateString` y `toLocaleTimeString` para usar explícitamente `Europe/Madrid`.
+   - Así la exportación mostrará `11/06/2026` y `17:30`, no el valor UTC.
 
-Paso 3 — **Crear**: genera 1 `empresa_profiles` por grupo + N `profiles` con `account_id` apuntando a la empresa, marcando `account_role = 'admin'` al elegido.
+5. **Validación posterior**
+   - Verificar con el ejemplo `3INA × Vidext` que:
+     - Excel: `Día 1`, `17:30 - 17:45`.
+     - Plataforma: `11/06/2026 17:30`.
+     - Exportación: `11/06/2026`, `17:30`.
 
-## Gestión por el super admin
+## Archivos a tocar
 
-En `/admin/usuarios`, en la ficha de empresa:
-- Lista de responsables con su rol
-- Botón "Hacer admin" en cada responsable (transfiere el rol)
-- Botón "Mover a otra cuenta" → modal con buscador de empresas destino
-- Botón "Eliminar de la cuenta"
-- Botón "Añadir responsable" (crea profile + envía credenciales)
+- `src/lib/admin-meetings.functions.ts`
+- `src/routes/_authenticated/admin/reuniones.tsx`
 
-## Permisos del admin de cuenta (empresa)
-
-Nueva sección `/empresa/equipo` (solo visible para `account_role = 'admin'`):
-- Ver responsables actuales
-- Solicitar nuevo responsable (ya existe `responsable_requests`) — se mantiene flujo
-- Quitar un responsable de la cuenta (super admin recibe notificación)
-- Editar ficha de empresa (ya disponible)
-
-Los responsables normales solo ven `/empresa/mi-ficha` para su perfil personal y pueden navegar el directorio + dar likes.
-
-## Likes — modelo híbrido
-
-### Empresa → Solución
-- El `like` sigue siendo individual (cada responsable da el suyo).
-- **Match y reunión 1to1 se consolidan a nivel cuenta**: basta con que **un responsable** de la empresa haya dado like + la solución haya correspondido.
-- Cambio en `check_and_create_match` trigger: la verificación cruzada agrupa por `account_id` del lado empresa.
-- Migración: añadir índice y modificar el match para guardar `empresa_account_id` además de `empresa_user_id` (quién dio el like original).
-
-### Solución → Empresa
-- Botón principal **"Me interesa esta empresa"** → crea likes hacia **todos los responsables** activos de la cuenta de una sola vez (transacción).
-- Botón secundario **"Elegir responsables…"** → modal con checkboxes para seleccionar 1 o varios.
-- En la ficha de empresa visible para la solución: lista de responsables con quién es admin.
-
-### Visualización
-- En `/empresa/mis-matches` y `/empresa/reuniones-1to1`: se muestran los matches/reuniones de **toda la cuenta**, etiquetando qué responsable dio el like original.
-- En `/sponsor/mis-matches`: la solución ve la empresa (no responsables individuales), con detalle de qué responsables le han correspondido.
-
-## Cambios técnicos
-
-### Migración SQL
-- `matches`: añadir `empresa_account_id uuid` (= `empresa_profiles.id`), backfill desde `profiles.account_id`, índice único `(empresa_account_id, sponsor_user_id, event_id)`.
-- `meetings_1to1`: añadir `empresa_account_id` (consolidación a nivel cuenta).
-- Función `check_and_create_match`: reescribir para detectar match cuando **cualquier** responsable de la cuenta empresa tiene like recíproco con la solución; crear 1 match/reunión por cuenta, no por responsable.
-- Función `remove_match_on_unlike`: solo eliminar match si **ningún** responsable de la cuenta mantiene el like.
-- Nueva función `bulk_like_empresa_account(sponsor_id, empresa_account_id, event_id)` para likes masivos.
-- Política RLS en `meetings_1to1` y `matches`: ya cubre con `same_account()`, validar.
-
-### Server functions (TanStack)
-- `admin-import.functions.ts`: `analyzeExcelGroups()` — devuelve agrupaciones propuestas sin escribir.
-- `admin-import.functions.ts`: `confirmImport(groups, adminAssignments)` — crea cuentas según confirmación.
-- `admin-users.functions.ts`: `transferAccountAdmin`, `moveResponsableToAccount`, `addResponsableToAccount`.
-- `empresa-team.functions.ts`: `listMyTeam`, `removeResponsable` (admin de cuenta).
-- `sponsor-likes.functions.ts`: `likeEmpresaAccount(empresaAccountId, mode: "all"|"selected", responsableIds?)`.
-
-### UI nueva/modificada
-- `ImportUsersModal.tsx`: rediseño en 3 pasos (Upload → Group review → Confirm).
-- `admin/usuarios.tsx`: acciones de gestión de responsables en `AccountHeader` / drawer.
-- `empresa/equipo.tsx` (nuevo): gestión del equipo por el admin de cuenta.
-- `sponsor/ver-empresas.tsx`: botón principal "Me interesa esta empresa" + secundario "Elegir responsables".
-- `PartnerDetailModal.tsx` (versión empresa): mostrar lista de responsables con admin destacado.
-
-## Entregables por fases
-
-1. **Migración SQL** (matches/meetings consolidados + funciones).
-2. **Server functions** de importación, gestión de responsables y likes masivos.
-3. **Rediseño del modal de importación** (3 pasos con agrupación).
-4. **Sección "Equipo" para admin de cuenta empresa**.
-5. **Gestión de responsables desde super admin**.
-6. **Botón "Me interesa esta empresa" + selección granular en soluciones**.
-
-Cada fase se entrega y verifica antes de pasar a la siguiente.
+No haré cambios de diseño ni modificaré la lógica de matches; solo la conversión, visualización y exportación de fechas/horas.
