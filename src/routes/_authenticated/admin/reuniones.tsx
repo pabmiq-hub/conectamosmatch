@@ -185,6 +185,7 @@ function AdminReuniones() {
       } />
 
       {showCreate && <CreateMeetingModal eventId={eventId || null} onClose={() => setShowCreate(false)} onCreated={load} />}
+      {showImport && eventId && <ImportMeetingsModal eventId={eventId} onClose={() => setShowImport(false)} onImported={load} />}
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-3">
