@@ -196,11 +196,15 @@ export const listAllParticipants = createServerFn({ method: "GET" })
 const importRowSchema = z.object({
   empresa: z.string().min(1),
   responsable_empresa: z.string().optional().nullable(),
+  slot: z.string().optional().nullable(),
+  bloque: z.string().optional().nullable(),
   dia: z.number().int().min(1).max(10),
-  hora: z.string().min(1), // "HH:MM" or "HH:MM - HH:MM"
+  hora: z.string().min(1),
   mesa: z.union([z.string(), z.number()]).optional().nullable(),
   submesa: z.string().optional().nullable(),
   sponsor: z.string().min(1),
+  tipo_sponsor: z.string().optional().nullable(),
+  tipo_match: z.string().optional().nullable(),
   notas: z.string().optional().nullable(),
 });
 
