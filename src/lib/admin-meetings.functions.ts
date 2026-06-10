@@ -217,9 +217,25 @@ const norm = (s: string | null | undefined) =>
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
 
-const STOPWORDS = new Set(["the", "el", "la", "los", "las", "de", "del", "and", "y", "sl", "slu", "sa", "sau", "srl", "ltd", "llc", "inc", "iberia", "seguros", "hr", "group", "espana"]);
+const STOPWORDS = new Set([
+  "the", "el", "la", "los", "las", "de", "del", "and", "y",
+  "sl", "slu", "sa", "sau", "srl", "ltd", "llc", "inc",
+  "iberia", "seguros", "hr", "group", "espana", "recruiting",
+]);
 const compact = (s: string | null | undefined) =>
   norm(s).split(" ").filter((w) => w && !STOPWORDS.has(w)).join("");
+
+const KNOWN_COMPANY_ALIASES: Record<string, string> = {
+  dkv: "dkvseguros",
+  informationlab: "theinformationlab",
+  leeeters: "leeters",
+  leeters: "leeters",
+  beamhr: "beam",
+  speex: "speexx",
+  jobtalent: "jobandtalent",
+  jobandtalent: "jobandtalent",
+  fingerprintbiometrics: "fingerprintbiometrics",
+};
 
 function levenshtein(a: string, b: string): number {
   if (a === b) return 0;
@@ -257,6 +273,11 @@ function buildNameIndex<T extends { company_name: string }>(items: T[]) {
     const e = exact.get(qn); if (e) return e;
     const qc = compact(query);
     const ec = compactMap.get(qc); if (ec) return ec;
+    const alias = KNOWN_COMPANY_ALIASES[qc];
+    if (alias) {
+      const aliasMatch = compactMap.get(alias) ?? all.find((x) => x.c === alias || x.c.includes(alias) || alias.includes(x.c))?.item;
+      if (aliasMatch) return aliasMatch;
+    }
     if (qc.length >= 4) {
       const sub = all.find((x) => x.c && Math.min(x.c.length, qc.length) >= 4 && (x.c.includes(qc) || qc.includes(x.c)));
       if (sub) return sub.item;
