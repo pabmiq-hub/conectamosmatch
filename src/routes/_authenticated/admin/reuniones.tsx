@@ -198,6 +198,9 @@ function AdminReuniones() {
           <button onClick={() => setShowCreate(true)} className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide">
             <Plus className="h-4 w-4" /> Crear reunión
           </button>
+          <button onClick={runClear} disabled={busy || !eventId} className="inline-flex items-center gap-2 rounded-md border border-destructive/40 px-4 py-2 text-xs font-bold text-destructive text-uppercase-wide hover:bg-destructive/10 disabled:opacity-50">
+            <Trash2 className="h-4 w-4" /> Limpiar reuniones
+          </button>
           <button onClick={runAuto} disabled={busy || !eventId} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide disabled:opacity-50">
             <Wand2 className="h-4 w-4" /> {busy ? "Asignando…" : "Auto-asignar slots"}
           </button>
