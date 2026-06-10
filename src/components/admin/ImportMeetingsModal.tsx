@@ -201,15 +201,35 @@ export function ImportMeetingsModal({ eventId, onClose, onImported }: { eventId:
           {rows.length > 0 && (
             <>
               <div>
-                <label className="text-[10px] text-uppercase-wide text-muted-foreground">Fechas reales para cada día del Excel</label>
+                <label className="text-[10px] text-uppercase-wide text-muted-foreground flex items-center gap-1">
+                  <Calendar className="h-3 w-3" /> Fechas reales para cada día (desde la agenda del evento)
+                </label>
                 <div className="mt-2 grid grid-cols-2 gap-2">
-                  {Array.from({ length: maxDia }, (_, i) => i + 1).map((d) => (
-                    <div key={d} className="flex items-center gap-2 rounded-md border border-border bg-input px-3 py-2">
-                      <span className="text-xs font-bold w-12">Día {d}</span>
-                      <input type="date" value={dayDates[d] ?? ""} onChange={(e) => setDayDates((p) => ({ ...p, [d]: e.target.value }))} className="flex-1 bg-transparent text-xs" />
-                    </div>
-                  ))}
+                  {Array.from({ length: maxDia }, (_, i) => i + 1).map((d) => {
+                    const auto = agendaDates[d - 1];
+                    const value = dayDates[d] ?? "";
+                    const missing = !auto && agendaLoaded;
+                    return (
+                      <div key={d} className={`flex items-center gap-2 rounded-md border px-3 py-2 ${missing ? "border-warning bg-warning/10" : "border-border bg-input"}`}>
+                        <span className="text-xs font-bold w-12">Día {d}</span>
+                        <input
+                          type="date"
+                          value={value}
+                          onChange={(e) => setDayDates((p) => ({ ...p, [d]: e.target.value }))}
+                          className="flex-1 bg-transparent text-xs"
+                        />
+                        {auto && (
+                          <span className="text-[9px] text-muted-foreground text-uppercase-wide">Auto</span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
+                {agendaLoaded && agendaDates.length < maxDia && (
+                  <p className="text-[10px] text-warning mt-2">
+                    El Excel tiene {maxDia} días pero la agenda del evento solo define {agendaDates.length}. Añade los días faltantes a la agenda o ajusta las fechas manualmente.
+                  </p>
+                )}
               </div>
 
               <label className="flex items-center gap-2 text-xs">
