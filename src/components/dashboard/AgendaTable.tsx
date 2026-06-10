@@ -1,4 +1,5 @@
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type AgendaRow = Database["public"]["Tables"]["event_agenda"]["Row"];
@@ -71,6 +72,7 @@ function meetingTimeLabel(iso: string | null): string {
 }
 
 export function AgendaTable({ items, meetings = [] }: { items: AgendaRow[]; meetings?: AgendaMeeting[] }) {
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   if (!items.length) {
     return <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">Aún no hay agenda publicada.</div>;
   }
@@ -106,17 +108,26 @@ export function AgendaTable({ items, meetings = [] }: { items: AgendaRow[]; meet
               {g.items.map((it, i) => {
                 const meta = typeMeta[it.agenda_type ?? ""] ?? { label: "", emoji: "", color: "bg-muted" };
                 const dayMeetings = it.agenda_type === "reuniones_1to1" && g.date ? meetingsByDate.get(g.date) ?? [] : [];
+                const isExpandable = dayMeetings.length > 0;
+                const isOpen = !!expanded[it.id];
                 return (
                   <Fragment key={it.id}>
-                    <tr className={i % 2 ? "bg-background" : "bg-card"}>
+                    <tr
+                      className={`${i % 2 ? "bg-background" : "bg-card"} ${isExpandable ? "cursor-pointer hover:bg-primary/5" : ""}`}
+                      onClick={isExpandable ? () => setExpanded((s) => ({ ...s, [it.id]: !s[it.id] })) : undefined}
+                    >
                       <td className="px-4 py-3 font-mono text-xs">{it.time_start?.slice(0,5)} – {it.time_end?.slice(0,5)}</td>
                       <td className="px-4 py-3">
-                        <div className="font-medium">{it.title}</div>
+                        <div className="font-medium flex items-center gap-2">
+                          {isExpandable && (isOpen ? <ChevronDown className="h-4 w-4 text-primary" /> : <ChevronRight className="h-4 w-4 text-primary" />)}
+                          {it.title}
+                        </div>
                         {meta.label && (
                           <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wider ${meta.color}`}>
                             {meta.emoji} {meta.label}
                           </span>
                         )}
+                        {isExpandable && <span className="ml-2 text-[10px] text-muted-foreground">({dayMeetings.length} reuniones)</span>}
                       </td>
                       <td className="px-4 py-3 text-xs">
                         {it.room && <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-primary" />{it.room}</span>}
@@ -126,25 +137,21 @@ export function AgendaTable({ items, meetings = [] }: { items: AgendaRow[]; meet
                         {it.speaker_role && <div className="text-muted-foreground">{it.speaker_role}</div>}
                       </td>
                     </tr>
-                    {dayMeetings.length > 0 && (
+                    {isExpandable && isOpen && (
                       <tr key={`${it.id}-meetings`} className="bg-primary/5">
                         <td colSpan={4} className="px-4 py-3">
                           <div className="space-y-2">
                             <div className="text-[10px] font-bold text-uppercase-wide text-primary">Tus reuniones 1to1 ({dayMeetings.length})</div>
                             <div className="grid gap-2">
-                              {dayMeetings.map((m) => {
-                                const franja = it.time_start && it.time_end ? `${it.time_start.slice(0,5)}-${it.time_end.slice(0,5)}` : null;
-                                return (
-                                  <div key={m.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-border bg-card px-3 py-2 text-xs">
-                                    <span className="font-mono font-bold text-primary">{meetingTimeLabel(m.scheduled_time)}</span>
-                                    <span className="font-medium">{m.partner_name ?? "—"}</span>
-                                    {m.responsable && <span className="text-muted-foreground">· {m.responsable}{m.responsable_role ? ` (${m.responsable_role})` : ""}</span>}
-                                    {m.my_attendee && <span className="text-muted-foreground">· Asiste: {m.my_attendee}</span>}
-                                    {m.room && <span className="text-muted-foreground">· Mesa {m.room}</span>}
-                                    {franja && <span className="text-muted-foreground">· Franja {franja}</span>}
-                                  </div>
-                                );
-                              })}
+                              {dayMeetings.map((m) => (
+                                <div key={m.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-border bg-card px-3 py-2 text-xs">
+                                  <span className="font-mono font-bold text-primary">{meetingTimeLabel(m.scheduled_time)}</span>
+                                  <span className="font-medium">{m.partner_name ?? "—"}</span>
+                                  {m.responsable && <span className="text-muted-foreground">· {m.responsable}{m.responsable_role ? ` (${m.responsable_role})` : ""}</span>}
+                                  {m.my_attendee && <span className="text-muted-foreground">· Asiste: {m.my_attendee}</span>}
+                                  {m.room && <span className="text-muted-foreground">· Mesa {m.room}</span>}
+                                </div>
+                              ))}
                             </div>
                           </div>
                         </td>

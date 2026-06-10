@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
-import { ClipboardList, MapPin, Clock, User, Calendar } from "lucide-react";
+import { ClipboardList, MapPin, User, Building2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/empresa/reuniones-1to1")({
   component: ReunionesEmpresa,
@@ -16,39 +16,28 @@ function ReunionesEmpresa() {
       if (!user) return;
       const { data: me } = await supabase.from("profiles").select("account_id").eq("id", user.id).maybeSingle();
       const { data: teamProfiles } = me?.account_id
-        ? await supabase.from("profiles").select("id, full_name, account_role").eq("account_id", me.account_id)
+        ? await supabase.from("profiles").select("id, full_name").eq("account_id", me.account_id)
         : { data: [] as any[] };
       const teamIds = (teamProfiles ?? []).map((p: any) => p.id);
       const teamMap = new Map((teamProfiles ?? []).map((p: any) => [p.id, p]));
       const { data: meetings } = teamIds.length
         ? await supabase.from("meetings_1to1").select("*").in("empresa_user_id", teamIds).order("scheduled_time")
         : { data: [] as any[] };
-      const sponsorIds = Array.from(new Set((meetings ?? []).map((m: any) => m.sponsor_user_id).filter(Boolean)));
+
       const sponsorAccIds = Array.from(new Set((meetings ?? []).map((m: any) => m.sponsor_account_id).filter(Boolean)));
-      const { data: sponsorProfs } = sponsorIds.length
-        ? await supabase.from("profiles").select("id, account_id").in("id", sponsorIds)
+      const { data: sps } = sponsorAccIds.length
+        ? await supabase.from("sponsor_profiles").select("id, company_name, logo_url").in("id", sponsorAccIds as string[])
         : { data: [] as any[] };
-      const sponsorProfAcc = new Map((sponsorProfs ?? []).map((p: any) => [p.id, p.account_id]));
-      const allSpAcc = Array.from(new Set([...sponsorAccIds, ...Array.from(sponsorProfAcc.values())].filter(Boolean)));
-      const { data: spOwnersAll } = allSpAcc.length
-        ? await supabase.from("profiles").select("id, account_id").eq("account_role", "owner").in("account_id", allSpAcc as string[])
-        : { data: [] as any[] };
-      const accToOwner = new Map((spOwnersAll ?? []).map((p: any) => [p.account_id, p.id]));
-      const ownerIds = Array.from(new Set((spOwnersAll ?? []).map((p: any) => p.id)));
-      const { data: sps } = ownerIds.length
-        ? await supabase.from("sponsor_profiles").select("user_id, company_name").in("user_id", ownerIds)
-        : { data: [] as any[] };
-      const ownerToCompany = new Map((sps ?? []).map((s: any) => [s.user_id, s.company_name]));
+      const accMap = new Map((sps ?? []).map((s: any) => [s.id, s]));
 
       setRows((meetings ?? []).map((m: any) => {
-        const accId = m.sponsor_account_id ?? sponsorProfAcc.get(m.sponsor_user_id);
-        const ownerId = accId ? accToOwner.get(accId) : null;
-        const company = ownerId ? ownerToCompany.get(ownerId) : null;
+        const sp = accMap.get(m.sponsor_account_id);
         const resp = m.sponsor_responsable && typeof m.sponsor_responsable === "object" ? m.sponsor_responsable : null;
         const myProf = teamMap.get(m.empresa_user_id) as any;
         return {
           ...m,
-          partner_name: company ?? "Solución",
+          partner_name: sp?.company_name ?? "Solución",
+          partner_logo: sp?.logo_url ?? null,
           responsable: resp?.full_name ?? null,
           responsable_role: resp?.role ?? null,
           my_attendee: myProf?.full_name ?? null,
@@ -57,6 +46,10 @@ function ReunionesEmpresa() {
     })();
   }, []);
 
+  return <MeetingsList rows={rows} />;
+}
+
+export function MeetingsList({ rows }: { rows: any[] }) {
   return (
     <div className="space-y-6">
       <PageHeader title="Mis reuniones 1to1" subtitle="Speed-meetings de 15 minutos asignadas por el organizador" />
@@ -64,21 +57,28 @@ function ReunionesEmpresa() {
         <div className="space-y-3">
           {rows.map((r) => {
             const d = r.scheduled_time ? new Date(r.scheduled_time) : null;
+            const time = d ? d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }) : null;
+            const date = d ? d.toLocaleDateString("es-ES", { weekday: "short", day: "2-digit", month: "short", timeZone: "Europe/Madrid" }) : null;
             return (
               <div key={r.id} className="rounded-xl border border-border bg-card p-4 flex flex-col sm:flex-row sm:items-center gap-4">
-                <div className="h-14 w-14 shrink-0 rounded-md bg-primary/10 text-primary flex flex-col items-center justify-center">
-                  <span className="font-display text-sm font-bold leading-tight">{d ? d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }) : "—"}</span>
-                  <span className="text-[9px] text-uppercase-wide">{d ? d.toLocaleDateString("es-ES", { day: "2-digit", month: "short", timeZone: "Europe/Madrid" }) : "Por asignar"}</span>
+                <div className="h-16 w-16 shrink-0 rounded-md bg-muted overflow-hidden flex items-center justify-center border border-border">
+                  {r.partner_logo ? (
+                    <img src={r.partner_logo} alt={r.partner_name} className="h-full w-full object-contain" />
+                  ) : (
+                    <Building2 className="h-6 w-6 text-muted-foreground" />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm truncate">{r.partner_name}</div>
+                  <div className="font-semibold text-base truncate">{r.partner_name}</div>
                   <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground mt-1">
                     {r.my_attendee && <span className="inline-flex items-center gap-1 text-primary"><User className="h-3 w-3" />Asiste: {r.my_attendee}</span>}
                     {r.responsable && <span className="inline-flex items-center gap-1"><User className="h-3 w-3" />{r.responsable}{r.responsable_role ? ` · ${r.responsable_role}` : ""}</span>}
-                    {d && <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3" />{d.toLocaleDateString("es-ES", { weekday: "short", day: "2-digit", month: "short", timeZone: "Europe/Madrid" })}</span>}
-                    {r.bloque && <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{r.bloque}</span>}
                     <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{r.room ? `Mesa ${r.room}` : "Mesa por asignar"}</span>
                   </div>
+                </div>
+                <div className="shrink-0 rounded-lg bg-primary text-primary-foreground px-4 py-2 text-center min-w-[110px]">
+                  <div className="font-display text-lg font-bold leading-none">{time ?? "—"}</div>
+                  <div className="text-[10px] text-uppercase-wide mt-1 opacity-90">{date ?? "Por asignar"}</div>
                 </div>
               </div>
             );
