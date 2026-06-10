@@ -227,6 +227,25 @@ function AdminReuniones() {
       {showCreate && <CreateMeetingModal eventId={eventId || null} onClose={() => setShowCreate(false)} onCreated={load} />}
       {showImport && eventId && <ImportMeetingsModal eventId={eventId} onClose={() => setShowImport(false)} onImported={load} />}
 
+      <Dialog open={showSortDialog} onOpenChange={setShowSortDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ordenar exportación</DialogTitle>
+            <DialogDescription>¿Cómo quieres ordenar las reuniones antes de exportar?</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 py-4">
+            <button onClick={() => runExport("empresa")} className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-3 text-sm font-bold hover:bg-muted transition">
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+              Alfabéticamente por Empresa
+            </button>
+            <button onClick={() => runExport("sponsor")} className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-3 text-sm font-bold hover:bg-muted transition">
+              <Sparkles className="h-4 w-4 text-muted-foreground" />
+              Alfabéticamente por Solución
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-3">
         <label className="text-[10px] text-uppercase-wide text-muted-foreground">Evento</label>
