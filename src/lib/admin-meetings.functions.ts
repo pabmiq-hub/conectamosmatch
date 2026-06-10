@@ -217,6 +217,62 @@ const norm = (s: string | null | undefined) =>
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
 
+const STOPWORDS = new Set(["the", "el", "la", "los", "las", "de", "del", "and", "y", "sl", "slu", "sa", "sau", "srl", "ltd", "llc", "inc", "iberia", "seguros", "hr", "group", "espana"]);
+const compact = (s: string | null | undefined) =>
+  norm(s).split(" ").filter((w) => w && !STOPWORDS.has(w)).join("");
+
+function levenshtein(a: string, b: string): number {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  const m = a.length, n = b.length;
+  const dp: number[] = new Array(n + 1);
+  for (let j = 0; j <= n; j++) dp[j] = j;
+  for (let i = 1; i <= m; i++) {
+    let prev = dp[0];
+    dp[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const tmp = dp[j];
+      dp[j] = a[i - 1] === b[j - 1] ? prev : 1 + Math.min(prev, dp[j], dp[j - 1]);
+      prev = tmp;
+    }
+  }
+  return dp[n];
+}
+
+function buildNameIndex<T extends { company_name: string }>(items: T[]) {
+  const exact = new Map<string, T>();
+  const compactMap = new Map<string, T>();
+  const all: { item: T; n: string; c: string }[] = [];
+  for (const it of items) {
+    const n = norm(it.company_name);
+    const c = compact(it.company_name);
+    if (n) exact.set(n, it);
+    if (c) compactMap.set(c, it);
+    all.push({ item: it, n, c });
+  }
+  return (query: string): T | null => {
+    const qn = norm(query);
+    if (!qn) return null;
+    const e = exact.get(qn); if (e) return e;
+    const qc = compact(query);
+    const ec = compactMap.get(qc); if (ec) return ec;
+    if (qc.length >= 4) {
+      const sub = all.find((x) => x.c && Math.min(x.c.length, qc.length) >= 4 && (x.c.includes(qc) || qc.includes(x.c)));
+      if (sub) return sub.item;
+    }
+    let best: { item: T; d: number } | null = null;
+    for (const x of all) {
+      if (!x.c) continue;
+      const maxLen = Math.max(x.c.length, qc.length);
+      const tol = Math.min(3, Math.max(1, Math.floor(maxLen * 0.25)));
+      const d = levenshtein(x.c, qc);
+      if (d <= tol && (!best || d < best.d)) best = { item: x.item, d };
+    }
+    return best?.item ?? null;
+  };
+}
+
 function madridIso(dateStr: string, timeStr: string): string {
   const probe = new Date(`${dateStr}T${timeStr}:00Z`);
   const tzName = new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Madrid", timeZoneName: "short" })
