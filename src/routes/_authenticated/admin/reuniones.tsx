@@ -144,8 +144,8 @@ function AdminReuniones() {
     finally { setBusy(false); }
   }
 
-  function exportRows() {
-    return filtered.map((r) => ({
+  function exportRows(sortBy: "empresa" | "sponsor" = "empresa") {
+    const data = filtered.map((r) => ({
       Empresa: r.empresa_name ?? "",
       "Responsable empresa": r.empresa_responsable?.full_name ?? "",
       Slot: r.slot ?? "",
@@ -160,29 +160,43 @@ function AdminReuniones() {
       Origen: r.match_id ? "Match" : "Manual",
       Estado: r.status ?? "",
     }));
-  }
-  function downloadExcel() {
-    const data = exportRows();
-    if (!data.length) { toast.error("Sin datos"); return; }
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Reuniones");
-    XLSX.writeFile(wb, `reuniones-${new Date().toISOString().slice(0, 10)}.xlsx`);
-  }
-  function downloadPdf() {
-    const data = exportRows();
-    if (!data.length) { toast.error("Sin datos"); return; }
-    const doc = new jsPDF({ orientation: "landscape" });
-    doc.setFontSize(14); doc.text("Reuniones 1to1", 14, 14);
-    doc.setFontSize(9); doc.text(`${data.length} registros · ${new Date().toLocaleString("es-ES")}`, 14, 20);
-    autoTable(doc, {
-      startY: 25,
-      head: [Object.keys(data[0])],
-      body: data.map((r) => Object.values(r) as string[]),
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [107, 0, 255] },
+    data.sort((a, b) => {
+      if (sortBy === "empresa") {
+        const cmp = (a.Empresa || "").localeCompare(b.Empresa || "", "es");
+        if (cmp !== 0) return cmp;
+        return (a.Sponsor || "").localeCompare(b.Sponsor || "", "es");
+      }
+      const cmp = (a.Sponsor || "").localeCompare(b.Sponsor || "", "es");
+      if (cmp !== 0) return cmp;
+      return (a.Empresa || "").localeCompare(b.Empresa || "", "es");
     });
-    doc.save(`reuniones-${new Date().toISOString().slice(0, 10)}.pdf`);
+    return data;
+  }
+  function downloadExcel() { setPendingExport("excel"); setShowSortDialog(true); }
+  function downloadPdf() { setPendingExport("pdf"); setShowSortDialog(true); }
+  function runExport(sortBy: "empresa" | "sponsor") {
+    setShowSortDialog(false);
+    const data = exportRows(sortBy);
+    if (!data.length) { toast.error("Sin datos"); setPendingExport(null); return; }
+    if (pendingExport === "excel") {
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Reuniones");
+      XLSX.writeFile(wb, `reuniones-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } else if (pendingExport === "pdf") {
+      const doc = new jsPDF({ orientation: "landscape" });
+      doc.setFontSize(14); doc.text("Reuniones 1to1", 14, 14);
+      doc.setFontSize(9); doc.text(`${data.length} registros · ${new Date().toLocaleString("es-ES")}`, 14, 20);
+      autoTable(doc, {
+        startY: 25,
+        head: [Object.keys(data[0])],
+        body: data.map((r) => Object.values(r) as string[]),
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [107, 0, 255] },
+      });
+      doc.save(`reuniones-${new Date().toISOString().slice(0, 10)}.pdf`);
+    }
+    setPendingExport(null);
   }
 
   return (
