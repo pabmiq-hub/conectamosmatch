@@ -131,10 +131,17 @@ function AdminReuniones() {
   function exportRows() {
     return filtered.map((r) => ({
       Empresa: r.empresa_name ?? "",
-      Solución: r.sponsor_name ?? "",
-      Origen: r.match_id ? "Match" : "Manual",
-      Hora: r.scheduled_time ? new Date(r.scheduled_time).toLocaleString("es-ES") : "",
+      "Responsable empresa": r.empresa_responsable?.full_name ?? "",
+      Slot: r.slot ?? "",
+      Día: r.scheduled_time ? new Date(r.scheduled_time).toLocaleDateString("es-ES") : "",
+      Bloque: r.bloque ?? "",
+      Hora: r.scheduled_time ? new Date(r.scheduled_time).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "",
       Mesa: r.room ?? "",
+      Sponsor: r.sponsor_name ?? "",
+      "Tipo Sponsor": r.tipo_sponsor ?? "",
+      "Tipo Match": r.tipo_match ?? "",
+      Notas: r.notes ?? "",
+      Origen: r.match_id ? "Match" : "Manual",
       Estado: r.status ?? "",
     }));
   }
