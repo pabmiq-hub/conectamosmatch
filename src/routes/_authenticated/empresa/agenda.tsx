@@ -31,27 +31,14 @@ function AgendaEmpresa() {
       const { data: mts } = teamIds.length
         ? await supabase.from("meetings_1to1").select("*").in("empresa_user_id", teamIds).eq("event_id", ev.id).order("scheduled_time")
         : { data: [] as any[] };
-      const sponsorIds = Array.from(new Set((mts ?? []).map((m: any) => m.sponsor_user_id).filter(Boolean)));
       const sponsorAccIds = Array.from(new Set((mts ?? []).map((m: any) => m.sponsor_account_id).filter(Boolean)));
-      const { data: sponsorProfs } = sponsorIds.length
-        ? await supabase.from("profiles").select("id, account_id").in("id", sponsorIds)
+      const { data: sps } = sponsorAccIds.length
+        ? await supabase.from("sponsor_profiles").select("id, company_name").in("id", sponsorAccIds as string[])
         : { data: [] as any[] };
-      const sponsorProfAcc = new Map((sponsorProfs ?? []).map((p: any) => [p.id, p.account_id]));
-      const allSpAcc = Array.from(new Set([...sponsorAccIds, ...Array.from(sponsorProfAcc.values())].filter(Boolean)));
-      const { data: spOwnersAll } = allSpAcc.length
-        ? await supabase.from("profiles").select("id, account_id").eq("account_role", "owner").in("account_id", allSpAcc as string[])
-        : { data: [] as any[] };
-      const accToOwner = new Map((spOwnersAll ?? []).map((p: any) => [p.account_id, p.id]));
-      const ownerIds = Array.from(new Set((spOwnersAll ?? []).map((p: any) => p.id)));
-      const { data: sps } = ownerIds.length
-        ? await supabase.from("sponsor_profiles").select("user_id, company_name").in("user_id", ownerIds)
-        : { data: [] as any[] };
-      const ownerToCompany = new Map((sps ?? []).map((s: any) => [s.user_id, s.company_name]));
+      const accToCompany = new Map((sps ?? []).map((s: any) => [s.id, s.company_name]));
 
       setMeetings((mts ?? []).map((m: any): AgendaMeeting => {
-        const accId = m.sponsor_account_id ?? sponsorProfAcc.get(m.sponsor_user_id);
-        const ownerId = accId ? accToOwner.get(accId) : null;
-        const company = ownerId ? ownerToCompany.get(ownerId) : null;
+        const company = m.sponsor_account_id ? accToCompany.get(m.sponsor_account_id) : null;
         const resp = m.sponsor_responsable && typeof m.sponsor_responsable === "object" ? m.sponsor_responsable : null;
         const myProf = teamMap.get(m.empresa_user_id) as any;
         return {
@@ -64,6 +51,7 @@ function AgendaEmpresa() {
           room: m.room ?? null,
         };
       }));
+
     })();
   }, []);
   return (
