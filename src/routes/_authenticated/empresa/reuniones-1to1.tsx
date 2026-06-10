@@ -92,7 +92,7 @@ export function MeetingsList({ rows }: { rows: any[] }) {
                         <div className="font-semibold text-base truncate">{r.partner_name}</div>
                         <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground mt-1">
                           {r.my_attendee && <span className="inline-flex items-center gap-1 text-primary"><User className="h-3 w-3" />Asiste: {r.my_attendee}</span>}
-                          {r.responsable && <span className="inline-flex items-center gap-1"><User className="h-3 w-3" />{r.responsable}{r.responsable_role ? ` · ${r.responsable_role}` : ""}</span>}
+                          {r.responsable && <span className="inline-flex items-center gap-1"><User className="h-3 w-3" />{r.responsable}</span>}
                           <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{r.room ? `Mesa ${r.room}` : "Mesa por asignar"}</span>
                         </div>
                       </div>

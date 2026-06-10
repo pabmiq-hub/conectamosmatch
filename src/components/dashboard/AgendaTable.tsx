@@ -147,7 +147,7 @@ export function AgendaTable({ items, meetings = [] }: { items: AgendaRow[]; meet
                                 <div key={m.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-border bg-card px-3 py-2 text-xs">
                                   <span className="font-mono font-bold text-primary">{meetingTimeLabel(m.scheduled_time)}</span>
                                   <span className="font-medium">{m.partner_name ?? "—"}</span>
-                                  {m.responsable && <span className="text-muted-foreground">· {m.responsable}{m.responsable_role ? ` (${m.responsable_role})` : ""}</span>}
+                                  {m.responsable && <span className="text-muted-foreground">· {m.responsable}</span>}
                                   {m.my_attendee && <span className="text-muted-foreground">· Asiste: {m.my_attendee}</span>}
                                   {m.room && <span className="text-muted-foreground">· Mesa {m.room}</span>}
                                 </div>
