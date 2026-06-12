@@ -194,10 +194,10 @@ export const listAllParticipants = createServerFn({ method: "GET" })
 
     return {
       empresas: (emps ?? []).filter((e: any) => e.user_id).map((e: any) => ({
-        user_id: e.user_id, name: e.company_name, responsables: buildResp(e.user_id),
+        user_id: e.user_id, account_id: e.id, name: e.company_name, responsables: buildResp(e.user_id),
       })),
       sponsors: (sps ?? []).filter((s: any) => s.user_id).map((s: any) => ({
-        user_id: s.user_id, name: s.company_name, responsables: buildResp(s.user_id),
+        user_id: s.user_id, account_id: s.id, name: s.company_name, responsables: buildResp(s.user_id),
       })),
     };
   });
