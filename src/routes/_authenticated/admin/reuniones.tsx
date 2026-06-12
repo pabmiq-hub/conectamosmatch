@@ -89,14 +89,16 @@ function AdminReuniones() {
   }, []);
 
   async function load() {
-    if (!eventId) { setRows([]); setMatches([]); return; }
+    if (!eventId) { setRows([]); setMatches([]); setAgendaItems([]); return; }
     try {
-      const [r, m] = await Promise.all([
+      const [r, m, a] = await Promise.all([
         list({ data: { event_id: eventId } }),
         listMatchesFn({ data: { event_id: eventId, status: "mutual" } }),
+        listAgendaFn({ data: { event_id: eventId } }),
       ]);
       setRows(r.meetings);
       setMatches(m.matches);
+      setAgendaItems(a.items ?? []);
     } catch (e: any) { toast.error(e?.message ?? "Error"); }
   }
   useEffect(() => { load(); }, [eventId]);
