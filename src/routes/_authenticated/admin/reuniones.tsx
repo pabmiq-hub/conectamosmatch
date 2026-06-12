@@ -8,6 +8,7 @@ import { listEvents } from "@/lib/admin-events.functions";
 import { listMeetings, autoAssignSlots, updateMeeting, deleteMeeting, clearMeetings } from "@/lib/admin-meetings.functions";
 import { listMatches } from "@/lib/admin-matches.functions";
 import { listAllParticipants } from "@/lib/admin-meetings.functions";
+import { listAgenda } from "@/lib/admin-agenda.functions";
 import { CreateMeetingModal } from "@/components/admin/CreateMeetingModal";
 import { ImportMeetingsModal } from "@/components/admin/ImportMeetingsModal";
 import * as XLSX from "xlsx";
