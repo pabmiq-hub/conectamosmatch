@@ -488,3 +488,133 @@ function FlatMeetingsTable({ rows, onUpdate, onDelete, reload, compact }: { rows
     </div>
   );
 }
+
+function AvailabilityModal({ onClose, event, agendaItems, meetings, empresas, sponsors }: {
+  onClose: () => void;
+  event: any;
+  agendaItems: any[];
+  meetings: any[];
+  empresas: { account_id?: string; user_id: string; name: string }[];
+  sponsors: { account_id?: string; user_id: string; name: string }[];
+}) {
+  const slotMin = event?.slot_duration_minutes ?? 15;
+  const blocks = useMemo(() => {
+    return (agendaItems ?? [])
+      .filter((it: any) => it.agenda_type === "reuniones_1to1" && it.event_date && it.time_start && it.time_end)
+      .map((it: any) => {
+        const slots: { iso: string; label: string }[] = [];
+        const [sh, sm] = String(it.time_start).split(":").map(Number);
+        const [eh, em] = String(it.time_end).split(":").map(Number);
+        let cur = sh * 60 + sm;
+        const end = eh * 60 + em;
+        while (cur + slotMin <= end) {
+          const hh = String(Math.floor(cur / 60)).padStart(2, "0");
+          const mm = String(cur % 60).padStart(2, "0");
+          const iso = madridLocalToIso(`${it.event_date}T${hh}:${mm}`);
+          slots.push({ iso, label: `${hh}:${mm}` });
+          cur += slotMin;
+        }
+        return { id: it.id, title: it.title ?? "Reuniones 1to1", date: it.event_date, range: `${it.time_start}-${it.time_end}`, slots };
+      });
+  }, [agendaItems, slotMin]);
+
+  // Index busy account_ids per slot timestamp
+  const busyByTs = useMemo(() => {
+    const m = new Map<number, { emp: Set<string>; sp: Set<string> }>();
+    meetings.forEach((mt) => {
+      if (!mt.scheduled_time) return;
+      const ts = new Date(mt.scheduled_time).getTime();
+      if (!m.has(ts)) m.set(ts, { emp: new Set(), sp: new Set() });
+      const slot = m.get(ts)!;
+      if (mt.empresa_account_id) slot.emp.add(mt.empresa_account_id);
+      if (mt.sponsor_account_id) slot.sp.add(mt.sponsor_account_id);
+    });
+    return m;
+  }, [meetings]);
+
+  function freeAt(ts: number) {
+    const busy = busyByTs.get(ts) ?? { emp: new Set<string>(), sp: new Set<string>() };
+    const freeEmp = empresas.filter((e) => e.account_id && !busy.emp.has(e.account_id)).sort((a, b) => a.name.localeCompare(b.name, "es"));
+    const freeSp = sponsors.filter((s) => s.account_id && !busy.sp.has(s.account_id)).sort((a, b) => a.name.localeCompare(b.name, "es"));
+    return { freeEmp, freeSp };
+  }
+
+  function exportExcel() {
+    const wb = XLSX.utils.book_new();
+    blocks.forEach((b) => {
+      const rows: any[] = [];
+      b.slots.forEach((s) => {
+        const ts = new Date(s.iso).getTime();
+        const { freeEmp, freeSp } = freeAt(ts);
+        const maxLen = Math.max(freeEmp.length, freeSp.length, 1);
+        for (let i = 0; i < maxLen; i++) {
+          rows.push({
+            Franja: i === 0 ? s.label : "",
+            "Empresa libre": freeEmp[i]?.name ?? "",
+            "Solución libre": freeSp[i]?.name ?? "",
+          });
+        }
+        rows.push({ Franja: "", "Empresa libre": "", "Solución libre": "" });
+      });
+      const sheetName = `${b.date} ${b.range}`.slice(0, 31);
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows.length ? rows : [{ Franja: "", "Empresa libre": "", "Solución libre": "" }]), sheetName);
+    });
+    XLSX.writeFile(wb, `disponibilidad-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="sm:max-w-4xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Disponibilidad por franja</DialogTitle>
+          <DialogDescription>Empresas y soluciones libres en cada franja de los bloques "Reuniones 1to1" de la agenda.</DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-end pb-2">
+          <button onClick={exportExcel} disabled={!blocks.length} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs font-bold text-uppercase-wide hover:bg-muted disabled:opacity-50">
+            <FileSpreadsheet className="h-4 w-4" /> Exportar Excel
+          </button>
+        </div>
+        {blocks.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-6 text-center">No hay bloques "Reuniones 1to1" en la agenda de este evento.</p>
+        ) : (
+          <div className="space-y-6">
+            {blocks.map((b) => (
+              <div key={b.id} className="rounded-xl border border-border overflow-hidden">
+                <div className="bg-muted/40 px-4 py-2 text-sm font-bold">
+                  {b.title} · {b.date} · {b.range}
+                </div>
+                <div className="divide-y divide-border">
+                  {b.slots.map((s) => {
+                    const ts = new Date(s.iso).getTime();
+                    const { freeEmp, freeSp } = freeAt(ts);
+                    return (
+                      <div key={s.iso} className="grid grid-cols-[80px_1fr_1fr] gap-3 px-4 py-3 text-xs">
+                        <div className="font-bold text-primary">{s.label}</div>
+                        <div>
+                          <div className="text-[10px] text-uppercase-wide text-muted-foreground mb-1">Empresas libres ({freeEmp.length})</div>
+                          <div className="flex flex-wrap gap-1">
+                            {freeEmp.length === 0
+                              ? <span className="text-muted-foreground">—</span>
+                              : freeEmp.map((e) => <span key={e.account_id} className="rounded-full bg-success/10 text-success px-2 py-0.5">{e.name}</span>)}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] text-uppercase-wide text-muted-foreground mb-1">Soluciones libres ({freeSp.length})</div>
+                          <div className="flex flex-wrap gap-1">
+                            {freeSp.length === 0
+                              ? <span className="text-muted-foreground">—</span>
+                              : freeSp.map((s2) => <span key={s2.account_id} className="rounded-full bg-primary/10 text-primary px-2 py-0.5">{s2.name}</span>)}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
