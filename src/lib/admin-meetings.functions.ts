@@ -163,8 +163,8 @@ export const listAllParticipants = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertSuperAdmin(context.userId);
     const [{ data: emps }, { data: sps }, { data: profs }] = await Promise.all([
-      supabaseAdmin.from("empresa_profiles").select("user_id, company_name").order("company_name"),
-      supabaseAdmin.from("sponsor_profiles").select("user_id, company_name").order("company_name"),
+      supabaseAdmin.from("empresa_profiles").select("id, user_id, company_name").order("company_name"),
+      supabaseAdmin.from("sponsor_profiles").select("id, user_id, company_name").order("company_name"),
       supabaseAdmin.from("profiles").select("id, account_id, full_name, email, account_role, role, is_active"),
     ]);
 
