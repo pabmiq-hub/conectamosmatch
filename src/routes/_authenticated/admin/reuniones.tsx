@@ -308,13 +308,16 @@ function AdminReuniones() {
         <label className="text-[10px] text-uppercase-wide text-muted-foreground">Empresa</label>
         <select value={empresaFilter} onChange={(e) => setEmpresaFilter(e.target.value)} className="rounded-md border border-border bg-card px-3 py-1.5 text-xs min-w-[160px]">
           <option value="">Todas</option>
-          {participants.empresas.map((e) => <option key={e.user_id} value={e.user_id}>{e.name}</option>)}
+          {participants.empresas.map((e) => <option key={e.account_id ?? e.user_id} value={e.account_id ?? e.user_id}>{e.name}</option>)}
         </select>
         <label className="text-[10px] text-uppercase-wide text-muted-foreground">Solución</label>
         <select value={sponsorFilter} onChange={(e) => setSponsorFilter(e.target.value)} className="rounded-md border border-border bg-card px-3 py-1.5 text-xs min-w-[160px]">
           <option value="">Todas</option>
-          {participants.sponsors.map((s) => <option key={s.user_id} value={s.user_id}>{s.name}</option>)}
+          {participants.sponsors.map((s) => <option key={s.account_id ?? s.user_id} value={s.account_id ?? s.user_id}>{s.name}</option>)}
         </select>
+        <button onClick={() => setShowAvailability(true)} disabled={!eventId} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs font-bold text-uppercase-wide hover:bg-muted disabled:opacity-50">
+          <CalendarCheck className="h-3.5 w-3.5" /> Ver disponibilidad
+        </button>
         <label className="ml-auto inline-flex items-center gap-2 text-xs">
           <input type="checkbox" checked={grouped} onChange={(e) => setGrouped(e.target.checked)} /> Agrupar por cuenta
         </label>
