@@ -306,9 +306,24 @@ function AdminReuniones() {
               <Sparkles className="h-4 w-4 text-muted-foreground" />
               Alfabéticamente por Solución
             </button>
+            <button onClick={() => runExport("franja")} className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-3 text-sm font-bold hover:bg-muted transition">
+              <CalendarCheck className="h-4 w-4 text-muted-foreground" />
+              Por franja horaria (fecha y hora)
+            </button>
           </div>
         </DialogContent>
       </Dialog>
+
+      {showAvailability && eventId && (
+        <AvailabilityModal
+          onClose={() => setShowAvailability(false)}
+          event={events.find((e) => e.id === eventId)}
+          agendaItems={agendaItems}
+          meetings={rows}
+          empresas={participants.empresas}
+          sponsors={participants.sponsors}
+        />
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-3">
