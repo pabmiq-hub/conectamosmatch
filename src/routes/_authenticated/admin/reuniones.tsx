@@ -53,6 +53,7 @@ function AdminReuniones() {
   const list = useServerFn(listMeetings);
   const listMatchesFn = useServerFn(listMatches);
   const listParts = useServerFn(listAllParticipants);
+  const listAgendaFn = useServerFn(listAgenda);
   const autoAssign = useServerFn(autoAssignSlots);
   const upd = useServerFn(updateMeeting);
   const del = useServerFn(deleteMeeting);
