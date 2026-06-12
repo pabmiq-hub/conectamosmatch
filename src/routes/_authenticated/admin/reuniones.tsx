@@ -178,9 +178,10 @@ function AdminReuniones() {
     finally { setBusy(false); }
   }
 
-  function exportRows(sortBy: "empresa" | "sponsor" = "empresa") {
+  function exportRows(sortBy: "empresa" | "sponsor" | "franja" = "empresa") {
     const mapped = filtered.map((r) => ({
       _scheduled: !!r.scheduled_time,
+      _ts: r.scheduled_time ? new Date(r.scheduled_time).getTime() : Number.MAX_SAFE_INTEGER,
       Empresa: r.empresa_name ?? "",
       "Responsable empresa": r.empresa_responsable?.full_name ?? "",
       Slot: r.slot ?? "",
@@ -196,6 +197,10 @@ function AdminReuniones() {
       Estado: r.status ?? "",
     }));
     const sorter = (a: any, b: any) => {
+      if (sortBy === "franja") {
+        if (a._ts !== b._ts) return a._ts - b._ts;
+        return (a.Empresa || "").localeCompare(b.Empresa || "", "es");
+      }
       if (sortBy === "empresa") {
         const cmp = (a.Empresa || "").localeCompare(b.Empresa || "", "es");
         if (cmp !== 0) return cmp;
@@ -205,14 +210,14 @@ function AdminReuniones() {
       if (cmp !== 0) return cmp;
       return (a.Empresa || "").localeCompare(b.Empresa || "", "es");
     };
-    const strip = (r: any) => { const { _scheduled, ...rest } = r; return rest; };
+    const strip = (r: any) => { const { _scheduled, _ts, ...rest } = r; return rest; };
     const agendadas = mapped.filter((r) => r._scheduled).sort(sorter).map(strip);
     const sinReunion = mapped.filter((r) => !r._scheduled).sort(sorter).map(strip);
     return { agendadas, sinReunion };
   }
   function downloadExcel() { setPendingExport("excel"); setShowSortDialog(true); }
   function downloadPdf() { setPendingExport("pdf"); setShowSortDialog(true); }
-  function runExport(sortBy: "empresa" | "sponsor") {
+  function runExport(sortBy: "empresa" | "sponsor" | "franja") {
     setShowSortDialog(false);
     const { agendadas, sinReunion } = exportRows(sortBy);
     if (!agendadas.length && !sinReunion.length) { toast.error("Sin datos"); setPendingExport(null); return; }
