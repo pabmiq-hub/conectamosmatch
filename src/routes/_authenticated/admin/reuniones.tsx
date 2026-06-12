@@ -66,6 +66,8 @@ function AdminReuniones() {
   const [showImport, setShowImport] = useState(false);
   const [showSortDialog, setShowSortDialog] = useState(false);
   const [pendingExport, setPendingExport] = useState<"excel" | "pdf" | null>(null);
+  const [showAvailability, setShowAvailability] = useState(false);
+  const [agendaItems, setAgendaItems] = useState<any[]>([]);
 
   // Filters
   const [empresaFilter, setEmpresaFilter] = useState<string>("");
