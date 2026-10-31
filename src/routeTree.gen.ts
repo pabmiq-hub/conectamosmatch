@@ -9,53 +9,53 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
-import { Route as AuthenticatedSponsorVerEmpresasRouteImport } from './routes/_authenticated/sponsor/ver-empresas'
-import { Route as AuthenticatedSponsorTablonRouteImport } from './routes/_authenticated/sponsor/tablon'
-import { Route as AuthenticatedSponsorReuniones1to1RouteImport } from './routes/_authenticated/sponsor/reuniones-1to1'
-import { Route as AuthenticatedSponsorMisSeleccionesRouteImport } from './routes/_authenticated/sponsor/mis-selecciones'
-import { Route as AuthenticatedSponsorMisMatchesRouteImport } from './routes/_authenticated/sponsor/mis-matches'
-import { Route as AuthenticatedSponsorMiFichaRouteImport } from './routes/_authenticated/sponsor/mi-ficha'
-import { Route as AuthenticatedSponsorMeHanSeleccionadoRouteImport } from './routes/_authenticated/sponsor/me-han-seleccionado'
-import { Route as AuthenticatedSponsorEquipoRouteImport } from './routes/_authenticated/sponsor/equipo'
-import { Route as AuthenticatedSponsorDashboardRouteImport } from './routes/_authenticated/sponsor/dashboard'
-import { Route as AuthenticatedSponsorAgendaRouteImport } from './routes/_authenticated/sponsor/agenda'
-import { Route as AuthenticatedEmpresaVerSponsorsRouteImport } from './routes/_authenticated/empresa/ver-sponsors'
-import { Route as AuthenticatedEmpresaVerEmpresasRouteImport } from './routes/_authenticated/empresa/ver-empresas'
-import { Route as AuthenticatedEmpresaTablonRouteImport } from './routes/_authenticated/empresa/tablon'
-import { Route as AuthenticatedEmpresaReuniones1to1RouteImport } from './routes/_authenticated/empresa/reuniones-1to1'
-import { Route as AuthenticatedEmpresaMisSeleccionesRouteImport } from './routes/_authenticated/empresa/mis-selecciones'
-import { Route as AuthenticatedEmpresaMisMatchesRouteImport } from './routes/_authenticated/empresa/mis-matches'
-import { Route as AuthenticatedEmpresaMiFichaRouteImport } from './routes/_authenticated/empresa/mi-ficha'
-import { Route as AuthenticatedEmpresaEquipoRouteImport } from './routes/_authenticated/empresa/equipo'
-import { Route as AuthenticatedEmpresaDashboardRouteImport } from './routes/_authenticated/empresa/dashboard'
-import { Route as AuthenticatedEmpresaAgendaRouteImport } from './routes/_authenticated/empresa/agenda'
-import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin/usuarios'
-import { Route as AuthenticatedAdminTablonRouteImport } from './routes/_authenticated/admin/tablon'
-import { Route as AuthenticatedAdminSeleccionesRouteImport } from './routes/_authenticated/admin/selecciones'
-import { Route as AuthenticatedAdminReunionesRouteImport } from './routes/_authenticated/admin/reuniones'
-import { Route as AuthenticatedAdminMatchesRouteImport } from './routes/_authenticated/admin/matches'
-import { Route as AuthenticatedAdminEventosRouteImport } from './routes/_authenticated/admin/eventos'
 import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin/dashboard'
-import { Route as AuthenticatedAdminEventosIdRegistrosRouteImport } from './routes/_authenticated/admin/eventos.$id.registros'
+import { Route as AuthenticatedAdminEventosRouteImport } from './routes/_authenticated/admin/eventos'
+import { Route as AuthenticatedAdminMatchesRouteImport } from './routes/_authenticated/admin/matches'
+import { Route as AuthenticatedAdminReunionesRouteImport } from './routes/_authenticated/admin/reuniones'
+import { Route as AuthenticatedAdminSeleccionesRouteImport } from './routes/_authenticated/admin/selecciones'
+import { Route as AuthenticatedAdminTablonRouteImport } from './routes/_authenticated/admin/tablon'
+import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin/usuarios'
+import { Route as AuthenticatedEmpresaAgendaRouteImport } from './routes/_authenticated/empresa/agenda'
+import { Route as AuthenticatedEmpresaDashboardRouteImport } from './routes/_authenticated/empresa/dashboard'
+import { Route as AuthenticatedEmpresaEquipoRouteImport } from './routes/_authenticated/empresa/equipo'
+import { Route as AuthenticatedEmpresaMiFichaRouteImport } from './routes/_authenticated/empresa/mi-ficha'
+import { Route as AuthenticatedEmpresaMisMatchesRouteImport } from './routes/_authenticated/empresa/mis-matches'
+import { Route as AuthenticatedEmpresaMisSeleccionesRouteImport } from './routes/_authenticated/empresa/mis-selecciones'
+import { Route as AuthenticatedEmpresaReuniones1to1RouteImport } from './routes/_authenticated/empresa/reuniones-1to1'
+import { Route as AuthenticatedEmpresaTablonRouteImport } from './routes/_authenticated/empresa/tablon'
+import { Route as AuthenticatedEmpresaVerEmpresasRouteImport } from './routes/_authenticated/empresa/ver-empresas'
+import { Route as AuthenticatedEmpresaVerSponsorsRouteImport } from './routes/_authenticated/empresa/ver-sponsors'
+import { Route as AuthenticatedSponsorAgendaRouteImport } from './routes/_authenticated/sponsor/agenda'
+import { Route as AuthenticatedSponsorDashboardRouteImport } from './routes/_authenticated/sponsor/dashboard'
+import { Route as AuthenticatedSponsorEquipoRouteImport } from './routes/_authenticated/sponsor/equipo'
+import { Route as AuthenticatedSponsorMeHanSeleccionadoRouteImport } from './routes/_authenticated/sponsor/me-han-seleccionado'
+import { Route as AuthenticatedSponsorMiFichaRouteImport } from './routes/_authenticated/sponsor/mi-ficha'
+import { Route as AuthenticatedSponsorMisMatchesRouteImport } from './routes/_authenticated/sponsor/mis-matches'
+import { Route as AuthenticatedSponsorMisSeleccionesRouteImport } from './routes/_authenticated/sponsor/mis-selecciones'
+import { Route as AuthenticatedSponsorReuniones1to1RouteImport } from './routes/_authenticated/sponsor/reuniones-1to1'
+import { Route as AuthenticatedSponsorTablonRouteImport } from './routes/_authenticated/sponsor/tablon'
+import { Route as AuthenticatedSponsorVerEmpresasRouteImport } from './routes/_authenticated/sponsor/ver-empresas'
 import { Route as AuthenticatedAdminEventosIdAgendaRouteImport } from './routes/_authenticated/admin/eventos.$id.agenda'
+import { Route as AuthenticatedAdminEventosIdRegistrosRouteImport } from './routes/_authenticated/admin/eventos.$id.registros'
 
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
@@ -68,154 +68,10 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedSponsorVerEmpresasRoute =
-  AuthenticatedSponsorVerEmpresasRouteImport.update({
-    id: '/sponsor/ver-empresas',
-    path: '/sponsor/ver-empresas',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedSponsorTablonRoute =
-  AuthenticatedSponsorTablonRouteImport.update({
-    id: '/sponsor/tablon',
-    path: '/sponsor/tablon',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedSponsorReuniones1to1Route =
-  AuthenticatedSponsorReuniones1to1RouteImport.update({
-    id: '/sponsor/reuniones-1to1',
-    path: '/sponsor/reuniones-1to1',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedSponsorMisSeleccionesRoute =
-  AuthenticatedSponsorMisSeleccionesRouteImport.update({
-    id: '/sponsor/mis-selecciones',
-    path: '/sponsor/mis-selecciones',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedSponsorMisMatchesRoute =
-  AuthenticatedSponsorMisMatchesRouteImport.update({
-    id: '/sponsor/mis-matches',
-    path: '/sponsor/mis-matches',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedSponsorMiFichaRoute =
-  AuthenticatedSponsorMiFichaRouteImport.update({
-    id: '/sponsor/mi-ficha',
-    path: '/sponsor/mi-ficha',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedSponsorMeHanSeleccionadoRoute =
-  AuthenticatedSponsorMeHanSeleccionadoRouteImport.update({
-    id: '/sponsor/me-han-seleccionado',
-    path: '/sponsor/me-han-seleccionado',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedSponsorEquipoRoute =
-  AuthenticatedSponsorEquipoRouteImport.update({
-    id: '/sponsor/equipo',
-    path: '/sponsor/equipo',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedSponsorDashboardRoute =
-  AuthenticatedSponsorDashboardRouteImport.update({
-    id: '/sponsor/dashboard',
-    path: '/sponsor/dashboard',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedSponsorAgendaRoute =
-  AuthenticatedSponsorAgendaRouteImport.update({
-    id: '/sponsor/agenda',
-    path: '/sponsor/agenda',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedEmpresaVerSponsorsRoute =
-  AuthenticatedEmpresaVerSponsorsRouteImport.update({
-    id: '/empresa/ver-sponsors',
-    path: '/empresa/ver-sponsors',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedEmpresaVerEmpresasRoute =
-  AuthenticatedEmpresaVerEmpresasRouteImport.update({
-    id: '/empresa/ver-empresas',
-    path: '/empresa/ver-empresas',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedEmpresaTablonRoute =
-  AuthenticatedEmpresaTablonRouteImport.update({
-    id: '/empresa/tablon',
-    path: '/empresa/tablon',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedEmpresaReuniones1to1Route =
-  AuthenticatedEmpresaReuniones1to1RouteImport.update({
-    id: '/empresa/reuniones-1to1',
-    path: '/empresa/reuniones-1to1',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedEmpresaMisSeleccionesRoute =
-  AuthenticatedEmpresaMisSeleccionesRouteImport.update({
-    id: '/empresa/mis-selecciones',
-    path: '/empresa/mis-selecciones',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedEmpresaMisMatchesRoute =
-  AuthenticatedEmpresaMisMatchesRouteImport.update({
-    id: '/empresa/mis-matches',
-    path: '/empresa/mis-matches',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedEmpresaMiFichaRoute =
-  AuthenticatedEmpresaMiFichaRouteImport.update({
-    id: '/empresa/mi-ficha',
-    path: '/empresa/mi-ficha',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedEmpresaEquipoRoute =
-  AuthenticatedEmpresaEquipoRouteImport.update({
-    id: '/empresa/equipo',
-    path: '/empresa/equipo',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedEmpresaDashboardRoute =
-  AuthenticatedEmpresaDashboardRouteImport.update({
-    id: '/empresa/dashboard',
-    path: '/empresa/dashboard',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedEmpresaAgendaRoute =
-  AuthenticatedEmpresaAgendaRouteImport.update({
-    id: '/empresa/agenda',
-    path: '/empresa/agenda',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedAdminUsuariosRoute =
-  AuthenticatedAdminUsuariosRouteImport.update({
-    id: '/admin/usuarios',
-    path: '/admin/usuarios',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedAdminTablonRoute =
-  AuthenticatedAdminTablonRouteImport.update({
-    id: '/admin/tablon',
-    path: '/admin/tablon',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedAdminSeleccionesRoute =
-  AuthenticatedAdminSeleccionesRouteImport.update({
-    id: '/admin/selecciones',
-    path: '/admin/selecciones',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedAdminReunionesRoute =
-  AuthenticatedAdminReunionesRouteImport.update({
-    id: '/admin/reuniones',
-    path: '/admin/reuniones',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedAdminMatchesRoute =
-  AuthenticatedAdminMatchesRouteImport.update({
-    id: '/admin/matches',
-    path: '/admin/matches',
+const AuthenticatedAdminDashboardRoute =
+  AuthenticatedAdminDashboardRouteImport.update({
+    id: '/admin/dashboard',
+    path: '/admin/dashboard',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedAdminEventosRoute =
@@ -224,22 +80,166 @@ const AuthenticatedAdminEventosRoute =
     path: '/admin/eventos',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedAdminDashboardRoute =
-  AuthenticatedAdminDashboardRouteImport.update({
-    id: '/admin/dashboard',
-    path: '/admin/dashboard',
+const AuthenticatedAdminMatchesRoute =
+  AuthenticatedAdminMatchesRouteImport.update({
+    id: '/admin/matches',
+    path: '/admin/matches',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedAdminEventosIdRegistrosRoute =
-  AuthenticatedAdminEventosIdRegistrosRouteImport.update({
-    id: '/$id/registros',
-    path: '/$id/registros',
-    getParentRoute: () => AuthenticatedAdminEventosRoute,
+const AuthenticatedAdminReunionesRoute =
+  AuthenticatedAdminReunionesRouteImport.update({
+    id: '/admin/reuniones',
+    path: '/admin/reuniones',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAdminSeleccionesRoute =
+  AuthenticatedAdminSeleccionesRouteImport.update({
+    id: '/admin/selecciones',
+    path: '/admin/selecciones',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAdminTablonRoute =
+  AuthenticatedAdminTablonRouteImport.update({
+    id: '/admin/tablon',
+    path: '/admin/tablon',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAdminUsuariosRoute =
+  AuthenticatedAdminUsuariosRouteImport.update({
+    id: '/admin/usuarios',
+    path: '/admin/usuarios',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedEmpresaAgendaRoute =
+  AuthenticatedEmpresaAgendaRouteImport.update({
+    id: '/empresa/agenda',
+    path: '/empresa/agenda',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedEmpresaDashboardRoute =
+  AuthenticatedEmpresaDashboardRouteImport.update({
+    id: '/empresa/dashboard',
+    path: '/empresa/dashboard',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedEmpresaEquipoRoute =
+  AuthenticatedEmpresaEquipoRouteImport.update({
+    id: '/empresa/equipo',
+    path: '/empresa/equipo',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedEmpresaMiFichaRoute =
+  AuthenticatedEmpresaMiFichaRouteImport.update({
+    id: '/empresa/mi-ficha',
+    path: '/empresa/mi-ficha',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedEmpresaMisMatchesRoute =
+  AuthenticatedEmpresaMisMatchesRouteImport.update({
+    id: '/empresa/mis-matches',
+    path: '/empresa/mis-matches',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedEmpresaMisSeleccionesRoute =
+  AuthenticatedEmpresaMisSeleccionesRouteImport.update({
+    id: '/empresa/mis-selecciones',
+    path: '/empresa/mis-selecciones',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedEmpresaReuniones1to1Route =
+  AuthenticatedEmpresaReuniones1to1RouteImport.update({
+    id: '/empresa/reuniones-1to1',
+    path: '/empresa/reuniones-1to1',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedEmpresaTablonRoute =
+  AuthenticatedEmpresaTablonRouteImport.update({
+    id: '/empresa/tablon',
+    path: '/empresa/tablon',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedEmpresaVerEmpresasRoute =
+  AuthenticatedEmpresaVerEmpresasRouteImport.update({
+    id: '/empresa/ver-empresas',
+    path: '/empresa/ver-empresas',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedEmpresaVerSponsorsRoute =
+  AuthenticatedEmpresaVerSponsorsRouteImport.update({
+    id: '/empresa/ver-sponsors',
+    path: '/empresa/ver-sponsors',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedSponsorAgendaRoute =
+  AuthenticatedSponsorAgendaRouteImport.update({
+    id: '/sponsor/agenda',
+    path: '/sponsor/agenda',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedSponsorDashboardRoute =
+  AuthenticatedSponsorDashboardRouteImport.update({
+    id: '/sponsor/dashboard',
+    path: '/sponsor/dashboard',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedSponsorEquipoRoute =
+  AuthenticatedSponsorEquipoRouteImport.update({
+    id: '/sponsor/equipo',
+    path: '/sponsor/equipo',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedSponsorMeHanSeleccionadoRoute =
+  AuthenticatedSponsorMeHanSeleccionadoRouteImport.update({
+    id: '/sponsor/me-han-seleccionado',
+    path: '/sponsor/me-han-seleccionado',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedSponsorMiFichaRoute =
+  AuthenticatedSponsorMiFichaRouteImport.update({
+    id: '/sponsor/mi-ficha',
+    path: '/sponsor/mi-ficha',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedSponsorMisMatchesRoute =
+  AuthenticatedSponsorMisMatchesRouteImport.update({
+    id: '/sponsor/mis-matches',
+    path: '/sponsor/mis-matches',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedSponsorMisSeleccionesRoute =
+  AuthenticatedSponsorMisSeleccionesRouteImport.update({
+    id: '/sponsor/mis-selecciones',
+    path: '/sponsor/mis-selecciones',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedSponsorReuniones1to1Route =
+  AuthenticatedSponsorReuniones1to1RouteImport.update({
+    id: '/sponsor/reuniones-1to1',
+    path: '/sponsor/reuniones-1to1',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedSponsorTablonRoute =
+  AuthenticatedSponsorTablonRouteImport.update({
+    id: '/sponsor/tablon',
+    path: '/sponsor/tablon',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedSponsorVerEmpresasRoute =
+  AuthenticatedSponsorVerEmpresasRouteImport.update({
+    id: '/sponsor/ver-empresas',
+    path: '/sponsor/ver-empresas',
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedAdminEventosIdAgendaRoute =
   AuthenticatedAdminEventosIdAgendaRouteImport.update({
     id: '/$id/agenda',
     path: '/$id/agenda',
+    getParentRoute: () => AuthenticatedAdminEventosRoute,
+  } as any)
+const AuthenticatedAdminEventosIdRegistrosRoute =
+  AuthenticatedAdminEventosIdRegistrosRouteImport.update({
+    id: '/$id/registros',
+    path: '/$id/registros',
     getParentRoute: () => AuthenticatedAdminEventosRoute,
   } as any)
 
@@ -468,11 +468,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -482,11 +482,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/login': {
@@ -503,179 +503,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/sponsor/ver-empresas': {
-      id: '/_authenticated/sponsor/ver-empresas'
-      path: '/sponsor/ver-empresas'
-      fullPath: '/sponsor/ver-empresas'
-      preLoaderRoute: typeof AuthenticatedSponsorVerEmpresasRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/sponsor/tablon': {
-      id: '/_authenticated/sponsor/tablon'
-      path: '/sponsor/tablon'
-      fullPath: '/sponsor/tablon'
-      preLoaderRoute: typeof AuthenticatedSponsorTablonRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/sponsor/reuniones-1to1': {
-      id: '/_authenticated/sponsor/reuniones-1to1'
-      path: '/sponsor/reuniones-1to1'
-      fullPath: '/sponsor/reuniones-1to1'
-      preLoaderRoute: typeof AuthenticatedSponsorReuniones1to1RouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/sponsor/mis-selecciones': {
-      id: '/_authenticated/sponsor/mis-selecciones'
-      path: '/sponsor/mis-selecciones'
-      fullPath: '/sponsor/mis-selecciones'
-      preLoaderRoute: typeof AuthenticatedSponsorMisSeleccionesRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/sponsor/mis-matches': {
-      id: '/_authenticated/sponsor/mis-matches'
-      path: '/sponsor/mis-matches'
-      fullPath: '/sponsor/mis-matches'
-      preLoaderRoute: typeof AuthenticatedSponsorMisMatchesRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/sponsor/mi-ficha': {
-      id: '/_authenticated/sponsor/mi-ficha'
-      path: '/sponsor/mi-ficha'
-      fullPath: '/sponsor/mi-ficha'
-      preLoaderRoute: typeof AuthenticatedSponsorMiFichaRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/sponsor/me-han-seleccionado': {
-      id: '/_authenticated/sponsor/me-han-seleccionado'
-      path: '/sponsor/me-han-seleccionado'
-      fullPath: '/sponsor/me-han-seleccionado'
-      preLoaderRoute: typeof AuthenticatedSponsorMeHanSeleccionadoRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/sponsor/equipo': {
-      id: '/_authenticated/sponsor/equipo'
-      path: '/sponsor/equipo'
-      fullPath: '/sponsor/equipo'
-      preLoaderRoute: typeof AuthenticatedSponsorEquipoRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/sponsor/dashboard': {
-      id: '/_authenticated/sponsor/dashboard'
-      path: '/sponsor/dashboard'
-      fullPath: '/sponsor/dashboard'
-      preLoaderRoute: typeof AuthenticatedSponsorDashboardRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/sponsor/agenda': {
-      id: '/_authenticated/sponsor/agenda'
-      path: '/sponsor/agenda'
-      fullPath: '/sponsor/agenda'
-      preLoaderRoute: typeof AuthenticatedSponsorAgendaRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/empresa/ver-sponsors': {
-      id: '/_authenticated/empresa/ver-sponsors'
-      path: '/empresa/ver-sponsors'
-      fullPath: '/empresa/ver-sponsors'
-      preLoaderRoute: typeof AuthenticatedEmpresaVerSponsorsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/empresa/ver-empresas': {
-      id: '/_authenticated/empresa/ver-empresas'
-      path: '/empresa/ver-empresas'
-      fullPath: '/empresa/ver-empresas'
-      preLoaderRoute: typeof AuthenticatedEmpresaVerEmpresasRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/empresa/tablon': {
-      id: '/_authenticated/empresa/tablon'
-      path: '/empresa/tablon'
-      fullPath: '/empresa/tablon'
-      preLoaderRoute: typeof AuthenticatedEmpresaTablonRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/empresa/reuniones-1to1': {
-      id: '/_authenticated/empresa/reuniones-1to1'
-      path: '/empresa/reuniones-1to1'
-      fullPath: '/empresa/reuniones-1to1'
-      preLoaderRoute: typeof AuthenticatedEmpresaReuniones1to1RouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/empresa/mis-selecciones': {
-      id: '/_authenticated/empresa/mis-selecciones'
-      path: '/empresa/mis-selecciones'
-      fullPath: '/empresa/mis-selecciones'
-      preLoaderRoute: typeof AuthenticatedEmpresaMisSeleccionesRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/empresa/mis-matches': {
-      id: '/_authenticated/empresa/mis-matches'
-      path: '/empresa/mis-matches'
-      fullPath: '/empresa/mis-matches'
-      preLoaderRoute: typeof AuthenticatedEmpresaMisMatchesRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/empresa/mi-ficha': {
-      id: '/_authenticated/empresa/mi-ficha'
-      path: '/empresa/mi-ficha'
-      fullPath: '/empresa/mi-ficha'
-      preLoaderRoute: typeof AuthenticatedEmpresaMiFichaRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/empresa/equipo': {
-      id: '/_authenticated/empresa/equipo'
-      path: '/empresa/equipo'
-      fullPath: '/empresa/equipo'
-      preLoaderRoute: typeof AuthenticatedEmpresaEquipoRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/empresa/dashboard': {
-      id: '/_authenticated/empresa/dashboard'
-      path: '/empresa/dashboard'
-      fullPath: '/empresa/dashboard'
-      preLoaderRoute: typeof AuthenticatedEmpresaDashboardRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/empresa/agenda': {
-      id: '/_authenticated/empresa/agenda'
-      path: '/empresa/agenda'
-      fullPath: '/empresa/agenda'
-      preLoaderRoute: typeof AuthenticatedEmpresaAgendaRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/admin/usuarios': {
-      id: '/_authenticated/admin/usuarios'
-      path: '/admin/usuarios'
-      fullPath: '/admin/usuarios'
-      preLoaderRoute: typeof AuthenticatedAdminUsuariosRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/admin/tablon': {
-      id: '/_authenticated/admin/tablon'
-      path: '/admin/tablon'
-      fullPath: '/admin/tablon'
-      preLoaderRoute: typeof AuthenticatedAdminTablonRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/admin/selecciones': {
-      id: '/_authenticated/admin/selecciones'
-      path: '/admin/selecciones'
-      fullPath: '/admin/selecciones'
-      preLoaderRoute: typeof AuthenticatedAdminSeleccionesRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/admin/reuniones': {
-      id: '/_authenticated/admin/reuniones'
-      path: '/admin/reuniones'
-      fullPath: '/admin/reuniones'
-      preLoaderRoute: typeof AuthenticatedAdminReunionesRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/admin/matches': {
-      id: '/_authenticated/admin/matches'
-      path: '/admin/matches'
-      fullPath: '/admin/matches'
-      preLoaderRoute: typeof AuthenticatedAdminMatchesRouteImport
+    '/_authenticated/admin/dashboard': {
+      id: '/_authenticated/admin/dashboard'
+      path: '/admin/dashboard'
+      fullPath: '/admin/dashboard'
+      preLoaderRoute: typeof AuthenticatedAdminDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/admin/eventos': {
@@ -685,25 +517,193 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminEventosRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/admin/dashboard': {
-      id: '/_authenticated/admin/dashboard'
-      path: '/admin/dashboard'
-      fullPath: '/admin/dashboard'
-      preLoaderRoute: typeof AuthenticatedAdminDashboardRouteImport
+    '/_authenticated/admin/matches': {
+      id: '/_authenticated/admin/matches'
+      path: '/admin/matches'
+      fullPath: '/admin/matches'
+      preLoaderRoute: typeof AuthenticatedAdminMatchesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/admin/eventos/$id/registros': {
-      id: '/_authenticated/admin/eventos/$id/registros'
-      path: '/$id/registros'
-      fullPath: '/admin/eventos/$id/registros'
-      preLoaderRoute: typeof AuthenticatedAdminEventosIdRegistrosRouteImport
-      parentRoute: typeof AuthenticatedAdminEventosRoute
+    '/_authenticated/admin/reuniones': {
+      id: '/_authenticated/admin/reuniones'
+      path: '/admin/reuniones'
+      fullPath: '/admin/reuniones'
+      preLoaderRoute: typeof AuthenticatedAdminReunionesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/admin/selecciones': {
+      id: '/_authenticated/admin/selecciones'
+      path: '/admin/selecciones'
+      fullPath: '/admin/selecciones'
+      preLoaderRoute: typeof AuthenticatedAdminSeleccionesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/admin/tablon': {
+      id: '/_authenticated/admin/tablon'
+      path: '/admin/tablon'
+      fullPath: '/admin/tablon'
+      preLoaderRoute: typeof AuthenticatedAdminTablonRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/admin/usuarios': {
+      id: '/_authenticated/admin/usuarios'
+      path: '/admin/usuarios'
+      fullPath: '/admin/usuarios'
+      preLoaderRoute: typeof AuthenticatedAdminUsuariosRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/empresa/agenda': {
+      id: '/_authenticated/empresa/agenda'
+      path: '/empresa/agenda'
+      fullPath: '/empresa/agenda'
+      preLoaderRoute: typeof AuthenticatedEmpresaAgendaRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/empresa/dashboard': {
+      id: '/_authenticated/empresa/dashboard'
+      path: '/empresa/dashboard'
+      fullPath: '/empresa/dashboard'
+      preLoaderRoute: typeof AuthenticatedEmpresaDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/empresa/equipo': {
+      id: '/_authenticated/empresa/equipo'
+      path: '/empresa/equipo'
+      fullPath: '/empresa/equipo'
+      preLoaderRoute: typeof AuthenticatedEmpresaEquipoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/empresa/mi-ficha': {
+      id: '/_authenticated/empresa/mi-ficha'
+      path: '/empresa/mi-ficha'
+      fullPath: '/empresa/mi-ficha'
+      preLoaderRoute: typeof AuthenticatedEmpresaMiFichaRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/empresa/mis-matches': {
+      id: '/_authenticated/empresa/mis-matches'
+      path: '/empresa/mis-matches'
+      fullPath: '/empresa/mis-matches'
+      preLoaderRoute: typeof AuthenticatedEmpresaMisMatchesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/empresa/mis-selecciones': {
+      id: '/_authenticated/empresa/mis-selecciones'
+      path: '/empresa/mis-selecciones'
+      fullPath: '/empresa/mis-selecciones'
+      preLoaderRoute: typeof AuthenticatedEmpresaMisSeleccionesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/empresa/reuniones-1to1': {
+      id: '/_authenticated/empresa/reuniones-1to1'
+      path: '/empresa/reuniones-1to1'
+      fullPath: '/empresa/reuniones-1to1'
+      preLoaderRoute: typeof AuthenticatedEmpresaReuniones1to1RouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/empresa/tablon': {
+      id: '/_authenticated/empresa/tablon'
+      path: '/empresa/tablon'
+      fullPath: '/empresa/tablon'
+      preLoaderRoute: typeof AuthenticatedEmpresaTablonRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/empresa/ver-empresas': {
+      id: '/_authenticated/empresa/ver-empresas'
+      path: '/empresa/ver-empresas'
+      fullPath: '/empresa/ver-empresas'
+      preLoaderRoute: typeof AuthenticatedEmpresaVerEmpresasRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/empresa/ver-sponsors': {
+      id: '/_authenticated/empresa/ver-sponsors'
+      path: '/empresa/ver-sponsors'
+      fullPath: '/empresa/ver-sponsors'
+      preLoaderRoute: typeof AuthenticatedEmpresaVerSponsorsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/sponsor/agenda': {
+      id: '/_authenticated/sponsor/agenda'
+      path: '/sponsor/agenda'
+      fullPath: '/sponsor/agenda'
+      preLoaderRoute: typeof AuthenticatedSponsorAgendaRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/sponsor/dashboard': {
+      id: '/_authenticated/sponsor/dashboard'
+      path: '/sponsor/dashboard'
+      fullPath: '/sponsor/dashboard'
+      preLoaderRoute: typeof AuthenticatedSponsorDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/sponsor/equipo': {
+      id: '/_authenticated/sponsor/equipo'
+      path: '/sponsor/equipo'
+      fullPath: '/sponsor/equipo'
+      preLoaderRoute: typeof AuthenticatedSponsorEquipoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/sponsor/me-han-seleccionado': {
+      id: '/_authenticated/sponsor/me-han-seleccionado'
+      path: '/sponsor/me-han-seleccionado'
+      fullPath: '/sponsor/me-han-seleccionado'
+      preLoaderRoute: typeof AuthenticatedSponsorMeHanSeleccionadoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/sponsor/mi-ficha': {
+      id: '/_authenticated/sponsor/mi-ficha'
+      path: '/sponsor/mi-ficha'
+      fullPath: '/sponsor/mi-ficha'
+      preLoaderRoute: typeof AuthenticatedSponsorMiFichaRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/sponsor/mis-matches': {
+      id: '/_authenticated/sponsor/mis-matches'
+      path: '/sponsor/mis-matches'
+      fullPath: '/sponsor/mis-matches'
+      preLoaderRoute: typeof AuthenticatedSponsorMisMatchesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/sponsor/mis-selecciones': {
+      id: '/_authenticated/sponsor/mis-selecciones'
+      path: '/sponsor/mis-selecciones'
+      fullPath: '/sponsor/mis-selecciones'
+      preLoaderRoute: typeof AuthenticatedSponsorMisSeleccionesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/sponsor/reuniones-1to1': {
+      id: '/_authenticated/sponsor/reuniones-1to1'
+      path: '/sponsor/reuniones-1to1'
+      fullPath: '/sponsor/reuniones-1to1'
+      preLoaderRoute: typeof AuthenticatedSponsorReuniones1to1RouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/sponsor/tablon': {
+      id: '/_authenticated/sponsor/tablon'
+      path: '/sponsor/tablon'
+      fullPath: '/sponsor/tablon'
+      preLoaderRoute: typeof AuthenticatedSponsorTablonRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/sponsor/ver-empresas': {
+      id: '/_authenticated/sponsor/ver-empresas'
+      path: '/sponsor/ver-empresas'
+      fullPath: '/sponsor/ver-empresas'
+      preLoaderRoute: typeof AuthenticatedSponsorVerEmpresasRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/admin/eventos/$id/agenda': {
       id: '/_authenticated/admin/eventos/$id/agenda'
       path: '/$id/agenda'
       fullPath: '/admin/eventos/$id/agenda'
       preLoaderRoute: typeof AuthenticatedAdminEventosIdAgendaRouteImport
+      parentRoute: typeof AuthenticatedAdminEventosRoute
+    }
+    '/_authenticated/admin/eventos/$id/registros': {
+      id: '/_authenticated/admin/eventos/$id/registros'
+      path: '/$id/registros'
+      fullPath: '/admin/eventos/$id/registros'
+      preLoaderRoute: typeof AuthenticatedAdminEventosIdRegistrosRouteImport
       parentRoute: typeof AuthenticatedAdminEventosRoute
     }
   }
@@ -807,3 +807,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
