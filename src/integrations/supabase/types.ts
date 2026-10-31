@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.18"
   }
   public: {
     Tables: {
@@ -145,6 +145,7 @@ export type Database = {
       event_agenda: {
         Row: {
           agenda_type: Database["public"]["Enums"]["agenda_type_t"] | null
+          created_at: string | null
           description: string | null
           event_date: string | null
           event_id: string | null
@@ -159,6 +160,7 @@ export type Database = {
         }
         Insert: {
           agenda_type?: Database["public"]["Enums"]["agenda_type_t"] | null
+          created_at?: string | null
           description?: string | null
           event_date?: string | null
           event_id?: string | null
@@ -173,6 +175,7 @@ export type Database = {
         }
         Update: {
           agenda_type?: Database["public"]["Enums"]["agenda_type_t"] | null
+          created_at?: string | null
           description?: string | null
           event_date?: string | null
           event_id?: string | null
@@ -204,6 +207,7 @@ export type Database = {
           checked_in_at: string | null
           event_id: string | null
           id: string
+          invitation_code_id: string | null
           registered_at: string | null
           role_at_event: Database["public"]["Enums"]["attendee_role_t"] | null
           status: Database["public"]["Enums"]["registration_status_t"] | null
@@ -217,6 +221,7 @@ export type Database = {
           checked_in_at?: string | null
           event_id?: string | null
           id?: string
+          invitation_code_id?: string | null
           registered_at?: string | null
           role_at_event?: Database["public"]["Enums"]["attendee_role_t"] | null
           status?: Database["public"]["Enums"]["registration_status_t"] | null
@@ -230,6 +235,7 @@ export type Database = {
           checked_in_at?: string | null
           event_id?: string | null
           id?: string
+          invitation_code_id?: string | null
           registered_at?: string | null
           role_at_event?: Database["public"]["Enums"]["attendee_role_t"] | null
           status?: Database["public"]["Enums"]["registration_status_t"] | null
@@ -241,6 +247,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registrations_invitation_code_id_fkey"
+            columns: ["invitation_code_id"]
+            isOneToOne: false
+            referencedRelation: "invitation_codes"
             referencedColumns: ["id"]
           },
           {
@@ -335,6 +348,57 @@ export type Database = {
           {
             foreignKeyName: "events_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invitation_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          event_id: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          max_uses: number | null
+          sponsor_user_id: string | null
+          used_count: number | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          event_id?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          sponsor_user_id?: string | null
+          used_count?: number | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          event_id?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          sponsor_user_id?: string | null
+          used_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitation_codes_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitation_codes_sponsor_user_id_fkey"
+            columns: ["sponsor_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -557,8 +621,8 @@ export type Database = {
           id: string
           is_read: boolean | null
           link: string | null
-          title: string | null
-          type: string | null
+          title: string
+          type: string
           user_id: string | null
         }
         Insert: {
@@ -567,8 +631,8 @@ export type Database = {
           id?: string
           is_read?: boolean | null
           link?: string | null
-          title?: string | null
-          type?: string | null
+          title: string
+          type: string
           user_id?: string | null
         }
         Update: {
@@ -577,8 +641,8 @@ export type Database = {
           id?: string
           is_read?: boolean | null
           link?: string | null
-          title?: string | null
-          type?: string | null
+          title?: string
+          type?: string
           user_id?: string | null
         }
         Relationships: [
@@ -829,6 +893,13 @@ export type Database = {
         | "approved"
         | "rejected"
         | "cancelled"
+      sponsor_level_t:
+        | "PLATINUM"
+        | "GOLD"
+        | "SILVER"
+        | "BRONZE"
+        | "PREMIUM"
+        | "BASIC"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -990,6 +1061,14 @@ export const Constants = {
         "approved",
         "rejected",
         "cancelled",
+      ],
+      sponsor_level_t: [
+        "PLATINUM",
+        "GOLD",
+        "SILVER",
+        "BRONZE",
+        "PREMIUM",
+        "BASIC",
       ],
     },
   },
