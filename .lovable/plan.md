@@ -1,45 +1,72 @@
-## Diagnóstico
+# Reto 2.700 — Auditoría (Prompt 1) y propuesta de arquitectura
 
-El fallo no está en la fecha de la agenda: `Día 1` sí se está asociando al `11/06/2026`, que coincide con la agenda del evento.
+No se cambia nada en este paso. Esto es el informe para aprobar antes del Prompt 2.
 
-El problema principal está en la conversión horaria y en cómo se pinta el campo `datetime-local`:
+## 1. Lo que ya existe y se reutiliza
 
-- El Excel dice `Día 1`, `Hora 17:30 - 17:45`.
-- En base de datos se guarda como `2026-06-11 15:30:00+00`, que es correcto si se interpreta como `17:30` en Madrid.
-- Pero la pantalla usa `new Date(...).toISOString().slice(0,16)` para rellenar el input, y eso fuerza UTC, por eso aparece `15:30` en vez de `17:30`.
-- Además, el importador depende de parsing parcial de la columna `Hora`; conviene hacerlo explícito y consistente para rangos como `17:30 - 17:45`.
+| Área | Estado actual | Uso en el Reto |
+|---|---|---|
+| Acceso | Email + contraseña; tres roles: super admin, empresa (DRH) y solución (sponsor) | Igual, sin cambios |
+| Personas | Cada asistente es una persona con su ficha (nombre, email, cargo, foto) vinculada a una cuenta de empresa o solución (con nombre y logo) | Fichas del álbum: nombre, empresa, cargo, foto |
+| Eventos | Tabla de eventos + inscripciones por evento + agenda por días | El Reto se cuelga de un evento concreto |
+| Importación | Importador de usuarios en Excel en el panel admin | Se reutiliza para el listado definitivo |
+| Buscador | Directorios «Ver soluciones / Ver empresas» con búsqueda y orden | Base para buscar en el álbum |
+| Panel admin | Menú lateral con Usuarios, Eventos, Matches, Reuniones, Selecciones, Tablón | Nueva entrada «Reto 2.700» |
+| Notificaciones | Campana interna | Opcional para pop-ups de misión (sin push ni email) |
+| QR | No hay lector QR en el código actual | No se toca ni se crea |
 
-## Plan de solución
+No se modifican: likes, matches, reuniones 1to1, agenda, perfiles ni datos de junio.
 
-1. **Crear helpers de fecha/hora Madrid**
-   - Añadir funciones reutilizables para:
-     - Convertir `YYYY-MM-DD + HH:mm` de Madrid a ISO UTC para guardar.
-     - Convertir ISO guardado a valor `datetime-local` en hora Madrid.
-     - Convertir valor editado desde `datetime-local` como hora Madrid a ISO UTC.
-     - Formatear fecha y hora de exportación siempre en zona `Europe/Madrid`.
+## 2. Diseño de datos propuesto (todo nuevo, aislado por evento)
 
-2. **Corregir el importador servidor**
-   - Sustituir la función actual `madridIso`, que aún puede calcular mal el offset porque usa una fecha “probe” UTC que no representa realmente la hora local deseada.
-   - Parsear la columna `Hora` tomando siempre la hora de inicio del rango (`17:30 - 17:45` → `17:30`).
-   - Guardar `scheduled_time` como UTC correcto para la hora local Madrid.
+```text
+reto_config        1 fila por evento: activo, objetivo (2700), hora de cierre, cerrado, emergencia
+reto_participants  quién juega en ese evento (persona + tipo DRH/sponsor + empresa)
+reto_marks         "he conectado con X": (evento, emisor, receptor) único, sin automarca
+reto_missions      catálogo por evento: título, bonus, tipo, regla, horario, activa
+reto_mission_awards  bonus concedidos (único por persona+misión; historial auditable)
+reto_introductions «Te presento»: presentador, pareja, confirmaciones, estado
+reto_mission_seen  pop-up visto por persona y misión
+reto_icebreakers   las 27 preguntas editables
+reto_snapshots     foto congelada de resultados al cerrar
+```
 
-3. **Corregir la tabla de administración**
-   - Cambiar el valor del input `datetime-local` para que muestre la hora Madrid, no UTC.
-   - Al editar manualmente una hora, convertirla desde hora Madrid a UTC antes de guardar.
+Conexión válida = existen las dos marcas A→B y B→A. Se calcula en la base de datos (vistas/funciones), nunca en el navegador. Una pareja cuenta una sola vez.
 
-4. **Corregir exportación Excel/PDF**
-   - Cambiar `toLocaleDateString` y `toLocaleTimeString` para usar explícitamente `Europe/Madrid`.
-   - Así la exportación mostrará `11/06/2026` y `17:30`, no el valor UTC.
+## 3. Permisos
 
-5. **Validación posterior**
-   - Verificar con el ejemplo `3INA × Vidext` que:
-     - Excel: `Día 1`, `17:30 - 17:45`.
-     - Plataforma: `11/06/2026 17:30`.
-     - Exportación: `11/06/2026`, `17:30`.
+- Asistente: solo crea/borra sus propias marcas, dentro de su evento, hacia participantes de ese evento y si el juego está abierto.
+- Asistente: lee fichas y rankings de su evento; no ve marcas ajenas en bruto.
+- Puntos, misiones y cierre: solo los calcula la base de datos; nadie puede escribirlos a mano.
+- Super admin: toda la configuración y exportaciones.
+- Interruptor de emergencia: oculta el módulo sin afectar al resto.
 
-## Archivos a tocar
+## 4. Cambios mínimos en la app actual
 
-- `src/lib/admin-meetings.functions.ts`
-- `src/routes/_authenticated/admin/reuniones.tsx`
+- Una entrada nueva en el menú lateral (empresa, solución y admin), visible solo si el Reto está activo para su evento.
+- Páginas nuevas: Mi álbum, Ranking, Misiones, Rompe el hielo y panel admin del Reto.
+- Ningún cambio en las páginas existentes.
 
-No haré cambios de diseño ni modificaré la lógica de matches; solo la conversión, visualización y exportación de fechas/horas.
+## 5. Estrategia de pruebas
+
+- Un evento ficticio separado («TEST Reto 2.700») con 120 usuarios ficticios (p. ej. 80 DRH, 40 sponsors, 30 empresas) con emails `@test.conectamos.invalid`.
+- Pruebas automáticas de reglas: reciprocidad, desmarcado, duplicados, empates, misiones, «Te presento» y cierre.
+- Borrado total del evento de prueba al acabar.
+
+## 6. Riesgos concretos
+
+- No hay entorno de pruebas separado: la base de datos es la real. Se mitiga con el evento ficticio y el módulo apagado por defecto.
+- Hoy los responsables comparten cuenta: hay que confirmar que el Reto cuenta por persona, no por empresa.
+- «Empresa» para las misiones de empresas distintas: se usará la cuenta empresa/solución; quien no tenga cuenta no puntúa en esas misiones.
+- El evento de noviembre aún no está creado en la base de datos (solo existe el de junio).
+- Las fotos/logos no se migraron al nuevo almacenamiento: las fichas saldrán sin foto hasta que se resuban.
+
+## 7. Preguntas para el equipo
+
+1. ¿El Reto cuenta por persona (cada responsable juega individualmente)? Es lo que propone el documento.
+2. ¿Pueden conectar DRH con DRH y sponsor con sponsor, o solo entre tipos opuestos?
+3. ¿Creo ya el evento de noviembre o trabajo solo con el evento ficticio?
+
+## Siguiente paso
+
+Al aprobar, se ejecuta el Prompt 2 (álbum y conexión recíproca) sobre el evento ficticio.
