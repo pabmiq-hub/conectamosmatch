@@ -1,0 +1,1 @@
+- Reto 2.700 lives in separate `reto_*` tables keyed by event_id; reciprocal connections are computed in the DB, never stored or trusted from the browser — keeps the existing likes/matches/meetings untouched.
