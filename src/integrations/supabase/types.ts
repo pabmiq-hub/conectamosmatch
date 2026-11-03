@@ -748,6 +748,147 @@ export type Database = {
         }
         Relationships: []
       }
+      reto_config: {
+        Row: {
+          closes_at: string | null
+          created_at: string
+          emergency_off: boolean
+          event_id: string
+          is_active: boolean
+          is_closed: boolean
+          target: number
+          updated_at: string
+        }
+        Insert: {
+          closes_at?: string | null
+          created_at?: string
+          emergency_off?: boolean
+          event_id: string
+          is_active?: boolean
+          is_closed?: boolean
+          target?: number
+          updated_at?: string
+        }
+        Update: {
+          closes_at?: string | null
+          created_at?: string
+          emergency_off?: boolean
+          event_id?: string
+          is_active?: boolean
+          is_closed?: boolean
+          target?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reto_config_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reto_marks: {
+        Row: {
+          created_at: string
+          event_id: string
+          from_user_id: string
+          id: string
+          to_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          from_user_id: string
+          id?: string
+          to_user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          from_user_id?: string
+          id?: string
+          to_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reto_marks_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reto_marks_from_user_id_fkey"
+            columns: ["from_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reto_marks_to_user_id_fkey"
+            columns: ["to_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reto_participants: {
+        Row: {
+          account_id: string | null
+          cargo: string | null
+          company_name: string | null
+          created_at: string
+          display_name: string
+          event_id: string
+          id: string
+          participant_type: string
+          photo_url: string | null
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          cargo?: string | null
+          company_name?: string | null
+          created_at?: string
+          display_name: string
+          event_id: string
+          id?: string
+          participant_type: string
+          photo_url?: string | null
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          cargo?: string | null
+          company_name?: string | null
+          created_at?: string
+          display_name?: string
+          event_id?: string
+          id?: string
+          participant_type?: string
+          photo_url?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reto_participants_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reto_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sponsor_profiles: {
         Row: {
           budget_range: string | null
@@ -859,6 +1000,12 @@ export type Database = {
         Returns: boolean
       }
       my_account_id: { Args: never; Returns: string }
+      reto_connection_count: { Args: { _event: string }; Returns: number }
+      reto_is_open: { Args: { _event: string }; Returns: boolean }
+      reto_is_participant: {
+        Args: { _event: string; _user: string }
+        Returns: boolean
+      }
       same_account: { Args: { _a: string; _b: string }; Returns: boolean }
     }
     Enums: {
