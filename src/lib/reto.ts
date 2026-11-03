@@ -121,3 +121,77 @@ export async function fetchScoreboard(eventId: string): Promise<ScoreRow[]> {
     points: Number(r.points) || 0,
   }));
 }
+
+// ---------------------------------------------------------------------
+// Fase 4 · Misiones y puntuación (todo se calcula en la base de datos)
+// ---------------------------------------------------------------------
+
+export type MissionRow = {
+  mission_id: string;
+  code: string;
+  title: string;
+  description: string | null;
+  type: "connections" | "companies" | "cross_type" | "sprint" | "introduction";
+  threshold: number;
+  bonus_points: number;
+  max_awards: number;
+  starts_at: string | null;
+  enabled: boolean;
+  status: string;
+  order_index: number;
+  progress: number;
+  unlocked: boolean;
+  awarded_count: number;
+  awarded_points: number;
+  blocked_reason: string | null;
+};
+
+export type MissionState = "completada" | "en_curso" | "bloqueada";
+
+/** Visual state of a mission for the participant. Points always come from the DB, never from here. */
+export function missionState(m: Pick<MissionRow, "awarded_count" | "max_awards" | "blocked_reason">): MissionState {
+  if (m.awarded_count > 0 && m.awarded_count >= m.max_awards) return "completada";
+  if (m.blocked_reason) return m.awarded_count > 0 ? "completada" : "bloqueada";
+  return m.awarded_count > 0 ? "completada" : "en_curso";
+}
+
+/** Progress ratio 0..1 capped at the threshold. */
+export function missionRatio(progress: number, threshold: number): number {
+  if (threshold <= 0) return 0;
+  return Math.min(1, Math.max(0, progress / threshold));
+}
+
+/** Max bonus a mission can give (e.g. «Te presento»: 3 × 40 = 120). */
+export function missionMaxBonus(m: Pick<MissionRow, "bonus_points" | "max_awards">): number {
+  return m.bonus_points * m.max_awards;
+}
+
+export async function fetchMyMissions(eventId: string): Promise<MissionRow[]> {
+  // Refresh first so missions unlocked by time are awarded; ignore if it fails (read still works).
+  await retoDb.rpc("reto_refresh_missions", { _event: eventId }).then(() => null, () => null);
+  const { data, error } = await retoDb.rpc("reto_my_missions", { _event: eventId });
+  if (error) throw error;
+  return (data ?? []).map((r: any) => ({
+    ...r,
+    threshold: Number(r.threshold) || 0,
+    bonus_points: Number(r.bonus_points) || 0,
+    max_awards: Number(r.max_awards) || 1,
+    progress: Number(r.progress) || 0,
+    awarded_count: Number(r.awarded_count) || 0,
+    awarded_points: Number(r.awarded_points) || 0,
+  }));
+}
+
+export type PointsLogRow = { id: string; mission_code: string | null; delta: number; reason: "award" | "revoke"; detail: string | null; created_at: string };
+
+export async function fetchMyPointsLog(eventId: string, userId: string): Promise<PointsLogRow[]> {
+  const { data, error } = await retoDb
+    .from("reto_points_log")
+    .select("id, mission_code, delta, reason, detail, created_at")
+    .eq("event_id", eventId)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  return data ?? [];
+}
