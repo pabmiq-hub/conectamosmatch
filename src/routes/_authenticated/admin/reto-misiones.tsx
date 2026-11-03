@@ -132,7 +132,7 @@ function AdminRetoMisiones() {
               <tr key={m.id} className="border-b border-border last:border-0">
                 <td className="px-3 py-2">
                   <div className="font-bold">{m.title}</div>
-                  <div className="text-xs text-muted-foreground">{m.description}{m.type === "introduction" && " · Se construye en la siguiente fase."}</div>
+                  <div className="text-xs text-muted-foreground">{m.description}</div>
                 </td>
                 <td className="px-3 py-2 text-right">{m.threshold}</td>
                 <td className="px-3 py-2 text-right">+{m.bonus_points}{m.max_awards > 1 ? ` ×${m.max_awards}` : ""}</td>
@@ -146,7 +146,7 @@ function AdminRetoMisiones() {
                 </td>
                 <td className="px-3 py-2 text-right">{awards[m.id] ?? 0}</td>
                 <td className="px-3 py-2 text-center">
-                  <input type="checkbox" aria-label={`Activar ${m.title}`} checked={m.enabled} disabled={busy || m.type === "introduction"}
+                  <input type="checkbox" aria-label={`Activar ${m.title}`} checked={m.enabled} disabled={busy}
                     onChange={(e) => update(m, { enabled: e.target.checked })} className="h-4 w-4 accent-primary" />
                 </td>
               </tr>

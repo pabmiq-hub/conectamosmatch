@@ -7,6 +7,7 @@ import {
 } from "@/lib/reto";
 import { CheckCircle2, Lock, RefreshCw, Target, Trophy, History } from "lucide-react";
 import { toast } from "sonner";
+import { IntroducePanel } from "./RetoIntroductions";
 
 const UNIT: Record<MissionRow["type"], string> = {
   connections: "conexiones",
@@ -94,6 +95,11 @@ export function RetoMissions() {
         {rows.map((m) => <MissionCard key={m.mission_id} m={m} />)}
       </ul>
 
+      {(() => {
+        const intro = rows.find((r) => r.type === "introduction");
+        return intro ? <IntroducePanel eventId={eventId} me={me} enabled={!intro.blocked_reason} /> : null;
+      })()}
+
       <div className="rounded-xl border border-border bg-card">
         <div className="flex items-center gap-2 border-b border-border px-4 py-2 text-[10px] font-bold text-uppercase-wide text-muted-foreground">
           <History className="h-3.5 w-3.5" /> Historial de puntos
@@ -141,6 +147,9 @@ function MissionCard({ m }: { m: MissionRow }) {
             </span>
           </div>
           {m.description && <div className="text-sm text-muted-foreground">{m.description}</div>}
+          {m.type === "introduction" && (
+            <div className="mt-1 text-xs text-muted-foreground">{m.progress}/{m.max_awards} presentaciones validadas · usa el panel «¡Te presento!» de abajo</div>
+          )}
           {m.type !== "introduction" && (
             <div className="mt-2">
               <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
