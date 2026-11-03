@@ -17,6 +17,7 @@ import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin/dashboard'
 import { Route as AuthenticatedAdminEventosRouteImport } from './routes/_authenticated/admin/eventos'
 import { Route as AuthenticatedAdminMatchesRouteImport } from './routes/_authenticated/admin/matches'
+import { Route as AuthenticatedAdminRetoRouteImport } from './routes/_authenticated/admin/reto'
 import { Route as AuthenticatedAdminRetoComodinesRouteImport } from './routes/_authenticated/admin/reto-comodines'
 import { Route as AuthenticatedAdminRetoMisionesRouteImport } from './routes/_authenticated/admin/reto-misiones'
 import { Route as AuthenticatedAdminReunionesRouteImport } from './routes/_authenticated/admin/reuniones'
@@ -96,6 +97,11 @@ const AuthenticatedAdminMatchesRoute =
     path: '/admin/matches',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAdminRetoRoute = AuthenticatedAdminRetoRouteImport.update({
+  id: '/admin/reto',
+  path: '/admin/reto',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAdminRetoComodinesRoute =
   AuthenticatedAdminRetoComodinesRouteImport.update({
     id: '/admin/reto-comodines',
@@ -320,6 +326,7 @@ export interface FileRoutesByFullPath {
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/eventos': typeof AuthenticatedAdminEventosRouteWithChildren
   '/admin/matches': typeof AuthenticatedAdminMatchesRoute
+  '/admin/reto': typeof AuthenticatedAdminRetoRoute
   '/admin/reto-comodines': typeof AuthenticatedAdminRetoComodinesRoute
   '/admin/reto-misiones': typeof AuthenticatedAdminRetoMisionesRoute
   '/admin/reuniones': typeof AuthenticatedAdminReunionesRoute
@@ -365,6 +372,7 @@ export interface FileRoutesByTo {
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/eventos': typeof AuthenticatedAdminEventosRouteWithChildren
   '/admin/matches': typeof AuthenticatedAdminMatchesRoute
+  '/admin/reto': typeof AuthenticatedAdminRetoRoute
   '/admin/reto-comodines': typeof AuthenticatedAdminRetoComodinesRoute
   '/admin/reto-misiones': typeof AuthenticatedAdminRetoMisionesRoute
   '/admin/reuniones': typeof AuthenticatedAdminReunionesRoute
@@ -412,6 +420,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/_authenticated/admin/eventos': typeof AuthenticatedAdminEventosRouteWithChildren
   '/_authenticated/admin/matches': typeof AuthenticatedAdminMatchesRoute
+  '/_authenticated/admin/reto': typeof AuthenticatedAdminRetoRoute
   '/_authenticated/admin/reto-comodines': typeof AuthenticatedAdminRetoComodinesRoute
   '/_authenticated/admin/reto-misiones': typeof AuthenticatedAdminRetoMisionesRoute
   '/_authenticated/admin/reuniones': typeof AuthenticatedAdminReunionesRoute
@@ -459,6 +468,7 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/admin/eventos'
     | '/admin/matches'
+    | '/admin/reto'
     | '/admin/reto-comodines'
     | '/admin/reto-misiones'
     | '/admin/reuniones'
@@ -504,6 +514,7 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/admin/eventos'
     | '/admin/matches'
+    | '/admin/reto'
     | '/admin/reto-comodines'
     | '/admin/reto-misiones'
     | '/admin/reuniones'
@@ -550,6 +561,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/dashboard'
     | '/_authenticated/admin/eventos'
     | '/_authenticated/admin/matches'
+    | '/_authenticated/admin/reto'
     | '/_authenticated/admin/reto-comodines'
     | '/_authenticated/admin/reto-misiones'
     | '/_authenticated/admin/reuniones'
@@ -652,6 +664,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/matches'
       fullPath: '/admin/matches'
       preLoaderRoute: typeof AuthenticatedAdminMatchesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/admin/reto': {
+      id: '/_authenticated/admin/reto'
+      path: '/admin/reto'
+      fullPath: '/admin/reto'
+      preLoaderRoute: typeof AuthenticatedAdminRetoRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/admin/reto-comodines': {
@@ -931,6 +950,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
   AuthenticatedAdminEventosRoute: typeof AuthenticatedAdminEventosRouteWithChildren
   AuthenticatedAdminMatchesRoute: typeof AuthenticatedAdminMatchesRoute
+  AuthenticatedAdminRetoRoute: typeof AuthenticatedAdminRetoRoute
   AuthenticatedAdminRetoComodinesRoute: typeof AuthenticatedAdminRetoComodinesRoute
   AuthenticatedAdminRetoMisionesRoute: typeof AuthenticatedAdminRetoMisionesRoute
   AuthenticatedAdminReunionesRoute: typeof AuthenticatedAdminReunionesRoute
@@ -972,6 +992,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,
   AuthenticatedAdminEventosRoute: AuthenticatedAdminEventosRouteWithChildren,
   AuthenticatedAdminMatchesRoute: AuthenticatedAdminMatchesRoute,
+  AuthenticatedAdminRetoRoute: AuthenticatedAdminRetoRoute,
   AuthenticatedAdminRetoComodinesRoute: AuthenticatedAdminRetoComodinesRoute,
   AuthenticatedAdminRetoMisionesRoute: AuthenticatedAdminRetoMisionesRoute,
   AuthenticatedAdminReunionesRoute: AuthenticatedAdminReunionesRoute,

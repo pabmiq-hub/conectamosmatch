@@ -21,7 +21,7 @@ export function RetoProgress({ value, target = 2700 }: { value: number; target?:
       </div>
       <div className="relative mt-3 h-3 rounded-full bg-muted">
         <div className="h-full rounded-full bg-primary transition-all duration-700" style={{ width: `${pct}%` }} />
-        {RETO_MILESTONES.map((m) => (
+        {RETO_MILESTONES.filter((m) => m <= target).map((m) => (
           <div key={m} className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2" style={{ left: `${(m / target) * 100}%` }}>
             <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${value >= m ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground"}`}>
               <Flag className="h-2.5 w-2.5" />
@@ -30,7 +30,7 @@ export function RetoProgress({ value, target = 2700 }: { value: number; target?:
         ))}
       </div>
       <div className="relative mt-2 h-4 text-[10px] text-muted-foreground">
-        {RETO_MILESTONES.map((m) => (
+        {RETO_MILESTONES.filter((m) => m <= target).map((m) => (
           <span key={m} className="absolute -translate-x-1/2 last:-translate-x-full" style={{ left: `${(m / target) * 100}%` }}>
             {m.toLocaleString("es-ES")}
           </span>
