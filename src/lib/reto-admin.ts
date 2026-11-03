@@ -190,3 +190,21 @@ export async function fetchAll<T>(build: (from: number, to: number) => PromiseLi
   }
   return out;
 }
+
+// ---------- Horas en zona Madrid para los campos de fecha ----------
+export function toMadridLocal(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+      .formatToParts(new Date(iso)).map((x) => [x.type, x.value]),
+  );
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+}
+
+export function fromMadridLocal(v: string): string | null {
+  if (!v) return null;
+  const guess = new Date(`${v}:00Z`);
+  const local = toMadridLocal(guess.toISOString());
+  const diff = new Date(`${local}:00Z`).getTime() - guess.getTime();
+  return new Date(guess.getTime() - diff).toISOString();
+}

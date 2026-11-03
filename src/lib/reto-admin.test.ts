@@ -72,3 +72,11 @@ describe("parejas y listados", () => {
     expect(m).toEqual({ found: ["1"], missing: ["nadie@test.com"] });
   });
 });
+
+describe("horas de Madrid", () => {
+  it("convierte ida y vuelta en horario de invierno (UTC+1)", async () => {
+    const { fromMadridLocal, toMadridLocal } = await import("./reto-admin");
+    expect(fromMadridLocal("2026-11-27T20:00")).toBe("2026-11-27T19:00:00.000Z");
+    expect(toMadridLocal("2026-11-27T19:00:00.000Z")).toBe("2026-11-27T20:00");
+  });
+});
