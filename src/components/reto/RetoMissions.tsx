@@ -162,7 +162,10 @@ function MissionCard({ m }: { m: MissionRow }) {
             {state === "completada" ? (
               <span className="text-primary">Completada · +{m.awarded_points} puntos</span>
             ) : state === "bloqueada" ? (
-              <span className="text-muted-foreground">Bloqueada · {m.blocked_reason}</span>
+              <span className="text-muted-foreground">
+                Bloqueada · {m.blocked_reason}
+                {m.blocked_reason === "Se desbloquea más tarde" && m.starts_at && ` · ${formatMadrid(m.starts_at)}`}
+              </span>
             ) : (
               <span>En curso</span>
             )}
