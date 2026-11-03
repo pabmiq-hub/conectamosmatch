@@ -756,6 +756,7 @@ export type Database = {
           event_id: string
           is_active: boolean
           is_closed: boolean
+          missions_recalc_at: string | null
           target: number
           updated_at: string
         }
@@ -766,6 +767,7 @@ export type Database = {
           event_id: string
           is_active?: boolean
           is_closed?: boolean
+          missions_recalc_at?: string | null
           target?: number
           updated_at?: string
         }
@@ -776,6 +778,7 @@ export type Database = {
           event_id?: string
           is_active?: boolean
           is_closed?: boolean
+          missions_recalc_at?: string | null
           target?: number
           updated_at?: string
         }
@@ -835,6 +838,120 @@ export type Database = {
           },
         ]
       }
+      reto_mission_awards: {
+        Row: {
+          award_index: number
+          awarded_at: string
+          event_id: string
+          id: string
+          mission_id: string
+          points: number
+          user_id: string
+        }
+        Insert: {
+          award_index?: number
+          awarded_at?: string
+          event_id: string
+          id?: string
+          mission_id: string
+          points: number
+          user_id: string
+        }
+        Update: {
+          award_index?: number
+          awarded_at?: string
+          event_id?: string
+          id?: string
+          mission_id?: string
+          points?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reto_mission_awards_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reto_mission_awards_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "reto_missions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reto_mission_awards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reto_missions: {
+        Row: {
+          bonus_points: number
+          code: string
+          created_at: string
+          description: string | null
+          enabled: boolean
+          event_id: string
+          id: string
+          max_awards: number
+          order_index: number
+          starts_at: string | null
+          status: string
+          threshold: number
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          bonus_points?: number
+          code: string
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          event_id: string
+          id?: string
+          max_awards?: number
+          order_index?: number
+          starts_at?: string | null
+          status?: string
+          threshold?: number
+          title: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          bonus_points?: number
+          code?: string
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          event_id?: string
+          id?: string
+          max_awards?: number
+          order_index?: number
+          starts_at?: string | null
+          status?: string
+          threshold?: number
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reto_missions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reto_participants: {
         Row: {
           account_id: string | null
@@ -882,6 +999,64 @@ export type Database = {
           },
           {
             foreignKeyName: "reto_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reto_points_log: {
+        Row: {
+          created_at: string
+          delta: number
+          detail: string | null
+          event_id: string
+          id: string
+          mission_code: string | null
+          mission_id: string | null
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delta: number
+          detail?: string | null
+          event_id: string
+          id?: string
+          mission_code?: string | null
+          mission_id?: string | null
+          reason: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delta?: number
+          detail?: string | null
+          event_id?: string
+          id?: string
+          mission_code?: string | null
+          mission_id?: string | null
+          reason?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reto_points_log_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reto_points_log_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "reto_missions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reto_points_log_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -1006,6 +1181,45 @@ export type Database = {
         Args: { _event: string; _user: string }
         Returns: boolean
       }
+      reto_mission_progress_for: {
+        Args: { _event: string; _user: string }
+        Returns: {
+          blocked_reason: string
+          eligible: boolean
+          mission_id: string
+          progress: number
+          unlocked: boolean
+        }[]
+      }
+      reto_my_missions: {
+        Args: { _event: string }
+        Returns: {
+          awarded_count: number
+          awarded_points: number
+          blocked_reason: string
+          bonus_points: number
+          code: string
+          description: string
+          enabled: boolean
+          max_awards: number
+          mission_id: string
+          order_index: number
+          progress: number
+          starts_at: string
+          status: string
+          threshold: number
+          title: string
+          type: string
+          unlocked: boolean
+        }[]
+      }
+      reto_recalc_event: { Args: { _event: string }; Returns: number }
+      reto_recalc_event_internal: { Args: { _event: string }; Returns: number }
+      reto_recalc_user: {
+        Args: { _event: string; _user: string }
+        Returns: undefined
+      }
+      reto_refresh_missions: { Args: { _event: string }; Returns: undefined }
       reto_scoreboard: {
         Args: { _event: string }
         Returns: {
@@ -1018,6 +1232,10 @@ export type Database = {
           points: number
           user_id: string
         }[]
+      }
+      reto_seed_default_missions: {
+        Args: { _event: string }
+        Returns: undefined
       }
       same_account: { Args: { _a: string; _b: string }; Returns: boolean }
     }

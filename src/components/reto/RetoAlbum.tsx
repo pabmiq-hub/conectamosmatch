@@ -5,6 +5,7 @@ import { retoDb, connectionStatus, getMyActiveRetoEvent, type RetoStatus } from 
 import { Check, Clock, Handshake, Search, Sparkles, Trophy, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { RetoProgress } from "./RetoProgress";
+import { IntroInbox } from "./RetoIntroductions";
 
 type Participant = {
   user_id: string;
@@ -167,6 +168,11 @@ export function RetoAlbum() {
           <Sparkles className="h-4 w-4 text-primary shrink-0" />
           <span><b>{counts.por_confirmar}</b> persona{counts.por_confirmar === 1 ? " te ha" : "s te han"} marcado. Confírmalas para sumar.</span>
         </button>
+      )}
+
+      {me && (
+        <IntroInbox eventId={eventId} me={me} people={people} iMarked={(id) => out.has(id)}
+          onChanged={() => { loadMarks(eventId, me).catch(() => {}); }} />
       )}
 
       <div className="relative">

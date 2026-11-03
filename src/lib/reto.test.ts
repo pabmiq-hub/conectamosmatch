@@ -74,3 +74,30 @@ describe("Reto 2.700 missions display", () => {
     expect(missionMaxBonus({ bonus_points: 40, max_awards: 3 })).toBe(120);
   });
 });
+
+import { introPickError, introSlotsLeft, introMissing } from "./reto";
+
+describe("Reto 2.700 «¡Te presento!» (client pre-checks; the DB is the source of truth)", () => {
+  it("requires two different people, neither of them me", () => {
+    expect(introPickError("me", "a", null)).not.toBeNull();
+    expect(introPickError("me", "a", "a")).toBe("Elige dos personas distintas");
+    expect(introPickError("me", "me", "b")).toBe("No puedes presentarte a ti mismo");
+    expect(introPickError("me", "a", "b")).toBeNull();
+  });
+  it("max 3 open presentations per presenter; cancelled/declined free a slot", () => {
+    const rows = [
+      { introducer_id: "me", status: "validated" as const },
+      { introducer_id: "me", status: "pending" as const },
+      { introducer_id: "me", status: "cancelled" as const },
+      { introducer_id: "me", status: "declined" as const },
+      { introducer_id: "other", status: "pending" as const },
+    ];
+    expect(introSlotsLeft(rows, "me")).toBe(1);
+    expect(introSlotsLeft([...rows, { introducer_id: "me", status: "pending" as const }], "me")).toBe(0);
+  });
+  it("validates only with both confirmations and their reciprocal connection", () => {
+    expect(introMissing({ a_confirmed: true, b_confirmed: true, pair_connected: true })).toEqual([]);
+    expect(introMissing({ a_confirmed: true, b_confirmed: false, pair_connected: true })).toEqual(["b"]);
+    expect(introMissing({ a_confirmed: true, b_confirmed: true, pair_connected: false })).toEqual(["conexion"]);
+  });
+});
