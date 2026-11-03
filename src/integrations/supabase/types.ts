@@ -1006,6 +1006,19 @@ export type Database = {
         Args: { _event: string; _user: string }
         Returns: boolean
       }
+      reto_scoreboard: {
+        Args: { _event: string }
+        Returns: {
+          bonus: number
+          company_name: string
+          connections: number
+          display_name: string
+          participant_type: string
+          photo_url: string
+          points: number
+          user_id: string
+        }[]
+      }
       same_account: { Args: { _a: string; _b: string }; Returns: boolean }
     }
     Enums: {
