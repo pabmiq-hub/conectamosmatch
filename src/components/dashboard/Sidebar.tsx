@@ -82,7 +82,7 @@ export function Sidebar({ role, companyName, logoUrl, retoActive }: { role: AppR
       </div>
       <nav className="py-2">
         {items.map((it) => {
-          const active = path === it.to || (it.to !== "/admin" && path.startsWith(it.to));
+          const active = path === it.to || (it.to !== "/admin" && path.startsWith(`${it.to}/`));
           const Icon = it.icon;
           return (
             <Link key={it.to} to={it.to}
