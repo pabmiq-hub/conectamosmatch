@@ -4,12 +4,12 @@ import { Menu, X, LogOut, Settings, Shield } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { NotificationsBell } from "@/components/dashboard/NotificationsBell";
 import { signOut, type AppRole } from "@/lib/auth";
-import { navByRole } from "@/components/dashboard/Sidebar";
+import { navItemsFor } from "@/components/dashboard/Sidebar";
 
-export function Topbar({ title, userName, role, companyName, logoUrl }: { title?: string; userName?: string | null; role?: AppRole; companyName?: string; logoUrl?: string | null }) {
+export function Topbar({ title, userName, role, companyName, logoUrl, retoActive }: { title?: string; userName?: string | null; role?: AppRole; companyName?: string; logoUrl?: string | null; retoActive?: boolean }) {
   const [open, setOpen] = useState(false);
   const path = useRouterState({ select: (r) => r.location.pathname });
-  const items = role ? navByRole[role] : [];
+  const items = role ? navItemsFor(role, retoActive) : [];
   const roleBadge = role === "super_admin" ? "ADMIN" : role === "sponsor" ? "SPONSOR" : "EMPRESA";
 
   return (

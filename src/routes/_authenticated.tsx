@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { dashboardPathFor, type AppRole, type AppProfile } from "@/lib/auth";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
+import { getMyActiveRetoEvent } from "@/lib/reto";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -15,6 +16,7 @@ function AuthLayout() {
   const [companyName, setCompanyName] = useState<string>("");
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [retoActive, setRetoActive] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -61,6 +63,9 @@ function AuthLayout() {
         setLogoUrl(null);
       }
       setReady(true);
+      if (role !== "super_admin") {
+        getMyActiveRetoEvent(session.user.id).then((ev) => { if (mounted) setRetoActive(!!ev); }).catch(() => {});
+      }
     })();
 
     return () => { mounted = false; sub.data.subscription.unsubscribe(); };
@@ -76,9 +81,9 @@ function AuthLayout() {
 
   return (
     <div className="min-h-screen flex bg-background">
-      <Sidebar role={profile.role} companyName={companyName} logoUrl={logoUrl} />
+      <Sidebar role={profile.role} companyName={companyName} logoUrl={logoUrl} retoActive={retoActive} />
       <div className="flex-1 flex flex-col min-w-0">
-        <Topbar userName={profile.full_name ?? profile.email} role={profile.role} companyName={companyName} logoUrl={logoUrl} title={profile.role === "super_admin" ? "Panel de administración" : ""} />
+        <Topbar userName={profile.full_name ?? profile.email} role={profile.role} companyName={companyName} logoUrl={logoUrl} retoActive={retoActive} title={profile.role === "super_admin" ? "Panel de administración" : ""} />
         <main className="flex-1 p-4 md:p-8">
           <Outlet />
         </main>

@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { signOut, type AppRole } from "@/lib/auth";
-import { LayoutDashboard, User, Search, Users, Heart, Calendar, Megaphone, ClipboardList, LogOut, Settings, Building2, UsersRound, BookmarkCheck, Inbox } from "lucide-react";
+import { LayoutDashboard, User, Search, Users, Heart, Calendar, Megaphone, ClipboardList, LogOut, Settings, Building2, UsersRound, BookmarkCheck, Inbox, Trophy } from "lucide-react";
 
 export interface NavItem {
   to: string;
@@ -45,8 +45,16 @@ export const navByRole: Record<AppRole, NavItem[]> = {
   ],
 };
 
-export function Sidebar({ role, companyName, logoUrl }: { role: AppRole; companyName: string; logoUrl?: string | null }) {
-  const items = navByRole[role];
+/** Nav items for a role, adding the Reto 2.700 entry only when the person plays in an active Reto. */
+export function navItemsFor(role: AppRole, retoActive?: boolean): NavItem[] {
+  const base = navByRole[role];
+  if (!retoActive || role === "super_admin") return base;
+  const reto: NavItem = { to: role === "sponsor" ? "/sponsor/reto" : "/empresa/reto", label: "Reto 2.700", icon: Trophy };
+  return [base[0], reto, ...base.slice(1)];
+}
+
+export function Sidebar({ role, companyName, logoUrl, retoActive }: { role: AppRole; companyName: string; logoUrl?: string | null; retoActive?: boolean }) {
+  const items = navItemsFor(role, retoActive);
   const path = useRouterState({ select: (r) => r.location.pathname });
   const roleBadge = role === "super_admin" ? "ADMIN" : role === "sponsor" ? "SPONSOR" : "EMPRESA";
 
