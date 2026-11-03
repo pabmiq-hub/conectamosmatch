@@ -1021,6 +1021,7 @@ export type Database = {
       }
       reto_missions: {
         Row: {
+          activated_at: string
           bonus_points: number
           code: string
           created_at: string
@@ -1038,6 +1039,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          activated_at?: string
           bonus_points?: number
           code: string
           created_at?: string
@@ -1055,6 +1057,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          activated_at?: string
           bonus_points?: number
           code?: string
           created_at?: string
@@ -1193,6 +1196,45 @@ export type Database = {
           },
         ]
       }
+      reto_seen: {
+        Row: {
+          event_id: string
+          item_key: string
+          kind: string
+          seen_at: string
+          user_id: string
+        }
+        Insert: {
+          event_id: string
+          item_key: string
+          kind: string
+          seen_at?: string
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          item_key?: string
+          kind?: string
+          seen_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reto_seen_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reto_seen_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sponsor_profiles: {
         Row: {
           budget_range: string | null
@@ -1304,12 +1346,21 @@ export type Database = {
         Returns: boolean
       }
       my_account_id: { Args: never; Returns: string }
+      reto_admin_mission_action: {
+        Args: { _action: string; _id: string }
+        Returns: undefined
+      }
       reto_cancel_introduction: { Args: { _id: string }; Returns: undefined }
       reto_connection_count: { Args: { _event: string }; Returns: number }
       reto_create_introduction: {
         Args: { _event: string; _p1: string; _p2: string }
         Returns: string
       }
+      reto_dismiss_popup: {
+        Args: { _event: string; _kind: string }
+        Returns: undefined
+      }
+      reto_entry_popup: { Args: { _event: string }; Returns: Json }
       reto_is_open: { Args: { _event: string }; Returns: boolean }
       reto_is_participant: {
         Args: { _event: string; _user: string }
@@ -1324,6 +1375,10 @@ export type Database = {
           progress: number
           unlocked: boolean
         }[]
+      }
+      reto_mission_unlock_at: {
+        Args: { m: Database["public"]["Tables"]["reto_missions"]["Row"] }
+        Returns: string
       }
       reto_my_introductions: {
         Args: { _event: string }
