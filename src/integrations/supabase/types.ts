@@ -750,6 +750,11 @@ export type Database = {
       }
       reto_config: {
         Row: {
+          alma_user_id: string | null
+          awards_at: string | null
+          awards_note: string | null
+          closed_at: string | null
+          closed_by: string | null
           closes_at: string | null
           created_at: string
           emergency_off: boolean
@@ -757,10 +762,16 @@ export type Database = {
           is_active: boolean
           is_closed: boolean
           missions_recalc_at: string | null
+          superconector_user_id: string | null
           target: number
           updated_at: string
         }
         Insert: {
+          alma_user_id?: string | null
+          awards_at?: string | null
+          awards_note?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
           closes_at?: string | null
           created_at?: string
           emergency_off?: boolean
@@ -768,10 +779,16 @@ export type Database = {
           is_active?: boolean
           is_closed?: boolean
           missions_recalc_at?: string | null
+          superconector_user_id?: string | null
           target?: number
           updated_at?: string
         }
         Update: {
+          alma_user_id?: string | null
+          awards_at?: string | null
+          awards_note?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
           closes_at?: string | null
           created_at?: string
           emergency_off?: boolean
@@ -779,6 +796,7 @@ export type Database = {
           is_active?: boolean
           is_closed?: boolean
           missions_recalc_at?: string | null
+          superconector_user_id?: string | null
           target?: number
           updated_at?: string
         }
@@ -1267,6 +1285,94 @@ export type Database = {
           },
         ]
       }
+      reto_snapshot_pairs: {
+        Row: {
+          event_id: string
+          frozen_at: string
+          user_a: string
+          user_b: string
+          validated_at: string | null
+        }
+        Insert: {
+          event_id: string
+          frozen_at?: string
+          user_a: string
+          user_b: string
+          validated_at?: string | null
+        }
+        Update: {
+          event_id?: string
+          frozen_at?: string
+          user_a?: string
+          user_b?: string
+          validated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reto_snapshot_pairs_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reto_snapshots: {
+        Row: {
+          bonus: number
+          cargo: string | null
+          company_name: string | null
+          connections: number
+          display_name: string
+          event_id: string
+          frozen_at: string
+          participant_type: string
+          photo_url: string | null
+          points: number
+          rank_connections: number
+          rank_points: number
+          user_id: string
+        }
+        Insert: {
+          bonus?: number
+          cargo?: string | null
+          company_name?: string | null
+          connections?: number
+          display_name: string
+          event_id: string
+          frozen_at?: string
+          participant_type: string
+          photo_url?: string | null
+          points?: number
+          rank_connections: number
+          rank_points: number
+          user_id: string
+        }
+        Update: {
+          bonus?: number
+          cargo?: string | null
+          company_name?: string | null
+          connections?: number
+          display_name?: string
+          event_id?: string
+          frozen_at?: string
+          participant_type?: string
+          photo_url?: string | null
+          points?: number
+          rank_connections?: number
+          rank_points?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reto_snapshots_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sponsor_profiles: {
         Row: {
           budget_range: string | null
@@ -1378,11 +1484,31 @@ export type Database = {
         Returns: boolean
       }
       my_account_id: { Args: never; Returns: string }
+      reto_admin_add_participants: {
+        Args: { _event: string; _users: string[] }
+        Returns: number
+      }
+      reto_admin_close: { Args: { _event: string }; Returns: boolean }
+      reto_admin_enable_event: { Args: { _event: string }; Returns: undefined }
       reto_admin_mission_action: {
         Args: { _action: string; _id: string }
         Returns: undefined
       }
+      reto_admin_remove_participants: {
+        Args: { _event: string; _users: string[] }
+        Returns: number
+      }
+      reto_admin_reopen: { Args: { _event: string }; Returns: undefined }
+      reto_admin_set_winners: {
+        Args: { _alma: string; _event: string; _note: string; _super: string }
+        Returns: undefined
+      }
+      reto_admin_summary: { Args: { _event: string }; Returns: Json }
       reto_cancel_introduction: { Args: { _id: string }; Returns: undefined }
+      reto_close_internal: {
+        Args: { _by: string; _event: string }
+        Returns: boolean
+      }
       reto_connection_count: { Args: { _event: string }; Returns: number }
       reto_create_introduction: {
         Args: { _event: string; _p1: string; _p2: string }
@@ -1393,10 +1519,25 @@ export type Database = {
         Returns: undefined
       }
       reto_entry_popup: { Args: { _event: string }; Returns: Json }
+      reto_finalize_if_due: { Args: { _event: string }; Returns: boolean }
       reto_is_open: { Args: { _event: string }; Returns: boolean }
       reto_is_participant: {
         Args: { _event: string; _user: string }
         Returns: boolean
+      }
+      reto_live_scores: {
+        Args: { _event: string }
+        Returns: {
+          bonus: number
+          cargo: string
+          company_name: string
+          connections: number
+          display_name: string
+          participant_type: string
+          photo_url: string
+          points: number
+          user_id: string
+        }[]
       }
       reto_mission_progress_for: {
         Args: { _event: string; _user: string }
