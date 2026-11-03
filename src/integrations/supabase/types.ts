@@ -792,6 +792,125 @@ export type Database = {
           },
         ]
       }
+      reto_intro_claims: {
+        Row: {
+          claimed_at: string
+          event_id: string
+          introducer_id: string
+          introduction_id: string
+          person_a: string
+          person_b: string
+        }
+        Insert: {
+          claimed_at?: string
+          event_id: string
+          introducer_id: string
+          introduction_id: string
+          person_a: string
+          person_b: string
+        }
+        Update: {
+          claimed_at?: string
+          event_id?: string
+          introducer_id?: string
+          introduction_id?: string
+          person_a?: string
+          person_b?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reto_intro_claims_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reto_intro_claims_introduction_id_fkey"
+            columns: ["introduction_id"]
+            isOneToOne: false
+            referencedRelation: "reto_introductions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reto_introductions: {
+        Row: {
+          a_confirmed_at: string | null
+          b_confirmed_at: string | null
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          event_id: string
+          id: string
+          introducer_id: string
+          person_a: string
+          person_b: string
+          status: string
+          updated_at: string
+          validated_at: string | null
+        }
+        Insert: {
+          a_confirmed_at?: string | null
+          b_confirmed_at?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          introducer_id: string
+          person_a: string
+          person_b: string
+          status?: string
+          updated_at?: string
+          validated_at?: string | null
+        }
+        Update: {
+          a_confirmed_at?: string | null
+          b_confirmed_at?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          introducer_id?: string
+          person_a?: string
+          person_b?: string
+          status?: string
+          updated_at?: string
+          validated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reto_introductions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reto_introductions_introducer_id_fkey"
+            columns: ["introducer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reto_introductions_person_a_fkey"
+            columns: ["person_a"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reto_introductions_person_b_fkey"
+            columns: ["person_b"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reto_marks: {
         Row: {
           created_at: string
@@ -844,6 +963,7 @@ export type Database = {
           awarded_at: string
           event_id: string
           id: string
+          introduction_id: string | null
           mission_id: string
           points: number
           user_id: string
@@ -853,6 +973,7 @@ export type Database = {
           awarded_at?: string
           event_id: string
           id?: string
+          introduction_id?: string | null
           mission_id: string
           points: number
           user_id: string
@@ -862,6 +983,7 @@ export type Database = {
           awarded_at?: string
           event_id?: string
           id?: string
+          introduction_id?: string | null
           mission_id?: string
           points?: number
           user_id?: string
@@ -872,6 +994,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reto_mission_awards_introduction_id_fkey"
+            columns: ["introduction_id"]
+            isOneToOne: false
+            referencedRelation: "reto_introductions"
             referencedColumns: ["id"]
           },
           {
@@ -1175,7 +1304,12 @@ export type Database = {
         Returns: boolean
       }
       my_account_id: { Args: never; Returns: string }
+      reto_cancel_introduction: { Args: { _id: string }; Returns: undefined }
       reto_connection_count: { Args: { _event: string }; Returns: number }
+      reto_create_introduction: {
+        Args: { _event: string; _p1: string; _p2: string }
+        Returns: string
+      }
       reto_is_open: { Args: { _event: string }; Returns: boolean }
       reto_is_participant: {
         Args: { _event: string; _user: string }
@@ -1189,6 +1323,22 @@ export type Database = {
           mission_id: string
           progress: number
           unlocked: boolean
+        }[]
+      }
+      reto_my_introductions: {
+        Args: { _event: string }
+        Returns: {
+          a_confirmed: boolean
+          awarded: boolean
+          b_confirmed: boolean
+          created_at: string
+          id: string
+          introducer_id: string
+          pair_connected: boolean
+          person_a: string
+          person_b: string
+          status: string
+          validated_at: string
         }[]
       }
       reto_my_missions: {
@@ -1213,13 +1363,25 @@ export type Database = {
           unlocked: boolean
         }[]
       }
+      reto_pair_connected: {
+        Args: { _a: string; _b: string; _event: string }
+        Returns: boolean
+      }
       reto_recalc_event: { Args: { _event: string }; Returns: number }
       reto_recalc_event_internal: { Args: { _event: string }; Returns: number }
+      reto_recalc_intros: {
+        Args: { _event: string; _introducer: string }
+        Returns: undefined
+      }
       reto_recalc_user: {
         Args: { _event: string; _user: string }
         Returns: undefined
       }
       reto_refresh_missions: { Args: { _event: string }; Returns: undefined }
+      reto_respond_introduction: {
+        Args: { _action: string; _id: string }
+        Returns: string
+      }
       reto_scoreboard: {
         Args: { _event: string }
         Returns: {
