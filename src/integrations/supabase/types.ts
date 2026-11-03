@@ -792,6 +792,38 @@ export type Database = {
           },
         ]
       }
+      reto_icebreakers: {
+        Row: {
+          created_at: string
+          event_id: string
+          position: number
+          question: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          position: number
+          question: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          position?: number
+          question?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reto_icebreakers_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reto_intro_claims: {
         Row: {
           claimed_at: string
@@ -1454,6 +1486,7 @@ export type Database = {
         Args: { _event: string }
         Returns: undefined
       }
+      reto_seed_icebreakers: { Args: { _event: string }; Returns: undefined }
       same_account: { Args: { _a: string; _b: string }; Returns: boolean }
     }
     Enums: {
