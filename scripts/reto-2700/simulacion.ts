@@ -196,8 +196,8 @@ async function main() {
   const g = await guardTestEvent();
   check("El evento es el oculto de pruebas y está en borrador", true, `${g.ev.title} · ${g.ev.status}`);
   check("Ningún evento real tiene el Reto activado", g.otherRetoEvents === 0, `${g.otherRetoEvents} eventos reales con Reto`);
-  const before = await realSnapshot();
   await ensure120();
+  const before = await realSnapshot();
   await resetEvent();
   const all = await participants();
   check("Hay 120 participantes ficticios en el evento de pruebas", all.length === 120, `${all.length} participantes`);
@@ -284,6 +284,22 @@ async function main() {
     check("A y otra persona se marcan a la vez → 1 conexión nueva", (await connCount(A)) === c0 + 2);
     const self = await as(A).post("reto_marks", { event_id: EV, from_user_id: UA, to_user_id: UA });
     check("Nadie puede conectarse consigo mismo", failed(self), msg(self));
+  }
+
+  area = "4 · Puntuación";
+  {
+    // A tiene 2 conexiones (C y Test 01). La 3.ª desbloquea «Rompe el hielo» (+10); perderla lo retira.
+    const rh = (await svc(`reto_missions?event_id=eq.${EV}&code=eq.rompe_hielo&select=id,threshold,bonus_points`, {}, "")).data[0];
+    const s0 = await scoreOf(A, UA);
+    await addMarks([[UA, uidT(6)], [uidT(6), UA]]);
+    const s1 = await scoreOf(A, UA);
+    check("Al llegar a 3 conexiones se concede «Rompe el hielo»", s0.connections === 2 && s1.connections === 3 && s1.bonus === s0.bonus + rh.bonus_points, `bonus ${s0.bonus}→${s1.bonus}`);
+    await svc(`reto_marks?event_id=eq.${EV}&from_user_id=eq.${uidT(6)}&to_user_id=eq.${UA}`, { method: "DELETE" });
+    const s2 = await scoreOf(A, UA);
+    const rev = await count("reto_points_log", `event_id=eq.${EV}&user_id=eq.${UA}&reason=eq.revoke`);
+    check("Al bajar del umbral se retira el bonus y queda registrado", s2.connections === 2 && s2.bonus === s0.bonus && rev > 0, `bonus ${s1.bonus}→${s2.bonus}, ${rev} retirada(s) en el registro`);
+    await addMarks([[uidT(6), UA]]);
+    check("Al recuperar la conexión vuelve el bonus", (await scoreOf(A, UA)).bonus === s1.bonus);
   }
 
   // ---------------------------------------------------------------- 5 (antes de la carga, con parejas limpias)
@@ -418,17 +434,6 @@ async function main() {
     const has = (u: string, mid: string) => awards.some((a) => a.user_id === u && a.mission_id === mid);
     const wrong = sb.filter((r) => (r.connections >= rh.threshold) !== has(r.user_id, rh.id) || (r.connections >= c27.threshold) !== has(r.user_id, c27.id));
     check("Misiones por número de conexiones se conceden solo al llegar al umbral", wrong.length === 0, `${wrong.length} errores`);
-    // Revocación: alguien con exactamente 3 conexiones pierde una
-    const target = sb.find((r) => r.connections === rh.threshold && ![UA, UB, UC].includes(r.user_id));
-    if (target) {
-      const m = marks.find((x) => x.from_user_id === target.user_id && marks.some((y) => y.from_user_id === x.to_user_id && y.to_user_id === target.user_id) && mem.has(x.to_user_id))!;
-      await svc(`reto_marks?event_id=eq.${EV}&from_user_id=eq.${m.from_user_id}&to_user_id=eq.${m.to_user_id}`, { method: "DELETE" });
-      const lost = await scoreOf(A, target.user_id);
-      const rev = await count("reto_points_log", `event_id=eq.${EV}&user_id=eq.${target.user_id}&reason=eq.revoke`);
-      check("Al bajar del umbral se retira el bonus y queda registrado", lost.connections === rh.threshold - 1 && lost.bonus <= target.bonus - rh.bonus_points && rev > 0, `bonus ${target.bonus}→${lost.bonus}, ${rev} retiradas registradas`);
-      await addMarks([[m.from_user_id, m.to_user_id]]);
-      check("Al recuperar la conexión vuelve el bonus", (await scoreOf(A, target.user_id)).bonus === target.bonus);
-    } else check("Al bajar del umbral se retira el bonus", false, "no hay nadie con exactamente 3 conexiones");
     const total = await connCount(A);
     // Aviso de hito colectivo
     if (total >= 900) {
