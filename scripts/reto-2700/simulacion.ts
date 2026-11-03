@@ -227,10 +227,11 @@ async function main() {
 
     const r6 = await as(A).post("reto_marks", { event_id: EV, from_user_id: UB, to_user_id: UC });
     check("Nadie puede marcar en nombre de otra persona", failed(r6), msg(r6));
-    await addMarks([[uidT(1), uidT(2)]]);
+    await addMarks([[uidT(1), uidT(2)], [UA, uidT(9)]]);
     const r7 = await as(A).get(`reto_marks?event_id=eq.${EV}&select=from_user_id,to_user_id`);
-    check("Cada persona solo ve sus propias marcas", (r7.data as any[]).every((m) => m.from_user_id === UA || m.to_user_id === UA), `${(r7.data as any[]).length} visibles`);
-    await svc(`reto_marks?event_id=eq.${EV}&from_user_id=eq.${uidT(1)}&to_user_id=eq.${uidT(2)}`, { method: "DELETE" });
+    const vis = r7.data as any[];
+    check("Cada persona solo ve sus propias marcas", vis.length === 1 && vis[0].to_user_id === uidT(9), `${vis.length} visible(s) de 2 existentes`);
+    await svc(`reto_marks?event_id=eq.${EV}&from_user_id=in.(${uidT(1)},${UA})&to_user_id=in.(${uidT(2)},${uidT(9)})`, { method: "DELETE" });
 
     if (realEvent) {
       const r8 = await as(A).post("reto_marks", { event_id: realEvent, from_user_id: UA, to_user_id: UB });
@@ -398,7 +399,7 @@ async function main() {
     const ids = all.map((p) => p.user_id).filter((id) => id !== NON);
     const rows: [string, string][] = [];
     const seen = new Set<string>();
-    while (rows.length < 2000) {
+    while (rows.length < 2200) {
       const a = ids[Math.floor(rand() * ids.length)], b = ids[Math.floor(rand() * ids.length)];
       if (a === b || seen.has(a + b)) continue;
       seen.add(a + b); rows.push([a, b]);
@@ -406,7 +407,7 @@ async function main() {
     }
     const tl = performance.now();
     await addMarks(rows);
-    check("Se registran ~2.000 marcas entre 119 personas", true, `${rows.length} marcas en ${Math.round((performance.now() - tl) / 1000)} s`);
+    check("Se registran ~2.200 marcas entre 119 personas", true, `${rows.length} marcas en ${Math.round((performance.now() - tl) / 1000)} s`);
     // 40 consultas simultáneas del ranking (como 40 móviles abriendo a la vez)
     const toks = [A, B, C, I, P3, P4];
     const ts = performance.now();
@@ -523,7 +524,7 @@ async function main() {
     check("Empates en el ranking reciben la misma posición", tieOk);
     const top = Math.max(...snap.map((s) => s.connections));
     const leaders = snap.filter((s) => s.connections === top);
-    check("Desempate visible: se detecta si hay empate en el 1.er puesto", true, `${leaders.length} persona(s) con ${top} conexiones`);
+    console.log(`   info: ${leaders.length} persona(s) empatadas en el 1.er puesto con ${top} conexiones`);
     const w = await as(A_).rpc("reto_admin_set_winners", { _event: EV, _super: leaders[0].user_id, _alma: null, _note: null });
     check("Un participante no puede registrar ganadores", failed(w), msg(w));
     await svc(`reto_marks?event_id=eq.${EV}&from_user_id=in.(${uidT(60)},${uidT(61)})&to_user_id=in.(${uidT(60)},${uidT(61)})`, { method: "DELETE" });
