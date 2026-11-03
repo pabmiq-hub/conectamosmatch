@@ -425,7 +425,7 @@ async function main() {
       await svc(`reto_marks?event_id=eq.${EV}&from_user_id=eq.${m.from_user_id}&to_user_id=eq.${m.to_user_id}`, { method: "DELETE" });
       const lost = await scoreOf(A, target.user_id);
       const rev = await count("reto_points_log", `event_id=eq.${EV}&user_id=eq.${target.user_id}&reason=eq.revoke`);
-      check("Al bajar del umbral se retira el bonus y queda registrado", !(awards.length && false) && lost.bonus === target.bonus - rh.bonus_points || (lost.connections === rh.threshold - 1 && rev > 0), `bonus ${target.bonus}→${lost.bonus}, ${rev} retiradas registradas`);
+      check("Al bajar del umbral se retira el bonus y queda registrado", lost.connections === rh.threshold - 1 && lost.bonus <= target.bonus - rh.bonus_points && rev > 0, `bonus ${target.bonus}→${lost.bonus}, ${rev} retiradas registradas`);
       await addMarks([[m.from_user_id, m.to_user_id]]);
       check("Al recuperar la conexión vuelve el bonus", (await scoreOf(A, target.user_id)).bonus === target.bonus);
     } else check("Al bajar del umbral se retira el bonus", false, "no hay nadie con exactamente 3 conexiones");
