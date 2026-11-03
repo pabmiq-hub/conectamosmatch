@@ -27,6 +27,7 @@ import { Route as AuthenticatedEmpresaEquipoRouteImport } from './routes/_authen
 import { Route as AuthenticatedEmpresaMiFichaRouteImport } from './routes/_authenticated/empresa/mi-ficha'
 import { Route as AuthenticatedEmpresaMisMatchesRouteImport } from './routes/_authenticated/empresa/mis-matches'
 import { Route as AuthenticatedEmpresaMisSeleccionesRouteImport } from './routes/_authenticated/empresa/mis-selecciones'
+import { Route as AuthenticatedEmpresaRetoRouteImport } from './routes/_authenticated/empresa/reto'
 import { Route as AuthenticatedEmpresaReuniones1to1RouteImport } from './routes/_authenticated/empresa/reuniones-1to1'
 import { Route as AuthenticatedEmpresaTablonRouteImport } from './routes/_authenticated/empresa/tablon'
 import { Route as AuthenticatedEmpresaVerEmpresasRouteImport } from './routes/_authenticated/empresa/ver-empresas'
@@ -38,6 +39,7 @@ import { Route as AuthenticatedSponsorMeHanSeleccionadoRouteImport } from './rou
 import { Route as AuthenticatedSponsorMiFichaRouteImport } from './routes/_authenticated/sponsor/mi-ficha'
 import { Route as AuthenticatedSponsorMisMatchesRouteImport } from './routes/_authenticated/sponsor/mis-matches'
 import { Route as AuthenticatedSponsorMisSeleccionesRouteImport } from './routes/_authenticated/sponsor/mis-selecciones'
+import { Route as AuthenticatedSponsorRetoRouteImport } from './routes/_authenticated/sponsor/reto'
 import { Route as AuthenticatedSponsorReuniones1to1RouteImport } from './routes/_authenticated/sponsor/reuniones-1to1'
 import { Route as AuthenticatedSponsorTablonRouteImport } from './routes/_authenticated/sponsor/tablon'
 import { Route as AuthenticatedSponsorVerEmpresasRouteImport } from './routes/_authenticated/sponsor/ver-empresas'
@@ -146,6 +148,12 @@ const AuthenticatedEmpresaMisSeleccionesRoute =
     path: '/empresa/mis-selecciones',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedEmpresaRetoRoute =
+  AuthenticatedEmpresaRetoRouteImport.update({
+    id: '/empresa/reto',
+    path: '/empresa/reto',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedEmpresaReuniones1to1Route =
   AuthenticatedEmpresaReuniones1to1RouteImport.update({
     id: '/empresa/reuniones-1to1',
@@ -212,6 +220,12 @@ const AuthenticatedSponsorMisSeleccionesRoute =
     path: '/sponsor/mis-selecciones',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedSponsorRetoRoute =
+  AuthenticatedSponsorRetoRouteImport.update({
+    id: '/sponsor/reto',
+    path: '/sponsor/reto',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedSponsorReuniones1to1Route =
   AuthenticatedSponsorReuniones1to1RouteImport.update({
     id: '/sponsor/reuniones-1to1',
@@ -260,6 +274,7 @@ export interface FileRoutesByFullPath {
   '/empresa/mi-ficha': typeof AuthenticatedEmpresaMiFichaRoute
   '/empresa/mis-matches': typeof AuthenticatedEmpresaMisMatchesRoute
   '/empresa/mis-selecciones': typeof AuthenticatedEmpresaMisSeleccionesRoute
+  '/empresa/reto': typeof AuthenticatedEmpresaRetoRoute
   '/empresa/reuniones-1to1': typeof AuthenticatedEmpresaReuniones1to1Route
   '/empresa/tablon': typeof AuthenticatedEmpresaTablonRoute
   '/empresa/ver-empresas': typeof AuthenticatedEmpresaVerEmpresasRoute
@@ -271,6 +286,7 @@ export interface FileRoutesByFullPath {
   '/sponsor/mi-ficha': typeof AuthenticatedSponsorMiFichaRoute
   '/sponsor/mis-matches': typeof AuthenticatedSponsorMisMatchesRoute
   '/sponsor/mis-selecciones': typeof AuthenticatedSponsorMisSeleccionesRoute
+  '/sponsor/reto': typeof AuthenticatedSponsorRetoRoute
   '/sponsor/reuniones-1to1': typeof AuthenticatedSponsorReuniones1to1Route
   '/sponsor/tablon': typeof AuthenticatedSponsorTablonRoute
   '/sponsor/ver-empresas': typeof AuthenticatedSponsorVerEmpresasRoute
@@ -295,6 +311,7 @@ export interface FileRoutesByTo {
   '/empresa/mi-ficha': typeof AuthenticatedEmpresaMiFichaRoute
   '/empresa/mis-matches': typeof AuthenticatedEmpresaMisMatchesRoute
   '/empresa/mis-selecciones': typeof AuthenticatedEmpresaMisSeleccionesRoute
+  '/empresa/reto': typeof AuthenticatedEmpresaRetoRoute
   '/empresa/reuniones-1to1': typeof AuthenticatedEmpresaReuniones1to1Route
   '/empresa/tablon': typeof AuthenticatedEmpresaTablonRoute
   '/empresa/ver-empresas': typeof AuthenticatedEmpresaVerEmpresasRoute
@@ -306,6 +323,7 @@ export interface FileRoutesByTo {
   '/sponsor/mi-ficha': typeof AuthenticatedSponsorMiFichaRoute
   '/sponsor/mis-matches': typeof AuthenticatedSponsorMisMatchesRoute
   '/sponsor/mis-selecciones': typeof AuthenticatedSponsorMisSeleccionesRoute
+  '/sponsor/reto': typeof AuthenticatedSponsorRetoRoute
   '/sponsor/reuniones-1to1': typeof AuthenticatedSponsorReuniones1to1Route
   '/sponsor/tablon': typeof AuthenticatedSponsorTablonRoute
   '/sponsor/ver-empresas': typeof AuthenticatedSponsorVerEmpresasRoute
@@ -332,6 +350,7 @@ export interface FileRoutesById {
   '/_authenticated/empresa/mi-ficha': typeof AuthenticatedEmpresaMiFichaRoute
   '/_authenticated/empresa/mis-matches': typeof AuthenticatedEmpresaMisMatchesRoute
   '/_authenticated/empresa/mis-selecciones': typeof AuthenticatedEmpresaMisSeleccionesRoute
+  '/_authenticated/empresa/reto': typeof AuthenticatedEmpresaRetoRoute
   '/_authenticated/empresa/reuniones-1to1': typeof AuthenticatedEmpresaReuniones1to1Route
   '/_authenticated/empresa/tablon': typeof AuthenticatedEmpresaTablonRoute
   '/_authenticated/empresa/ver-empresas': typeof AuthenticatedEmpresaVerEmpresasRoute
@@ -343,6 +362,7 @@ export interface FileRoutesById {
   '/_authenticated/sponsor/mi-ficha': typeof AuthenticatedSponsorMiFichaRoute
   '/_authenticated/sponsor/mis-matches': typeof AuthenticatedSponsorMisMatchesRoute
   '/_authenticated/sponsor/mis-selecciones': typeof AuthenticatedSponsorMisSeleccionesRoute
+  '/_authenticated/sponsor/reto': typeof AuthenticatedSponsorRetoRoute
   '/_authenticated/sponsor/reuniones-1to1': typeof AuthenticatedSponsorReuniones1to1Route
   '/_authenticated/sponsor/tablon': typeof AuthenticatedSponsorTablonRoute
   '/_authenticated/sponsor/ver-empresas': typeof AuthenticatedSponsorVerEmpresasRoute
@@ -369,6 +389,7 @@ export interface FileRouteTypes {
     | '/empresa/mi-ficha'
     | '/empresa/mis-matches'
     | '/empresa/mis-selecciones'
+    | '/empresa/reto'
     | '/empresa/reuniones-1to1'
     | '/empresa/tablon'
     | '/empresa/ver-empresas'
@@ -380,6 +401,7 @@ export interface FileRouteTypes {
     | '/sponsor/mi-ficha'
     | '/sponsor/mis-matches'
     | '/sponsor/mis-selecciones'
+    | '/sponsor/reto'
     | '/sponsor/reuniones-1to1'
     | '/sponsor/tablon'
     | '/sponsor/ver-empresas'
@@ -404,6 +426,7 @@ export interface FileRouteTypes {
     | '/empresa/mi-ficha'
     | '/empresa/mis-matches'
     | '/empresa/mis-selecciones'
+    | '/empresa/reto'
     | '/empresa/reuniones-1to1'
     | '/empresa/tablon'
     | '/empresa/ver-empresas'
@@ -415,6 +438,7 @@ export interface FileRouteTypes {
     | '/sponsor/mi-ficha'
     | '/sponsor/mis-matches'
     | '/sponsor/mis-selecciones'
+    | '/sponsor/reto'
     | '/sponsor/reuniones-1to1'
     | '/sponsor/tablon'
     | '/sponsor/ver-empresas'
@@ -440,6 +464,7 @@ export interface FileRouteTypes {
     | '/_authenticated/empresa/mi-ficha'
     | '/_authenticated/empresa/mis-matches'
     | '/_authenticated/empresa/mis-selecciones'
+    | '/_authenticated/empresa/reto'
     | '/_authenticated/empresa/reuniones-1to1'
     | '/_authenticated/empresa/tablon'
     | '/_authenticated/empresa/ver-empresas'
@@ -451,6 +476,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sponsor/mi-ficha'
     | '/_authenticated/sponsor/mis-matches'
     | '/_authenticated/sponsor/mis-selecciones'
+    | '/_authenticated/sponsor/reto'
     | '/_authenticated/sponsor/reuniones-1to1'
     | '/_authenticated/sponsor/tablon'
     | '/_authenticated/sponsor/ver-empresas'
@@ -594,6 +620,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEmpresaMisSeleccionesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/empresa/reto': {
+      id: '/_authenticated/empresa/reto'
+      path: '/empresa/reto'
+      fullPath: '/empresa/reto'
+      preLoaderRoute: typeof AuthenticatedEmpresaRetoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/empresa/reuniones-1to1': {
       id: '/_authenticated/empresa/reuniones-1to1'
       path: '/empresa/reuniones-1to1'
@@ -671,6 +704,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSponsorMisSeleccionesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/sponsor/reto': {
+      id: '/_authenticated/sponsor/reto'
+      path: '/sponsor/reto'
+      fullPath: '/sponsor/reto'
+      preLoaderRoute: typeof AuthenticatedSponsorRetoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/sponsor/reuniones-1to1': {
       id: '/_authenticated/sponsor/reuniones-1to1'
       path: '/sponsor/reuniones-1to1'
@@ -741,6 +781,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedEmpresaMiFichaRoute: typeof AuthenticatedEmpresaMiFichaRoute
   AuthenticatedEmpresaMisMatchesRoute: typeof AuthenticatedEmpresaMisMatchesRoute
   AuthenticatedEmpresaMisSeleccionesRoute: typeof AuthenticatedEmpresaMisSeleccionesRoute
+  AuthenticatedEmpresaRetoRoute: typeof AuthenticatedEmpresaRetoRoute
   AuthenticatedEmpresaReuniones1to1Route: typeof AuthenticatedEmpresaReuniones1to1Route
   AuthenticatedEmpresaTablonRoute: typeof AuthenticatedEmpresaTablonRoute
   AuthenticatedEmpresaVerEmpresasRoute: typeof AuthenticatedEmpresaVerEmpresasRoute
@@ -752,6 +793,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSponsorMiFichaRoute: typeof AuthenticatedSponsorMiFichaRoute
   AuthenticatedSponsorMisMatchesRoute: typeof AuthenticatedSponsorMisMatchesRoute
   AuthenticatedSponsorMisSeleccionesRoute: typeof AuthenticatedSponsorMisSeleccionesRoute
+  AuthenticatedSponsorRetoRoute: typeof AuthenticatedSponsorRetoRoute
   AuthenticatedSponsorReuniones1to1Route: typeof AuthenticatedSponsorReuniones1to1Route
   AuthenticatedSponsorTablonRoute: typeof AuthenticatedSponsorTablonRoute
   AuthenticatedSponsorVerEmpresasRoute: typeof AuthenticatedSponsorVerEmpresasRoute
@@ -773,6 +815,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedEmpresaMisMatchesRoute: AuthenticatedEmpresaMisMatchesRoute,
   AuthenticatedEmpresaMisSeleccionesRoute:
     AuthenticatedEmpresaMisSeleccionesRoute,
+  AuthenticatedEmpresaRetoRoute: AuthenticatedEmpresaRetoRoute,
   AuthenticatedEmpresaReuniones1to1Route:
     AuthenticatedEmpresaReuniones1to1Route,
   AuthenticatedEmpresaTablonRoute: AuthenticatedEmpresaTablonRoute,
@@ -787,6 +830,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSponsorMisMatchesRoute: AuthenticatedSponsorMisMatchesRoute,
   AuthenticatedSponsorMisSeleccionesRoute:
     AuthenticatedSponsorMisSeleccionesRoute,
+  AuthenticatedSponsorRetoRoute: AuthenticatedSponsorRetoRoute,
   AuthenticatedSponsorReuniones1to1Route:
     AuthenticatedSponsorReuniones1to1Route,
   AuthenticatedSponsorTablonRoute: AuthenticatedSponsorTablonRoute,
