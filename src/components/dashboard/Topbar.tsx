@@ -59,7 +59,7 @@ export function Topbar({ title, userName, role, companyName, logoUrl, retoActive
             </div>
             <nav className="flex-1 py-2">
               {items.map((it) => {
-                const active = path === it.to || (it.to !== "/admin" && path.startsWith(it.to));
+                const active = path === it.to || (it.to !== "/admin" && path.startsWith(`${it.to}/`));
                 const Icon = it.icon;
                 return (
                   <Link key={it.to} to={it.to} onClick={() => setOpen(false)}

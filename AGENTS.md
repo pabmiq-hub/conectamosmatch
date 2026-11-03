@@ -1,1 +1,2 @@
 - Reto 2.700 lives in separate `reto_*` tables keyed by event_id; reciprocal connections are computed in the DB, never stored or trusted from the browser — keeps the existing likes/matches/meetings untouched.
+- Closing the Reto freezes results into `reto_snapshots`/`reto_snapshot_pairs` and `reto_scoreboard`/`reto_connection_count` read the snapshot while closed — prizes come from a stable, auditable copy; all admin writes go through `reto_admin_*` SECURITY DEFINER functions that check super_admin.

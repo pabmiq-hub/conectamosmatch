@@ -17,6 +17,7 @@ export const navByRole: Record<AppRole, NavItem[]> = {
     { to: "/admin/selecciones", label: "Selecciones", icon: BookmarkCheck },
     { to: "/admin/reuniones", label: "Reuniones 1to1", icon: ClipboardList },
     { to: "/admin/tablon", label: "Tablón", icon: Megaphone },
+    { to: "/admin/reto", label: "Reto 2.700", icon: Trophy },
     { to: "/admin/reto-misiones", label: "Misiones Reto", icon: Target },
     { to: "/admin/reto-comodines", label: "Comodines Reto", icon: MessageCircleQuestion },
   ],
@@ -81,7 +82,7 @@ export function Sidebar({ role, companyName, logoUrl, retoActive }: { role: AppR
       </div>
       <nav className="py-2">
         {items.map((it) => {
-          const active = path === it.to || (it.to !== "/admin" && path.startsWith(it.to));
+          const active = path === it.to || (it.to !== "/admin" && path.startsWith(`${it.to}/`));
           const Icon = it.icon;
           return (
             <Link key={it.to} to={it.to}

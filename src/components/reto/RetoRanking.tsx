@@ -6,6 +6,7 @@ import {
   nextThreshold, pickLeaders, rankBy, reachedThreshold, type RankedRow, type ScoreRow,
 } from "@/lib/reto";
 import { RetoProgress } from "./RetoProgress";
+import { fetchRetoConfig, finalizeIfDue, type RetoConfig } from "@/lib/reto-admin";
 import { Crown, Handshake, Heart, RefreshCw, Star, Trophy } from "lucide-react";
 import { toast } from "sonner";
 
@@ -19,10 +20,13 @@ export function RetoRanking() {
   const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState<Tab>("connections");
   const [celebrate, setCelebrate] = useState<string | null>(null);
+  const [cfg, setCfg] = useState<RetoConfig | null>(null);
 
   const load = useCallback(async (ev: string) => {
     setRefreshing(true);
     try {
+      await finalizeIfDue(ev);
+      setCfg(await fetchRetoConfig(ev));
       setRows(await fetchScoreboard(ev));
     } catch (e: any) {
       toast.error(e?.message?.includes("reto_scoreboard") ? "El ranking aún no está preparado en la base de datos." : (e?.message ?? "No se pudo cargar el ranking"));
@@ -72,6 +76,11 @@ export function RetoRanking() {
   if (loading) return <div className="text-xs text-muted-foreground text-uppercase-wide">Cargando ranking…</div>;
   if (!eventId) return <EmptyState icon={Trophy} title="El Reto 2.700 no está activo" hint="Aparecerá aquí cuando empiece el evento." />;
 
+  const closed = !!cfg?.is_closed;
+  const byId = new Map(rows.map((r) => [r.user_id, r]));
+  const official = closed && cfg?.awards_at
+    ? { sc: byId.get(cfg.superconector_user_id ?? "") ?? null, al: byId.get(cfg.alma_user_id ?? "") ?? null }
+    : null;
   const myLevel = reachedThreshold(mine?.connections ?? 0, RETO_LEVELS);
   const myNext = nextThreshold(mine?.connections ?? 0, RETO_LEVELS);
 
@@ -79,7 +88,7 @@ export function RetoRanking() {
     <div className="space-y-5">
       <PageHeader
         title="Ranking Reto 2.700"
-        subtitle="Cada conexión recíproca suma 1 al reto colectivo y 1 punto a cada persona."
+        subtitle={closed ? "Resultados finales congelados al cierre del Reto." : "Cada conexión recíproca suma 1 al reto colectivo y 1 punto a cada persona."}
         right={
           <button onClick={() => load(eventId)} disabled={refreshing}
             className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-bold text-uppercase-wide hover:bg-accent disabled:opacity-50">
@@ -94,7 +103,13 @@ export function RetoRanking() {
         </div>
       )}
 
-      <RetoProgress value={collective} />
+      {closed && (
+        <div className="rounded-lg border border-border bg-muted px-4 py-3 text-sm">
+          <b>El Reto ha terminado.</b> {official ? "Ganadores confirmados por la organización." : "La organización confirmará los ganadores en breve."}
+        </div>
+      )}
+
+      <RetoProgress value={collective} target={cfg?.target ?? 2700} />
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Stat icon={Handshake} label="Mis conexiones" value={mine?.connections ?? 0}
@@ -105,8 +120,8 @@ export function RetoRanking() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <Leader icon={Trophy} title="Superconector" row={leaders.superconector} tie={leaders.superTie} unit="conexiones" metric="connections" />
-        <Leader icon={Heart} title="Alma Conectamos" row={leaders.alma} tie={leaders.almaTie} unit="puntos" metric="points" />
+        <Leader icon={Trophy} title="Superconector" row={official ? official.sc : leaders.superconector} tie={!official && leaders.superTie} unit="conexiones" metric="connections" tag={official ? "ganador" : closed ? "pendiente de confirmar" : "líder provisional"} />
+        <Leader icon={Heart} title="Alma Conectamos" row={official ? official.al : leaders.alma} tie={!official && leaders.almaTie} unit="puntos" metric="points" tag={official ? "ganador" : closed ? "pendiente de confirmar" : "líder provisional"} />
       </div>
 
       <div className="flex gap-2">
@@ -163,10 +178,10 @@ function Stat({ icon: Icon, label, value, hint }: { icon: typeof Trophy; label: 
   );
 }
 
-function Leader({ icon: Icon, title, row, tie, unit, metric }: { icon: typeof Trophy; title: string; row: RankedRow | null; tie: boolean; unit: string; metric: "connections" | "points" }) {
+function Leader({ icon: Icon, title, row, tie, unit, metric, tag }: { icon: typeof Trophy; title: string; row: ScoreRow | null; tie: boolean; unit: string; metric: "connections" | "points"; tag: string }) {
   return (
     <div className="rounded-xl border border-primary/40 bg-primary/5 p-4">
-      <div className="flex items-center gap-2 text-[10px] font-bold text-uppercase-wide text-primary"><Icon className="h-3.5 w-3.5" /> {title} · líder provisional</div>
+      <div className="flex items-center gap-2 text-[10px] font-bold text-uppercase-wide text-primary"><Icon className="h-3.5 w-3.5" /> {title} · {tag}</div>
       {row ? (
         <>
           <div className="mt-1 truncate text-sm font-bold">{row.display_name}{tie && <span className="ml-1 text-xs font-normal text-muted-foreground">(empate)</span>}</div>
