@@ -6,6 +6,7 @@ import { Check, Clock, Handshake, Search, Sparkles, Trophy, UserCheck } from "lu
 import { toast } from "sonner";
 import { RetoProgress } from "./RetoProgress";
 import { IntroInbox } from "./RetoIntroductions";
+import { fetchRetoConfig, finalizeIfDue, retoPhase, type RetoConfig } from "@/lib/reto-admin";
 
 type Participant = {
   user_id: string;
@@ -37,6 +38,7 @@ export function RetoAlbum() {
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [collective, setCollective] = useState<number | null>(null);
+  const [cfg, setCfg] = useState<RetoConfig | null>(null);
 
   async function loadCollective(ev: string) {
     const { data, error } = await retoDb.rpc("reto_connection_count", { _event: ev });
@@ -70,6 +72,8 @@ export function RetoAlbum() {
         const ev = await getMyActiveRetoEvent(user.id);
         setEventId(ev);
         if (!ev) return;
+        await finalizeIfDue(ev);
+        setCfg(await fetchRetoConfig(ev));
         const { data: ps, error } = await retoDb
           .from("reto_participants")
           .select("user_id, display_name, cargo, company_name, photo_url, participant_type")
@@ -118,8 +122,11 @@ export function RetoAlbum() {
     );
   }, [withStatus, filter, q]);
 
+  const phase = retoPhase(cfg, Date.now());
+  const open = phase === "abierto";
+
   async function toggle(p: Participant) {
-    if (!eventId || !me) return;
+    if (!eventId || !me || !open) return;
     setBusy(p.user_id);
     const marked = out.has(p.user_id);
     try {
@@ -160,9 +167,17 @@ export function RetoAlbum() {
         }
       />
 
-      {collective !== null && <RetoProgress value={collective} />}
+      {!open && cfg && (
+        <div className="rounded-lg border border-border bg-muted px-4 py-3 text-sm">
+          {phase === "cerrado" || phase === "cierre_pendiente"
+            ? <><b>El Reto ha terminado.</b> Tu álbum queda guardado en solo lectura y el ranking final está en «Ranking Reto».</>
+            : <><b>El Reto está en pausa.</b> Puedes ver tu álbum, pero ahora mismo no se pueden marcar conexiones.</>}
+        </div>
+      )}
 
-      {counts.por_confirmar > 0 && filter !== "por_confirmar" && (
+      {collective !== null && <RetoProgress value={collective} target={cfg?.target ?? 2700} />}
+
+      {open && counts.por_confirmar > 0 && filter !== "por_confirmar" && (
         <button onClick={() => setFilter("por_confirmar")}
           className="w-full flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 px-4 py-3 text-left text-sm">
           <Sparkles className="h-4 w-4 text-primary shrink-0" />
@@ -170,7 +185,7 @@ export function RetoAlbum() {
         </button>
       )}
 
-      {me && (
+      {me && open && (
         <IntroInbox eventId={eventId} me={me} people={people} iMarked={(id) => out.has(id)}
           onChanged={() => { loadMarks(eventId, me).catch(() => {}); }} />
       )}
@@ -207,14 +222,14 @@ export function RetoAlbum() {
                 <div className="truncate text-xs text-muted-foreground">{[p.cargo, p.company_name].filter(Boolean).join(" · ")}</div>
                 <StatusTag status={p.status} />
               </div>
-              <button disabled={busy === p.user_id} onClick={() => toggle(p)}
+              {open && <button disabled={busy === p.user_id} onClick={() => toggle(p)}
                 className={`shrink-0 rounded-lg px-3 py-2 text-xs font-bold text-uppercase-wide transition-colors disabled:opacity-50 ${
                   out.has(p.user_id)
                     ? "border border-border bg-background text-muted-foreground hover:text-foreground"
                     : "bg-primary text-primary-foreground hover:opacity-90"
                 }`}>
                 {out.has(p.user_id) ? "Desmarcar" : p.status === "por_confirmar" ? "Confirmar" : "Hemos conectado"}
-              </button>
+              </button>}
             </li>
           ))}
         </ul>
