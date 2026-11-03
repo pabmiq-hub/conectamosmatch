@@ -17,6 +17,7 @@ import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin/dashboard'
 import { Route as AuthenticatedAdminEventosRouteImport } from './routes/_authenticated/admin/eventos'
 import { Route as AuthenticatedAdminMatchesRouteImport } from './routes/_authenticated/admin/matches'
+import { Route as AuthenticatedAdminRetoComodinesRouteImport } from './routes/_authenticated/admin/reto-comodines'
 import { Route as AuthenticatedAdminRetoMisionesRouteImport } from './routes/_authenticated/admin/reto-misiones'
 import { Route as AuthenticatedAdminReunionesRouteImport } from './routes/_authenticated/admin/reuniones'
 import { Route as AuthenticatedAdminSeleccionesRouteImport } from './routes/_authenticated/admin/selecciones'
@@ -29,6 +30,7 @@ import { Route as AuthenticatedEmpresaMiFichaRouteImport } from './routes/_authe
 import { Route as AuthenticatedEmpresaMisMatchesRouteImport } from './routes/_authenticated/empresa/mis-matches'
 import { Route as AuthenticatedEmpresaMisSeleccionesRouteImport } from './routes/_authenticated/empresa/mis-selecciones'
 import { Route as AuthenticatedEmpresaRetoRouteImport } from './routes/_authenticated/empresa/reto'
+import { Route as AuthenticatedEmpresaRetoHieloRouteImport } from './routes/_authenticated/empresa/reto-hielo'
 import { Route as AuthenticatedEmpresaRetoMisionesRouteImport } from './routes/_authenticated/empresa/reto-misiones'
 import { Route as AuthenticatedEmpresaRetoRankingRouteImport } from './routes/_authenticated/empresa/reto-ranking'
 import { Route as AuthenticatedEmpresaReuniones1to1RouteImport } from './routes/_authenticated/empresa/reuniones-1to1'
@@ -43,6 +45,7 @@ import { Route as AuthenticatedSponsorMiFichaRouteImport } from './routes/_authe
 import { Route as AuthenticatedSponsorMisMatchesRouteImport } from './routes/_authenticated/sponsor/mis-matches'
 import { Route as AuthenticatedSponsorMisSeleccionesRouteImport } from './routes/_authenticated/sponsor/mis-selecciones'
 import { Route as AuthenticatedSponsorRetoRouteImport } from './routes/_authenticated/sponsor/reto'
+import { Route as AuthenticatedSponsorRetoHieloRouteImport } from './routes/_authenticated/sponsor/reto-hielo'
 import { Route as AuthenticatedSponsorRetoMisionesRouteImport } from './routes/_authenticated/sponsor/reto-misiones'
 import { Route as AuthenticatedSponsorRetoRankingRouteImport } from './routes/_authenticated/sponsor/reto-ranking'
 import { Route as AuthenticatedSponsorReuniones1to1RouteImport } from './routes/_authenticated/sponsor/reuniones-1to1'
@@ -91,6 +94,12 @@ const AuthenticatedAdminMatchesRoute =
   AuthenticatedAdminMatchesRouteImport.update({
     id: '/admin/matches',
     path: '/admin/matches',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAdminRetoComodinesRoute =
+  AuthenticatedAdminRetoComodinesRouteImport.update({
+    id: '/admin/reto-comodines',
+    path: '/admin/reto-comodines',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedAdminRetoMisionesRoute =
@@ -163,6 +172,12 @@ const AuthenticatedEmpresaRetoRoute =
   AuthenticatedEmpresaRetoRouteImport.update({
     id: '/empresa/reto',
     path: '/empresa/reto',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedEmpresaRetoHieloRoute =
+  AuthenticatedEmpresaRetoHieloRouteImport.update({
+    id: '/empresa/reto-hielo',
+    path: '/empresa/reto-hielo',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedEmpresaRetoMisionesRoute =
@@ -249,6 +264,12 @@ const AuthenticatedSponsorRetoRoute =
     path: '/sponsor/reto',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedSponsorRetoHieloRoute =
+  AuthenticatedSponsorRetoHieloRouteImport.update({
+    id: '/sponsor/reto-hielo',
+    path: '/sponsor/reto-hielo',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedSponsorRetoMisionesRoute =
   AuthenticatedSponsorRetoMisionesRouteImport.update({
     id: '/sponsor/reto-misiones',
@@ -299,6 +320,7 @@ export interface FileRoutesByFullPath {
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/eventos': typeof AuthenticatedAdminEventosRouteWithChildren
   '/admin/matches': typeof AuthenticatedAdminMatchesRoute
+  '/admin/reto-comodines': typeof AuthenticatedAdminRetoComodinesRoute
   '/admin/reto-misiones': typeof AuthenticatedAdminRetoMisionesRoute
   '/admin/reuniones': typeof AuthenticatedAdminReunionesRoute
   '/admin/selecciones': typeof AuthenticatedAdminSeleccionesRoute
@@ -311,6 +333,7 @@ export interface FileRoutesByFullPath {
   '/empresa/mis-matches': typeof AuthenticatedEmpresaMisMatchesRoute
   '/empresa/mis-selecciones': typeof AuthenticatedEmpresaMisSeleccionesRoute
   '/empresa/reto': typeof AuthenticatedEmpresaRetoRoute
+  '/empresa/reto-hielo': typeof AuthenticatedEmpresaRetoHieloRoute
   '/empresa/reto-misiones': typeof AuthenticatedEmpresaRetoMisionesRoute
   '/empresa/reto-ranking': typeof AuthenticatedEmpresaRetoRankingRoute
   '/empresa/reuniones-1to1': typeof AuthenticatedEmpresaReuniones1to1Route
@@ -325,6 +348,7 @@ export interface FileRoutesByFullPath {
   '/sponsor/mis-matches': typeof AuthenticatedSponsorMisMatchesRoute
   '/sponsor/mis-selecciones': typeof AuthenticatedSponsorMisSeleccionesRoute
   '/sponsor/reto': typeof AuthenticatedSponsorRetoRoute
+  '/sponsor/reto-hielo': typeof AuthenticatedSponsorRetoHieloRoute
   '/sponsor/reto-misiones': typeof AuthenticatedSponsorRetoMisionesRoute
   '/sponsor/reto-ranking': typeof AuthenticatedSponsorRetoRankingRoute
   '/sponsor/reuniones-1to1': typeof AuthenticatedSponsorReuniones1to1Route
@@ -341,6 +365,7 @@ export interface FileRoutesByTo {
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/eventos': typeof AuthenticatedAdminEventosRouteWithChildren
   '/admin/matches': typeof AuthenticatedAdminMatchesRoute
+  '/admin/reto-comodines': typeof AuthenticatedAdminRetoComodinesRoute
   '/admin/reto-misiones': typeof AuthenticatedAdminRetoMisionesRoute
   '/admin/reuniones': typeof AuthenticatedAdminReunionesRoute
   '/admin/selecciones': typeof AuthenticatedAdminSeleccionesRoute
@@ -353,6 +378,7 @@ export interface FileRoutesByTo {
   '/empresa/mis-matches': typeof AuthenticatedEmpresaMisMatchesRoute
   '/empresa/mis-selecciones': typeof AuthenticatedEmpresaMisSeleccionesRoute
   '/empresa/reto': typeof AuthenticatedEmpresaRetoRoute
+  '/empresa/reto-hielo': typeof AuthenticatedEmpresaRetoHieloRoute
   '/empresa/reto-misiones': typeof AuthenticatedEmpresaRetoMisionesRoute
   '/empresa/reto-ranking': typeof AuthenticatedEmpresaRetoRankingRoute
   '/empresa/reuniones-1to1': typeof AuthenticatedEmpresaReuniones1to1Route
@@ -367,6 +393,7 @@ export interface FileRoutesByTo {
   '/sponsor/mis-matches': typeof AuthenticatedSponsorMisMatchesRoute
   '/sponsor/mis-selecciones': typeof AuthenticatedSponsorMisSeleccionesRoute
   '/sponsor/reto': typeof AuthenticatedSponsorRetoRoute
+  '/sponsor/reto-hielo': typeof AuthenticatedSponsorRetoHieloRoute
   '/sponsor/reto-misiones': typeof AuthenticatedSponsorRetoMisionesRoute
   '/sponsor/reto-ranking': typeof AuthenticatedSponsorRetoRankingRoute
   '/sponsor/reuniones-1to1': typeof AuthenticatedSponsorReuniones1to1Route
@@ -385,6 +412,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/_authenticated/admin/eventos': typeof AuthenticatedAdminEventosRouteWithChildren
   '/_authenticated/admin/matches': typeof AuthenticatedAdminMatchesRoute
+  '/_authenticated/admin/reto-comodines': typeof AuthenticatedAdminRetoComodinesRoute
   '/_authenticated/admin/reto-misiones': typeof AuthenticatedAdminRetoMisionesRoute
   '/_authenticated/admin/reuniones': typeof AuthenticatedAdminReunionesRoute
   '/_authenticated/admin/selecciones': typeof AuthenticatedAdminSeleccionesRoute
@@ -397,6 +425,7 @@ export interface FileRoutesById {
   '/_authenticated/empresa/mis-matches': typeof AuthenticatedEmpresaMisMatchesRoute
   '/_authenticated/empresa/mis-selecciones': typeof AuthenticatedEmpresaMisSeleccionesRoute
   '/_authenticated/empresa/reto': typeof AuthenticatedEmpresaRetoRoute
+  '/_authenticated/empresa/reto-hielo': typeof AuthenticatedEmpresaRetoHieloRoute
   '/_authenticated/empresa/reto-misiones': typeof AuthenticatedEmpresaRetoMisionesRoute
   '/_authenticated/empresa/reto-ranking': typeof AuthenticatedEmpresaRetoRankingRoute
   '/_authenticated/empresa/reuniones-1to1': typeof AuthenticatedEmpresaReuniones1to1Route
@@ -411,6 +440,7 @@ export interface FileRoutesById {
   '/_authenticated/sponsor/mis-matches': typeof AuthenticatedSponsorMisMatchesRoute
   '/_authenticated/sponsor/mis-selecciones': typeof AuthenticatedSponsorMisSeleccionesRoute
   '/_authenticated/sponsor/reto': typeof AuthenticatedSponsorRetoRoute
+  '/_authenticated/sponsor/reto-hielo': typeof AuthenticatedSponsorRetoHieloRoute
   '/_authenticated/sponsor/reto-misiones': typeof AuthenticatedSponsorRetoMisionesRoute
   '/_authenticated/sponsor/reto-ranking': typeof AuthenticatedSponsorRetoRankingRoute
   '/_authenticated/sponsor/reuniones-1to1': typeof AuthenticatedSponsorReuniones1to1Route
@@ -429,6 +459,7 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/admin/eventos'
     | '/admin/matches'
+    | '/admin/reto-comodines'
     | '/admin/reto-misiones'
     | '/admin/reuniones'
     | '/admin/selecciones'
@@ -441,6 +472,7 @@ export interface FileRouteTypes {
     | '/empresa/mis-matches'
     | '/empresa/mis-selecciones'
     | '/empresa/reto'
+    | '/empresa/reto-hielo'
     | '/empresa/reto-misiones'
     | '/empresa/reto-ranking'
     | '/empresa/reuniones-1to1'
@@ -455,6 +487,7 @@ export interface FileRouteTypes {
     | '/sponsor/mis-matches'
     | '/sponsor/mis-selecciones'
     | '/sponsor/reto'
+    | '/sponsor/reto-hielo'
     | '/sponsor/reto-misiones'
     | '/sponsor/reto-ranking'
     | '/sponsor/reuniones-1to1'
@@ -471,6 +504,7 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/admin/eventos'
     | '/admin/matches'
+    | '/admin/reto-comodines'
     | '/admin/reto-misiones'
     | '/admin/reuniones'
     | '/admin/selecciones'
@@ -483,6 +517,7 @@ export interface FileRouteTypes {
     | '/empresa/mis-matches'
     | '/empresa/mis-selecciones'
     | '/empresa/reto'
+    | '/empresa/reto-hielo'
     | '/empresa/reto-misiones'
     | '/empresa/reto-ranking'
     | '/empresa/reuniones-1to1'
@@ -497,6 +532,7 @@ export interface FileRouteTypes {
     | '/sponsor/mis-matches'
     | '/sponsor/mis-selecciones'
     | '/sponsor/reto'
+    | '/sponsor/reto-hielo'
     | '/sponsor/reto-misiones'
     | '/sponsor/reto-ranking'
     | '/sponsor/reuniones-1to1'
@@ -514,6 +550,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/dashboard'
     | '/_authenticated/admin/eventos'
     | '/_authenticated/admin/matches'
+    | '/_authenticated/admin/reto-comodines'
     | '/_authenticated/admin/reto-misiones'
     | '/_authenticated/admin/reuniones'
     | '/_authenticated/admin/selecciones'
@@ -526,6 +563,7 @@ export interface FileRouteTypes {
     | '/_authenticated/empresa/mis-matches'
     | '/_authenticated/empresa/mis-selecciones'
     | '/_authenticated/empresa/reto'
+    | '/_authenticated/empresa/reto-hielo'
     | '/_authenticated/empresa/reto-misiones'
     | '/_authenticated/empresa/reto-ranking'
     | '/_authenticated/empresa/reuniones-1to1'
@@ -540,6 +578,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sponsor/mis-matches'
     | '/_authenticated/sponsor/mis-selecciones'
     | '/_authenticated/sponsor/reto'
+    | '/_authenticated/sponsor/reto-hielo'
     | '/_authenticated/sponsor/reto-misiones'
     | '/_authenticated/sponsor/reto-ranking'
     | '/_authenticated/sponsor/reuniones-1to1'
@@ -613,6 +652,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/matches'
       fullPath: '/admin/matches'
       preLoaderRoute: typeof AuthenticatedAdminMatchesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/admin/reto-comodines': {
+      id: '/_authenticated/admin/reto-comodines'
+      path: '/admin/reto-comodines'
+      fullPath: '/admin/reto-comodines'
+      preLoaderRoute: typeof AuthenticatedAdminRetoComodinesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/admin/reto-misiones': {
@@ -697,6 +743,13 @@ declare module '@tanstack/react-router' {
       path: '/empresa/reto'
       fullPath: '/empresa/reto'
       preLoaderRoute: typeof AuthenticatedEmpresaRetoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/empresa/reto-hielo': {
+      id: '/_authenticated/empresa/reto-hielo'
+      path: '/empresa/reto-hielo'
+      fullPath: '/empresa/reto-hielo'
+      preLoaderRoute: typeof AuthenticatedEmpresaRetoHieloRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/empresa/reto-misiones': {
@@ -797,6 +850,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSponsorRetoRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/sponsor/reto-hielo': {
+      id: '/_authenticated/sponsor/reto-hielo'
+      path: '/sponsor/reto-hielo'
+      fullPath: '/sponsor/reto-hielo'
+      preLoaderRoute: typeof AuthenticatedSponsorRetoHieloRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/sponsor/reto-misiones': {
       id: '/_authenticated/sponsor/reto-misiones'
       path: '/sponsor/reto-misiones'
@@ -871,6 +931,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
   AuthenticatedAdminEventosRoute: typeof AuthenticatedAdminEventosRouteWithChildren
   AuthenticatedAdminMatchesRoute: typeof AuthenticatedAdminMatchesRoute
+  AuthenticatedAdminRetoComodinesRoute: typeof AuthenticatedAdminRetoComodinesRoute
   AuthenticatedAdminRetoMisionesRoute: typeof AuthenticatedAdminRetoMisionesRoute
   AuthenticatedAdminReunionesRoute: typeof AuthenticatedAdminReunionesRoute
   AuthenticatedAdminSeleccionesRoute: typeof AuthenticatedAdminSeleccionesRoute
@@ -883,6 +944,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedEmpresaMisMatchesRoute: typeof AuthenticatedEmpresaMisMatchesRoute
   AuthenticatedEmpresaMisSeleccionesRoute: typeof AuthenticatedEmpresaMisSeleccionesRoute
   AuthenticatedEmpresaRetoRoute: typeof AuthenticatedEmpresaRetoRoute
+  AuthenticatedEmpresaRetoHieloRoute: typeof AuthenticatedEmpresaRetoHieloRoute
   AuthenticatedEmpresaRetoMisionesRoute: typeof AuthenticatedEmpresaRetoMisionesRoute
   AuthenticatedEmpresaRetoRankingRoute: typeof AuthenticatedEmpresaRetoRankingRoute
   AuthenticatedEmpresaReuniones1to1Route: typeof AuthenticatedEmpresaReuniones1to1Route
@@ -897,6 +959,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSponsorMisMatchesRoute: typeof AuthenticatedSponsorMisMatchesRoute
   AuthenticatedSponsorMisSeleccionesRoute: typeof AuthenticatedSponsorMisSeleccionesRoute
   AuthenticatedSponsorRetoRoute: typeof AuthenticatedSponsorRetoRoute
+  AuthenticatedSponsorRetoHieloRoute: typeof AuthenticatedSponsorRetoHieloRoute
   AuthenticatedSponsorRetoMisionesRoute: typeof AuthenticatedSponsorRetoMisionesRoute
   AuthenticatedSponsorRetoRankingRoute: typeof AuthenticatedSponsorRetoRankingRoute
   AuthenticatedSponsorReuniones1to1Route: typeof AuthenticatedSponsorReuniones1to1Route
@@ -909,6 +972,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,
   AuthenticatedAdminEventosRoute: AuthenticatedAdminEventosRouteWithChildren,
   AuthenticatedAdminMatchesRoute: AuthenticatedAdminMatchesRoute,
+  AuthenticatedAdminRetoComodinesRoute: AuthenticatedAdminRetoComodinesRoute,
   AuthenticatedAdminRetoMisionesRoute: AuthenticatedAdminRetoMisionesRoute,
   AuthenticatedAdminReunionesRoute: AuthenticatedAdminReunionesRoute,
   AuthenticatedAdminSeleccionesRoute: AuthenticatedAdminSeleccionesRoute,
@@ -922,6 +986,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedEmpresaMisSeleccionesRoute:
     AuthenticatedEmpresaMisSeleccionesRoute,
   AuthenticatedEmpresaRetoRoute: AuthenticatedEmpresaRetoRoute,
+  AuthenticatedEmpresaRetoHieloRoute: AuthenticatedEmpresaRetoHieloRoute,
   AuthenticatedEmpresaRetoMisionesRoute: AuthenticatedEmpresaRetoMisionesRoute,
   AuthenticatedEmpresaRetoRankingRoute: AuthenticatedEmpresaRetoRankingRoute,
   AuthenticatedEmpresaReuniones1to1Route:
@@ -939,6 +1004,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSponsorMisSeleccionesRoute:
     AuthenticatedSponsorMisSeleccionesRoute,
   AuthenticatedSponsorRetoRoute: AuthenticatedSponsorRetoRoute,
+  AuthenticatedSponsorRetoHieloRoute: AuthenticatedSponsorRetoHieloRoute,
   AuthenticatedSponsorRetoMisionesRoute: AuthenticatedSponsorRetoMisionesRoute,
   AuthenticatedSponsorRetoRankingRoute: AuthenticatedSponsorRetoRankingRoute,
   AuthenticatedSponsorReuniones1to1Route:

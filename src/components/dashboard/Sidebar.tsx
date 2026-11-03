@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { signOut, type AppRole } from "@/lib/auth";
-import { LayoutDashboard, User, Search, Users, Heart, Calendar, Megaphone, ClipboardList, LogOut, Settings, Building2, UsersRound, BookmarkCheck, Inbox, Trophy, Medal, Target } from "lucide-react";
+import { LayoutDashboard, User, Search, Users, Heart, Calendar, Megaphone, ClipboardList, LogOut, Settings, Building2, UsersRound, BookmarkCheck, Inbox, Trophy, Medal, Target, MessageCircleQuestion } from "lucide-react";
 
 export interface NavItem {
   to: string;
@@ -18,6 +18,7 @@ export const navByRole: Record<AppRole, NavItem[]> = {
     { to: "/admin/reuniones", label: "Reuniones 1to1", icon: ClipboardList },
     { to: "/admin/tablon", label: "Tablón", icon: Megaphone },
     { to: "/admin/reto-misiones", label: "Misiones Reto", icon: Target },
+    { to: "/admin/reto-comodines", label: "Comodines Reto", icon: MessageCircleQuestion },
   ],
   empresa: [
     { to: "/empresa/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -54,7 +55,8 @@ export function navItemsFor(role: AppRole, retoActive?: boolean): NavItem[] {
   const reto: NavItem = { to: `${prefix}/reto`, label: "Reto 2.700", icon: Trophy };
   const ranking: NavItem = { to: `${prefix}/reto-ranking`, label: "Ranking Reto", icon: Medal };
   const missions: NavItem = { to: `${prefix}/reto-misiones`, label: "Misiones Reto", icon: Target };
-  return [base[0], reto, ranking, missions, ...base.slice(1)];
+  const icebreaker: NavItem = { to: `${prefix}/reto-hielo`, label: "Rompe el hielo", icon: MessageCircleQuestion };
+  return [base[0], reto, ranking, missions, icebreaker, ...base.slice(1)];
 }
 
 export function Sidebar({ role, companyName, logoUrl, retoActive }: { role: AppRole; companyName: string; logoUrl?: string | null; retoActive?: boolean }) {
