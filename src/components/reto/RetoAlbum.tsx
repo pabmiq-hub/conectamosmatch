@@ -210,9 +210,9 @@ export function RetoAlbum() {
       {visible.length === 0 ? (
         <EmptyState icon={UserCheck} title="Nadie en esta lista" hint="Prueba con otro filtro o búsqueda." />
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {visible.map((p) => (
-            <li key={p.user_id} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
+            <li key={p.user_id} className="flex min-w-0 items-center gap-3 rounded-xl border border-border bg-card p-3">
               <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-muted flex items-center justify-center font-display text-sm font-bold">
                 {p.photo_url ? <img src={p.photo_url} alt={p.display_name} className="h-full w-full object-cover" />
                   : p.display_name.slice(0, 1).toUpperCase()}
