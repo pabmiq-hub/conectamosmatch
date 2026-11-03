@@ -5,6 +5,7 @@ import { dashboardPathFor, type AppRole, type AppProfile } from "@/lib/auth";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
 import { getMyActiveRetoEvent } from "@/lib/reto";
+import { RetoEntryPopup } from "@/components/reto/RetoEntryPopup";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -17,6 +18,7 @@ function AuthLayout() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [retoActive, setRetoActive] = useState(false);
+  const [retoEventId, setRetoEventId] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -64,7 +66,7 @@ function AuthLayout() {
       }
       setReady(true);
       if (role !== "super_admin") {
-        getMyActiveRetoEvent(session.user.id).then((ev) => { if (mounted) setRetoActive(!!ev); }).catch(() => {});
+        getMyActiveRetoEvent(session.user.id).then((ev) => { if (mounted) { setRetoActive(!!ev); setRetoEventId(ev); } }).catch(() => {});
       }
     })();
 
@@ -87,6 +89,9 @@ function AuthLayout() {
         <main className="flex-1 p-4 md:p-8">
           <Outlet />
         </main>
+        {retoEventId && profile.role !== "super_admin" && (
+          <RetoEntryPopup eventId={retoEventId} role={profile.role === "sponsor" ? "sponsor" : "empresa"} />
+        )}
       </div>
     </div>
   );

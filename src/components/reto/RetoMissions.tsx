@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import {
-  fetchMyMissions, fetchMyPointsLog, getMyActiveRetoEvent, missionMaxBonus, missionRatio, missionState,
+  fetchMyMissions, fetchMyPointsLog, formatMadrid, getMyActiveRetoEvent, missionMaxBonus, missionRatio, missionState,
   type MissionRow, type PointsLogRow,
 } from "@/lib/reto";
 import { CheckCircle2, Lock, RefreshCw, Target, Trophy, History } from "lucide-react";
@@ -162,7 +162,10 @@ function MissionCard({ m }: { m: MissionRow }) {
             {state === "completada" ? (
               <span className="text-primary">Completada · +{m.awarded_points} puntos</span>
             ) : state === "bloqueada" ? (
-              <span className="text-muted-foreground">Bloqueada · {m.blocked_reason}</span>
+              <span className="text-muted-foreground">
+                Bloqueada · {m.blocked_reason}
+                {m.blocked_reason === "Se desbloquea más tarde" && m.starts_at && ` · ${formatMadrid(m.starts_at)}`}
+              </span>
             ) : (
               <span>En curso</span>
             )}

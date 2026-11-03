@@ -268,3 +268,65 @@ export async function cancelIntroduction(id: string): Promise<void> {
   const { error } = await retoDb.rpc("reto_cancel_introduction", { _id: id });
   if (error) throw new Error(cleanDbError(error));
 }
+
+// ---------------------------------------------------------------------
+// Fase 6 · Misiones programadas, pausa y pop-ups (la hora la decide la BD)
+// ---------------------------------------------------------------------
+
+export type EntryPopup =
+  | { kind: "mission"; mission_id: string; code: string; title: string; description: string | null; bonus_points: number; max_awards: number; unlocked_at: string }
+  | { kind: "milestone"; value: number; total: number };
+
+export async function fetchEntryPopup(eventId: string): Promise<EntryPopup | null> {
+  const { data, error } = await retoDb.rpc("reto_entry_popup", { _event: eventId });
+  if (error) return null; // nunca bloquear la app por un pop-up
+  return (data as EntryPopup) ?? null;
+}
+
+export async function dismissEntryPopup(eventId: string, kind: EntryPopup["kind"]): Promise<void> {
+  await retoDb.rpc("reto_dismiss_popup", { _event: eventId, _kind: kind });
+}
+
+export type AdminMissionAction = "activate_now" | "pause" | "resume" | "disable";
+
+export async function adminMissionAction(id: string, action: AdminMissionAction): Promise<void> {
+  const { error } = await retoDb.rpc("reto_admin_mission_action", { _id: id, _action: action });
+  if (error) throw new Error(error.message?.includes("reto_admin_mission_action") ? "Falta ejecutar el SQL de la fase 6." : error.message);
+}
+
+export type AdminMissionState = "desactivada" | "pausada" | "sin_hora" | "programada" | "activa";
+
+/** Estado que ve el superadmin (solo para mostrar; la BD decide con su propia hora). */
+export function adminMissionState(
+  m: { enabled: boolean; status: string; type: string; starts_at: string | null },
+  nowMs: number,
+): AdminMissionState {
+  if (!m.enabled) return "desactivada";
+  if (m.status === "paused") return "pausada";
+  if (m.type === "sprint" && !m.starts_at) return "sin_hora";
+  if (m.starts_at && new Date(m.starts_at).getTime() > nowMs) return "programada";
+  return "activa";
+}
+
+/** Momentos del programa y qué misiones se desbloquean en cada uno. */
+export const RETO_PROGRAM: { key: string; label: string; codes: string[] }[] = [
+  { key: "bienvenida", label: "Bienvenida", codes: ["rompe_hielo", "fuera_burbuja"] },
+  { key: "coctel", label: "Cóctel", codes: ["te_presento"] },
+  { key: "cena", label: "Cena", codes: ["conexion_cruzada", "gran_puente"] },
+  { key: "dia2", label: "Segundo día", codes: ["club_27", "leyenda_27h"] },
+  { key: "final", label: "Tramo final", codes: ["sprint_final"] },
+];
+
+/** Qué hora (ISO) debe recibir cada misión según el programa. Momentos vacíos no cambian nada. */
+export function programAssignments(times: Record<string, string | null>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const p of RETO_PROGRAM) {
+    const t = times[p.key];
+    if (t) for (const c of p.codes) out[c] = t;
+  }
+  return out;
+}
+
+export function formatMadrid(iso: string): string {
+  return new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+}

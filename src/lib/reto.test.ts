@@ -101,3 +101,23 @@ describe("Reto 2.700 «¡Te presento!» (client pre-checks; the DB is the source
     expect(introMissing({ a_confirmed: true, b_confirmed: true, pair_connected: false })).toEqual(["conexion"]);
   });
 });
+
+import { adminMissionState, programAssignments } from "./reto";
+
+describe("Reto 2.700 · misiones programadas (fase 6)", () => {
+  const now = Date.parse("2026-11-26T10:00:00Z");
+  it("a mission scheduled in the future is 'programada' until its time", () => {
+    const m = { enabled: true, status: "active", type: "connections", starts_at: "2026-11-26T18:00:00Z" };
+    expect(adminMissionState(m, now)).toBe("programada");
+    expect(adminMissionState(m, Date.parse("2026-11-26T18:00:01Z"))).toBe("activa");
+  });
+  it("disabled wins over paused; paused wins over schedule; sprint needs a time", () => {
+    expect(adminMissionState({ enabled: false, status: "paused", type: "connections", starts_at: null }, now)).toBe("desactivada");
+    expect(adminMissionState({ enabled: true, status: "paused", type: "connections", starts_at: null }, now)).toBe("pausada");
+    expect(adminMissionState({ enabled: true, status: "active", type: "sprint", starts_at: null }, now)).toBe("sin_hora");
+  });
+  it("program moments map to their missions: cóctel → Te presento, segundo día → 27 y 54", () => {
+    const a = programAssignments({ coctel: "C", dia2: "D", cena: null });
+    expect(a).toEqual({ te_presento: "C", club_27: "D", leyenda_27h: "D" });
+  });
+});

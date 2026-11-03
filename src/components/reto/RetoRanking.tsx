@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import {
-  RETO_LEVELS, RETO_MILESTONES, collectiveFromRows, fetchScoreboard, getMyActiveRetoEvent,
+  RETO_LEVELS, collectiveFromRows, fetchScoreboard, getMyActiveRetoEvent,
   nextThreshold, pickLeaders, rankBy, reachedThreshold, type RankedRow, type ScoreRow,
 } from "@/lib/reto";
 import { RetoProgress } from "./RetoProgress";
@@ -51,17 +51,16 @@ export function RetoRanking() {
   const top10 = ranked.slice(0, 10);
   const meOutside = myRow && !top10.some((r) => r.user_id === me);
 
-  // Light, one-time celebrations for new collective milestones and personal levels.
+  // Light, one-time celebration for new personal levels.
+  // Collective milestones (900/1800/2700) are shown once on entry by the server-tracked pop-up.
   useEffect(() => {
     if (!eventId || !me || !rows.length) return;
     const key = `reto-celebrated:${eventId}:${me}`;
-    const seen = JSON.parse(localStorage.getItem(key) ?? '{"m":0,"l":0}');
-    const m = reachedThreshold(collective, RETO_MILESTONES);
+    const seen = JSON.parse(localStorage.getItem(key) ?? '{"l":0}');
     const l = reachedThreshold(mine?.connections ?? 0, RETO_LEVELS);
     let msg: string | null = null;
-    if (m > seen.m) msg = `¡Hito colectivo: ${m.toLocaleString("es-ES")} conexiones!`;
-    else if (l > seen.l) msg = `¡Nivel personal: ${l} conexiones!`;
-    localStorage.setItem(key, JSON.stringify({ m: Math.max(m, seen.m), l: Math.max(l, seen.l) }));
+    if (l > (seen.l ?? 0)) msg = `¡Nivel personal: ${l} conexiones!`;
+    localStorage.setItem(key, JSON.stringify({ l: Math.max(l, seen.l ?? 0) }));
     if (msg) {
       toast.success(msg);
       setCelebrate(msg);
