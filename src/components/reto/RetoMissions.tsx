@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import {
-  fetchMyMissions, fetchMyPointsLog, getMyActiveRetoEvent, missionMaxBonus, missionRatio, missionState,
+  fetchMyMissions, fetchMyPointsLog, formatMadrid, getMyActiveRetoEvent, missionMaxBonus, missionRatio, missionState,
   type MissionRow, type PointsLogRow,
 } from "@/lib/reto";
 import { CheckCircle2, Lock, RefreshCw, Target, Trophy, History } from "lucide-react";
