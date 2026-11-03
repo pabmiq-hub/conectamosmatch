@@ -53,3 +53,24 @@ describe("Reto 2.700 scoreboard (fase 3)", () => {
     expect(nextThreshold(54, RETO_LEVELS)).toBeNull();
   });
 });
+
+import { missionMaxBonus, missionRatio, missionState } from "./reto";
+
+describe("Reto 2.700 missions display", () => {
+  it("awarded once-only mission is completed", () => {
+    expect(missionState({ awarded_count: 1, max_awards: 1, blocked_reason: null })).toBe("completada");
+  });
+  it("not yet reached and open → in progress", () => {
+    expect(missionState({ awarded_count: 0, max_awards: 1, blocked_reason: null })).toBe("en_curso");
+  });
+  it("disabled or locked mission without award → blocked", () => {
+    expect(missionState({ awarded_count: 0, max_awards: 1, blocked_reason: "Desactivada" })).toBe("bloqueada");
+  });
+  it("progress ratio is capped at the threshold", () => {
+    expect(missionRatio(2, 3)).toBeCloseTo(2 / 3);
+    expect(missionRatio(7, 5)).toBe(1);
+  });
+  it("Te presento max bonus is 3 × 40 = 120", () => {
+    expect(missionMaxBonus({ bonus_points: 40, max_awards: 3 })).toBe(120);
+  });
+});
