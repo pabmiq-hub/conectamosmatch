@@ -330,3 +330,61 @@ export function programAssignments(times: Record<string, string | null>): Record
 export function formatMadrid(iso: string): string {
   return new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 }
+
+// ---------- Fase 7 · Rompe el hielo (27 comodines, sin puntos ni registro) ----------
+export const ICEBREAKER_COUNT = 27;
+export const RETO_DEFAULT_ICEBREAKERS: string[] = [
+  "¿Cuál fue tu primer trabajo y qué aprendiste?",
+  "¿Qué talento oculto tienes que no aparece en LinkedIn?",
+  "¿A qué te dedicarías si no trabajaras en lo tuyo?",
+  "¿Cuál ha sido tu momento más surrealista en una reunión?",
+  "¿Qué moda corporativa eliminarías mañana?",
+  "¿Qué pequeño hábito te ha cambiado la vida laboral?",
+  "¿Qué decisión profesional parecía una locura y salió bien?",
+  "¿A quién de este evento debería conocer y por qué?",
+  "¿Qué idea te llevas ya de estas 27 horas?",
+  "¿Qué trabajo nunca aceptarías?",
+  "¿Qué persona te ha enseñado más en tu carrera?",
+  "¿Qué pregunta te gustaría que te hicieran más a menudo?",
+  "¿Qué afición sorprende más cuando la cuentas?",
+  "¿Cuál ha sido tu mejor error profesional?",
+  "¿Qué has cambiado de opinión en los últimos años?",
+  "¿Qué harías con una semana sin reuniones?",
+  "¿Qué consejo darías a tu yo de 25 años?",
+  "¿Qué película describe mejor tu semana laboral?",
+  "¿Qué pequeño logro profesional te hizo especial ilusión?",
+  "¿Qué reto de RR. HH. crees que se exagera?",
+  "¿Qué proyecto te gustaría poner en marcha mañana?",
+  "¿Qué costumbre de tu empresa te enorgullece?",
+  "¿Qué aprendiste de alguien muy distinto a ti?",
+  "¿Cuál ha sido la conversación laboral más inesperada?",
+  "Si pudieras intercambiar trabajo por un día, ¿con quién sería?",
+  "¿Qué recomendarías visitar en tu ciudad?",
+  "¿A qué dos personas de este evento presentarías entre sí?",
+];
+
+/** Random index in [0, count) that is never the same as `last` (when count > 1). */
+export function pickIcebreaker(count: number, last: number | null, rand: () => number = Math.random): number {
+  if (count <= 0) return -1;
+  if (count === 1 || last === null || last < 0 || last >= count) return Math.min(count - 1, Math.floor(rand() * count));
+  const i = Math.min(count - 2, Math.floor(rand() * (count - 1)));
+  return i >= last ? i + 1 : i;
+}
+
+export type IcebreakerRow = { position: number; question: string };
+
+/** Event's 27 questions; falls back to the default catalogue for any missing slot. */
+export function mergeIcebreakers(rows: IcebreakerRow[]): string[] {
+  const out = [...RETO_DEFAULT_ICEBREAKERS];
+  for (const r of rows) {
+    const q = r.question?.trim();
+    if (r.position >= 1 && r.position <= ICEBREAKER_COUNT && q) out[r.position - 1] = q;
+  }
+  return out;
+}
+
+export async function fetchIcebreakers(eventId: string): Promise<string[]> {
+  const { data, error } = await retoDb.from("reto_icebreakers").select("position, question").eq("event_id", eventId).order("position");
+  if (error) return [...RETO_DEFAULT_ICEBREAKERS];
+  return mergeIcebreakers((data ?? []) as IcebreakerRow[]);
+}

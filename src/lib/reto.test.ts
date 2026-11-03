@@ -121,3 +121,27 @@ describe("Reto 2.700 · misiones programadas (fase 6)", () => {
     expect(a).toEqual({ te_presento: "C", club_27: "D", leyenda_27h: "D" });
   });
 });
+
+import { pickIcebreaker, mergeIcebreakers, RETO_DEFAULT_ICEBREAKERS, ICEBREAKER_COUNT } from "./reto";
+
+describe("Reto 2.700 rompe el hielo (fase 7)", () => {
+  it("the catalogue has exactly 27 questions", () => {
+    expect(RETO_DEFAULT_ICEBREAKERS).toHaveLength(ICEBREAKER_COUNT);
+    expect(ICEBREAKER_COUNT).toBe(27);
+  });
+  it("never repeats the same question immediately", () => {
+    for (let last = 0; last < 27; last++) {
+      for (const r of [0, 0.25, 0.5, 0.9999]) {
+        const i = pickIcebreaker(27, last, () => r);
+        expect(i).not.toBe(last);
+        expect(i).toBeGreaterThanOrEqual(0);
+        expect(i).toBeLessThan(27);
+      }
+    }
+  });
+  it("edited questions replace defaults; empty ones keep the default", () => {
+    const qs = mergeIcebreakers([{ position: 1, question: "Nueva" }, { position: 2, question: "  " }]);
+    expect(qs[0]).toBe("Nueva");
+    expect(qs[1]).toBe(RETO_DEFAULT_ICEBREAKERS[1]);
+  });
+});
