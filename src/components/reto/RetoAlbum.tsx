@@ -4,6 +4,7 @@ import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { retoDb, connectionStatus, getMyActiveRetoEvent, type RetoStatus } from "@/lib/reto";
 import { Check, Clock, Handshake, Search, Sparkles, Trophy, UserCheck } from "lucide-react";
 import { toast } from "sonner";
+import { RetoProgress } from "./RetoProgress";
 
 type Participant = {
   user_id: string;
@@ -34,6 +35,12 @@ export function RetoAlbum() {
   const [filter, setFilter] = useState<Filter>("todos");
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  const [collective, setCollective] = useState<number | null>(null);
+
+  async function loadCollective(ev: string) {
+    const { data, error } = await retoDb.rpc("reto_connection_count", { _event: ev });
+    if (!error) setCollective(Number(data) || 0);
+  }
 
   async function loadMarks(ev: string, uid: string) {
     const { data, error } = await retoDb
@@ -50,6 +57,7 @@ export function RetoAlbum() {
     }
     setOut(o);
     setInc(i);
+    loadCollective(ev).catch(() => {});
   }
 
   useEffect(() => {
@@ -150,6 +158,8 @@ export function RetoAlbum() {
           </div>
         }
       />
+
+      {collective !== null && <RetoProgress value={collective} />}
 
       {counts.por_confirmar > 0 && filter !== "por_confirmar" && (
         <button onClick={() => setFilter("por_confirmar")}
