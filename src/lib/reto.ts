@@ -195,3 +195,76 @@ export async function fetchMyPointsLog(eventId: string, userId: string): Promise
   if (error) throw error;
   return data ?? [];
 }
+
+// ---------------------------------------------------------------------
+// Fase 5 · «¡Te presento!» (validación y puntos siempre en la base de datos)
+// ---------------------------------------------------------------------
+
+export const INTRO_MAX = 3;
+export const INTRO_POINTS = 40;
+
+export type IntroRow = {
+  id: string;
+  introducer_id: string;
+  person_a: string;
+  person_b: string;
+  a_confirmed: boolean;
+  b_confirmed: boolean;
+  pair_connected: boolean;
+  status: "pending" | "validated" | "cancelled" | "declined";
+  awarded: boolean;
+  created_at: string;
+  validated_at: string | null;
+};
+
+/** Client-side pre-check of a pick (the DB repeats every check). Returns an error message or null. */
+export function introPickError(me: string, p1: string | null, p2: string | null): string | null {
+  if (!p1 || !p2) return "Elige dos personas";
+  if (p1 === p2) return "Elige dos personas distintas";
+  if (p1 === me || p2 === me) return "No puedes presentarte a ti mismo";
+  return null;
+}
+
+/** Open slots left for a presenter: pending + validated presentations use a slot. */
+export function introSlotsLeft(rows: Pick<IntroRow, "introducer_id" | "status">[], me: string, max = INTRO_MAX): number {
+  const used = rows.filter((r) => r.introducer_id === me && (r.status === "pending" || r.status === "validated")).length;
+  return Math.max(0, max - used);
+}
+
+/** What is still missing for a presentation to validate (empty = nothing missing). */
+export function introMissing(r: Pick<IntroRow, "a_confirmed" | "b_confirmed" | "pair_connected">): ("a" | "b" | "conexion")[] {
+  const out: ("a" | "b" | "conexion")[] = [];
+  if (!r.a_confirmed) out.push("a");
+  if (!r.b_confirmed) out.push("b");
+  if (!r.pair_connected) out.push("conexion");
+  return out;
+}
+
+function cleanDbError(e: any): string {
+  const msg: string = e?.message ?? "Error";
+  if (msg.includes("reto_create_introduction") || msg.includes("reto_my_introductions")) return "«¡Te presento!» aún no está preparado en la base de datos.";
+  return msg;
+}
+
+export async function fetchMyIntroductions(eventId: string): Promise<IntroRow[]> {
+  const { data, error } = await retoDb.rpc("reto_my_introductions", { _event: eventId });
+  if (error) throw new Error(cleanDbError(error));
+  return data ?? [];
+}
+
+export async function createIntroduction(eventId: string, p1: string, p2: string): Promise<string> {
+  const { data, error } = await retoDb.rpc("reto_create_introduction", { _event: eventId, _p1: p1, _p2: p2 });
+  if (error) throw new Error(cleanDbError(error));
+  return data as string;
+}
+
+export async function respondIntroduction(id: string, action: "confirm" | "withdraw" | "decline"): Promise<string> {
+  const { data, error } = await retoDb.rpc("reto_respond_introduction", { _id: id, _action: action });
+  if (error) throw new Error(cleanDbError(error));
+  return data as string;
+}
+
+export async function cancelIntroduction(id: string): Promise<void> {
+  const { error } = await retoDb.rpc("reto_cancel_introduction", { _id: id });
+  if (error) throw new Error(cleanDbError(error));
+}
