@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { signOut, type AppRole } from "@/lib/auth";
-import { LayoutDashboard, User, Search, Users, Heart, Calendar, Megaphone, ClipboardList, LogOut, Settings, Building2, UsersRound, BookmarkCheck, Inbox, Trophy } from "lucide-react";
+import { LayoutDashboard, User, Search, Users, Heart, Calendar, Megaphone, ClipboardList, LogOut, Settings, Building2, UsersRound, BookmarkCheck, Inbox, Trophy, Medal } from "lucide-react";
 
 export interface NavItem {
   to: string;
@@ -49,8 +49,10 @@ export const navByRole: Record<AppRole, NavItem[]> = {
 export function navItemsFor(role: AppRole, retoActive?: boolean): NavItem[] {
   const base = navByRole[role];
   if (!retoActive || role === "super_admin") return base;
-  const reto: NavItem = { to: role === "sponsor" ? "/sponsor/reto" : "/empresa/reto", label: "Reto 2.700", icon: Trophy };
-  return [base[0], reto, ...base.slice(1)];
+  const prefix = role === "sponsor" ? "/sponsor" : "/empresa";
+  const reto: NavItem = { to: `${prefix}/reto`, label: "Reto 2.700", icon: Trophy };
+  const ranking: NavItem = { to: `${prefix}/reto-ranking`, label: "Ranking Reto", icon: Medal };
+  return [base[0], reto, ranking, ...base.slice(1)];
 }
 
 export function Sidebar({ role, companyName, logoUrl, retoActive }: { role: AppRole; companyName: string; logoUrl?: string | null; retoActive?: boolean }) {
