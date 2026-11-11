@@ -96,7 +96,7 @@ export function ChatPage() {
     <div className="space-y-6">
       <PageHeader title="Mensajes" subtitle="Chat privado con las cuentas con las que tienes match o reunión 1:1" />
       {convs.length === 0 ? (
-        <EmptyState icon={MessageSquare} title="Aún no tienes conversaciones" description="Podrás escribir cuando tengas un match mutuo o una reunión 1:1 asignada." />
+        <EmptyState icon={MessageSquare} title="Aún no tienes conversaciones" hint="Podrás escribir cuando tengas un match mutuo o una reunión 1:1 asignada." />
       ) : (
         <div className="grid gap-4 md:grid-cols-[300px_1fr] min-h-[560px]">
           <div className={`rounded-xl border border-border bg-card overflow-hidden ${active ? "hidden md:block" : ""}`}>
