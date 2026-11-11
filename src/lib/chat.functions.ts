@@ -37,8 +37,8 @@ export const listMyConversations = createServerFn({ method: "POST" })
 
     const [{ data: accs }, { data: msgs }, { data: reads }] = await Promise.all([
       supabaseAdmin.from(isEmp ? "sponsor_profiles" : "empresa_profiles").select("id, company_name, logo_url").in("id", ids),
-      supabaseAdmin.from("chat_messages").select("empresa_account_id, sponsor_account_id, sender_id, body, created_at").eq(mine, me.account_id).order("created_at", { ascending: false }).limit(1000),
-      supabaseAdmin.from("chat_reads").select("partner_account_id, last_read_at").eq("user_id", userId),
+      (supabaseAdmin as any).from("chat_messages").select("empresa_account_id, sponsor_account_id, sender_id, body, created_at").eq(mine, me.account_id).order("created_at", { ascending: false }).limit(1000),
+      (supabaseAdmin as any).from("chat_reads").select("partner_account_id, last_read_at").eq("user_id", userId),
     ]);
     const readMap = new Map((reads ?? []).map((r: any) => [r.partner_account_id, r.last_read_at]));
     const conversations: ChatConversation[] = ids.map((pid) => {
