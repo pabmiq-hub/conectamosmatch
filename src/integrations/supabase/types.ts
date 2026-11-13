@@ -59,6 +59,51 @@ export type Database = {
           },
         ]
       }
+      chat_messages: {
+        Row: {
+          body: string
+          created_at: string
+          empresa_account_id: string
+          id: string
+          sender_id: string
+          sponsor_account_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          empresa_account_id: string
+          id?: string
+          sender_id: string
+          sponsor_account_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          empresa_account_id?: string
+          id?: string
+          sender_id?: string
+          sponsor_account_id?: string
+        }
+        Relationships: []
+      }
+      chat_reads: {
+        Row: {
+          last_read_at: string
+          partner_account_id: string
+          user_id: string
+        }
+        Insert: {
+          last_read_at?: string
+          partner_account_id: string
+          user_id: string
+        }
+        Update: {
+          last_read_at?: string
+          partner_account_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       empresa_profiles: {
         Row: {
           company_name: string
@@ -1472,6 +1517,7 @@ export type Database = {
           skipped: number
         }[]
       }
+      chat_allowed: { Args: { _e: string; _s: string }; Returns: boolean }
       get_my_role: {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
