@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { signOut, type AppRole } from "@/lib/auth";
-import { LayoutDashboard, User, Search, Users, Heart, Calendar, Megaphone, ClipboardList, LogOut, Settings, Building2, UsersRound, BookmarkCheck, Inbox, Trophy, Medal, Target, MessageCircleQuestion, MessageSquare } from "lucide-react";
+import { LayoutDashboard, User, Search, Users, Heart, Calendar, Megaphone, ClipboardList, LogOut, Settings, Building2, UsersRound, BookmarkCheck, Inbox, Trophy, Medal, Target, MessageCircleQuestion, MessageSquare, ChevronDown } from "lucide-react";
 
 export interface NavItem {
   to: string;
@@ -62,9 +63,36 @@ export function navItemsFor(role: AppRole, retoActive?: boolean): NavItem[] {
   return [base[0], reto, ranking, missions, icebreaker, ...base.slice(1)];
 }
 
+interface NavGroup { title: string; items: NavItem[]; collapsible?: boolean }
+
+const SECTION: Record<string, string> = {
+  dashboard: "Mi cuenta", "mi-ficha": "Mi cuenta", equipo: "Mi cuenta",
+  usuarios: "Gestión", eventos: "Gestión",
+  "ver-sponsors": "Networking", "ver-empresas": "Networking", "mis-selecciones": "Networking",
+  "me-han-seleccionado": "Networking", "mis-matches": "Networking", matches: "Networking",
+  selecciones: "Networking", "reuniones-1to1": "Networking", reuniones: "Networking", mensajes: "Networking",
+  agenda: "Evento", tablon: "Evento",
+};
+const ORDER = ["Mi cuenta", "Gestión", "Networking", "Evento", "Reto 2.700"];
+
+/** Groups the flat nav list into titled sections; Reto pages go in a collapsible block. */
+export function groupNav(items: NavItem[]): NavGroup[] {
+  const map = new Map<string, NavItem[]>();
+  for (const it of items) {
+    const seg = it.to.split("/")[2] ?? "dashboard";
+    const title = seg.startsWith("reto") ? "Reto 2.700" : SECTION[seg] ?? "Mi cuenta";
+    if (!map.has(title)) map.set(title, []);
+    map.get(title)!.push(it);
+  }
+  return ORDER.filter((t) => map.has(t)).map((t) => ({ title: t, items: map.get(t)!, collapsible: t === "Reto 2.700" }));
+}
+
 export function Sidebar({ role, companyName, logoUrl, retoActive }: { role: AppRole; companyName: string; logoUrl?: string | null; retoActive?: boolean }) {
   const items = navItemsFor(role, retoActive);
   const path = useRouterState({ select: (r) => r.location.pathname });
+  const groups = groupNav(items);
+  const [openMap, setOpenMap] = useState<Record<string, boolean>>({});
+  const isActive = (it: NavItem) => path === it.to || (it.to !== "/admin" && path.startsWith(`${it.to}/`));
   const roleBadge = role === "super_admin" ? "ADMIN" : role === "sponsor" ? "SPONSOR" : "EMPRESA";
 
   return (
@@ -83,18 +111,35 @@ export function Sidebar({ role, companyName, logoUrl, retoActive }: { role: AppR
         </div>
       </div>
       <nav className="py-2">
-        {items.map((it) => {
-          const active = path === it.to || (it.to !== "/admin" && path.startsWith(`${it.to}/`));
-          const Icon = it.icon;
+        {groups.map((g) => {
+          const hasActive = g.items.some(isActive);
+          const open = g.collapsible ? (openMap[g.title] ?? hasActive) : true;
           return (
-            <Link key={it.to} to={it.to}
-              className={`relative flex items-center gap-3 px-4 py-2.5 text-xs text-uppercase-wide font-medium transition-colors ${
-                active ? "text-primary bg-sidebar-accent" : "text-sidebar-foreground hover:bg-sidebar-accent"
-              }`}>
-              {active && <span className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />}
-              <Icon className="h-4 w-4 shrink-0" />
-              <span>{it.label}</span>
-            </Link>
+            <div key={g.title} className="mb-1">
+              {g.collapsible ? (
+                <button type="button" onClick={() => setOpenMap((m) => ({ ...m, [g.title]: !open }))}
+                  className="w-full flex items-center justify-between px-4 pt-3 pb-1 text-[10px] font-bold text-uppercase-wide text-muted-foreground hover:text-foreground">
+                  <span className="flex items-center gap-1.5"><Trophy className="h-3 w-3" />{g.title}</span>
+                  <ChevronDown className={`h-3 w-3 transition-transform ${open ? "rotate-180" : ""}`} />
+                </button>
+              ) : (
+                <div className="px-4 pt-3 pb-1 text-[10px] font-bold text-uppercase-wide text-muted-foreground">{g.title}</div>
+              )}
+              {open && g.items.map((it) => {
+                const active = isActive(it);
+                const Icon = it.icon;
+                return (
+                  <Link key={it.to} to={it.to}
+                    className={`relative flex items-center gap-3 px-4 py-2 text-xs text-uppercase-wide font-medium transition-colors ${
+                      active ? "text-primary bg-sidebar-accent" : "text-sidebar-foreground hover:bg-sidebar-accent"
+                    }`}>
+                    {active && <span className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />}
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span>{it.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
           );
         })}
       </nav>
