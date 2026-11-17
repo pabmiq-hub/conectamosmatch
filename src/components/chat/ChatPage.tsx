@@ -64,6 +64,7 @@ export function ChatPage() {
     if (!me) return;
     await supabase.from("chat_dm_reads" as any).upsert({ user_id: me, partner_id: pid, last_read_at: new Date().toISOString() } as any);
     setPeople((ps) => ps.map((p) => (p.userId === pid ? { ...p, unread: 0 } : p)));
+    window.dispatchEvent(new Event("chat-read"));
   };
 
   useEffect(() => {

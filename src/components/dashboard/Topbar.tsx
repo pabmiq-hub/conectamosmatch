@@ -1,14 +1,12 @@
 import { useState } from "react";
-import { Link, useRouterState } from "@tanstack/react-router";
 import { Menu, X, LogOut, Settings, Shield } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { NotificationsBell } from "@/components/dashboard/NotificationsBell";
 import { signOut, type AppRole } from "@/lib/auth";
-import { navItemsFor } from "@/components/dashboard/Sidebar";
+import { navItemsFor, NavMenu } from "@/components/dashboard/Sidebar";
 
 export function Topbar({ title, userName, role, companyName, logoUrl, retoActive }: { title?: string; userName?: string | null; role?: AppRole; companyName?: string; logoUrl?: string | null; retoActive?: boolean }) {
   const [open, setOpen] = useState(false);
-  const path = useRouterState({ select: (r) => r.location.pathname });
   const items = role ? navItemsFor(role, retoActive) : [];
   const roleBadge = role === "super_admin" ? "ADMIN" : role === "sponsor" ? "SPONSOR" : "EMPRESA";
 
@@ -57,22 +55,7 @@ export function Topbar({ title, userName, role, companyName, logoUrl, retoActive
               </div>
               <button onClick={() => setOpen(false)} className="p-1 text-muted-foreground hover:text-foreground" aria-label="Cerrar menú"><X className="h-5 w-5" /></button>
             </div>
-            <nav className="flex-1 py-2">
-              {items.map((it) => {
-                const active = path === it.to || (it.to !== "/admin" && path.startsWith(`${it.to}/`));
-                const Icon = it.icon;
-                return (
-                  <Link key={it.to} to={it.to} onClick={() => setOpen(false)}
-                    className={`relative flex items-center gap-3 px-4 py-3 text-sm text-uppercase-wide font-medium transition-colors ${
-                      active ? "text-primary bg-sidebar-accent" : "text-sidebar-foreground hover:bg-sidebar-accent"
-                    }`}>
-                    {active && <span className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />}
-                    <Icon className="h-4 w-4 shrink-0" />
-                    <span>{it.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
+            <div className="flex-1"><NavMenu items={items} large onNavigate={() => setOpen(false)} /></div>
             <div className="p-3 border-t border-sidebar-border">
               <button onClick={() => signOut()}
                 className="w-full flex items-center gap-2 rounded-md px-3 py-2.5 text-sm text-uppercase-wide font-medium text-muted-foreground hover:bg-sidebar-accent hover:text-foreground">

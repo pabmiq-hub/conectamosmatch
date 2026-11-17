@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { retoDb, connectionStatus, getMyActiveRetoEvent, type RetoStatus } from "@/lib/reto";
-import { Check, Clock, Handshake, Search, Sparkles, Trophy, UserCheck } from "lucide-react";
+import { Check, Clock, Handshake, Search, Sparkles, Trophy, UserCheck, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { RetoProgress } from "./RetoProgress";
 import { IntroInbox } from "./RetoIntroductions";
@@ -28,6 +29,7 @@ const FILTERS: { key: Filter; label: string }[] = [
 ];
 
 export function RetoAlbum() {
+  const chatBase = useRouterState({ select: (r) => r.location.pathname }).startsWith("/sponsor") ? "/sponsor" : "/empresa";
   const [me, setMe] = useState<string | null>(null);
   const [eventId, setEventId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -222,6 +224,10 @@ export function RetoAlbum() {
                 <div className="truncate text-xs text-muted-foreground">{[p.cargo, p.company_name].filter(Boolean).join(" · ")}</div>
                 <StatusTag status={p.status} />
               </div>
+              <Link to={`${chatBase}/mensajes` as any} search={{ con: p.user_id } as any} aria-label={`Enviar mensaje a ${p.display_name}`} title="Enviar mensaje"
+                className="shrink-0 rounded-lg border border-border bg-background p-2 text-muted-foreground hover:text-primary hover:border-primary transition-colors">
+                <MessageSquare className="h-4 w-4" />
+              </Link>
               {open && <button disabled={busy === p.user_id} onClick={() => toggle(p)}
                 className={`shrink-0 rounded-lg px-3 py-2 text-xs font-bold text-uppercase-wide transition-colors disabled:opacity-50 ${
                   out.has(p.user_id)

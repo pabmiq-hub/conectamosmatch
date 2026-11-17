@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useUnreadMessages } from "@/hooks/use-unread-messages";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { signOut, type AppRole } from "@/lib/auth";
 import { LayoutDashboard, User, Search, Users, Heart, Calendar, Megaphone, ClipboardList, LogOut, Settings, Building2, UsersRound, BookmarkCheck, Inbox, Trophy, Medal, Target, MessageCircleQuestion, MessageSquare, ChevronDown } from "lucide-react";
@@ -18,7 +19,7 @@ export const navByRole: Record<AppRole, NavItem[]> = {
     { to: "/admin/selecciones", label: "Selecciones", icon: BookmarkCheck },
     { to: "/admin/reuniones", label: "Reuniones 1to1", icon: ClipboardList },
     { to: "/admin/tablon", label: "Tablón", icon: Megaphone },
-    { to: "/admin/reto", label: "Reto 2.700", icon: Trophy },
+    { to: "/admin/reto", label: "Centro de mando", icon: Trophy },
     { to: "/admin/reto-misiones", label: "Misiones Reto", icon: Target },
     { to: "/admin/reto-comodines", label: "Comodines Reto", icon: MessageCircleQuestion },
   ],
@@ -56,43 +57,103 @@ export function navItemsFor(role: AppRole, retoActive?: boolean): NavItem[] {
   const base = navByRole[role];
   if (!retoActive || role === "super_admin") return base;
   const prefix = role === "sponsor" ? "/sponsor" : "/empresa";
-  const reto: NavItem = { to: `${prefix}/reto`, label: "Reto 2.700", icon: Trophy };
+  const reto: NavItem = { to: `${prefix}/reto`, label: "Conexiones", icon: Trophy };
   const ranking: NavItem = { to: `${prefix}/reto-ranking`, label: "Ranking Reto", icon: Medal };
   const missions: NavItem = { to: `${prefix}/reto-misiones`, label: "Misiones Reto", icon: Target };
   const icebreaker: NavItem = { to: `${prefix}/reto-hielo`, label: "Rompe el hielo", icon: MessageCircleQuestion };
   return [base[0], reto, ranking, missions, icebreaker, ...base.slice(1)];
 }
 
-interface NavGroup { title: string; items: NavItem[]; collapsible?: boolean }
+interface NavGroup { title: string; icon: typeof LayoutDashboard; items: NavItem[] }
 
 const SECTION: Record<string, string> = {
-  dashboard: "Mi cuenta", "mi-ficha": "Mi cuenta", equipo: "Mi cuenta",
-  usuarios: "Gestión", eventos: "Gestión",
+  dashboard: "Inicio", "mi-ficha": "Inicio", equipo: "Inicio", usuarios: "Inicio", eventos: "Inicio",
   "ver-sponsors": "Networking", "ver-empresas": "Networking", "mis-selecciones": "Networking",
-  "me-han-seleccionado": "Networking", "mis-matches": "Networking", matches: "Networking",
-  selecciones: "Networking", "reuniones-1to1": "Networking", reuniones: "Networking", mensajes: "Networking",
-  agenda: "Evento", tablon: "Evento",
+  "me-han-seleccionado": "Networking", "mis-matches": "Networking", matches: "Networking", selecciones: "Networking",
+  "reuniones-1to1": "Agenda", reuniones: "Agenda", agenda: "Agenda", tablon: "Agenda",
+  mensajes: "Mensajes",
 };
-const ORDER = ["Mi cuenta", "Gestión", "Networking", "Evento", "Reto 2.700"];
+const GROUP_ICON: Record<string, typeof LayoutDashboard> = { Inicio: LayoutDashboard, Networking: Heart, Agenda: Calendar, Mensajes: MessageSquare, "Reto 2.700": Trophy };
+const ORDER = ["Inicio", "Networking", "Agenda", "Mensajes", "Reto 2.700"];
 
-/** Groups the flat nav list into titled sections; Reto pages go in a collapsible block. */
+/** Groups the flat nav list into a few sections; single-item sections render as direct links. */
 export function groupNav(items: NavItem[]): NavGroup[] {
   const map = new Map<string, NavItem[]>();
   for (const it of items) {
     const seg = it.to.split("/")[2] ?? "dashboard";
-    const title = seg.startsWith("reto") ? "Reto 2.700" : SECTION[seg] ?? "Mi cuenta";
+    const title = seg.startsWith("reto") ? "Reto 2.700" : SECTION[seg] ?? "Inicio";
     if (!map.has(title)) map.set(title, []);
     map.get(title)!.push(it);
   }
-  return ORDER.filter((t) => map.has(t)).map((t) => ({ title: t, items: map.get(t)!, collapsible: t === "Reto 2.700" }));
+  return ORDER.filter((t) => map.has(t)).map((t) => ({ title: t, icon: GROUP_ICON[t], items: map.get(t)! }));
+}
+
+function Badge({ n }: { n: number }) {
+  if (!n) return null;
+  return <span className="ml-auto min-w-5 h-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">{n > 99 ? "99+" : n}</span>;
+}
+
+/** Shared accordion nav for desktop sidebar and mobile drawer. */
+export function NavMenu({ items, onNavigate, large }: { items: NavItem[]; onNavigate?: () => void; large?: boolean }) {
+  const path = useRouterState({ select: (r) => r.location.pathname });
+  const unread = useUnreadMessages();
+  const groups = groupNav(items);
+  const isActive = (it: NavItem) => path === it.to || (it.to !== "/admin" && path.startsWith(`${it.to}/`));
+  const activeGroup = groups.find((g) => g.items.some(isActive))?.title ?? null;
+  const [openG, setOpenG] = useState<string | null>(activeGroup);
+  useEffect(() => { if (activeGroup) setOpenG(activeGroup); }, [activeGroup]);
+  const py = large ? "py-3 text-sm" : "py-2.5 text-xs";
+  const rowCls = (active: boolean) => `relative w-full flex items-center gap-3 px-4 ${py} text-uppercase-wide font-medium transition-colors ${active ? "text-primary bg-sidebar-accent" : "text-sidebar-foreground hover:bg-sidebar-accent"}`;
+  const countFor = (it: NavItem) => (it.to.endsWith("/mensajes") ? unread : 0);
+
+  return (
+    <nav className="py-2">
+      {groups.map((g) => {
+        const GIcon = g.icon;
+        if (g.items.length === 1) {
+          const it = g.items[0];
+          const active = isActive(it);
+          return (
+            <Link key={g.title} to={it.to} onClick={onNavigate} className={rowCls(active)}>
+              {active && <span className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />}
+              <GIcon className="h-4 w-4 shrink-0" /><span>{g.title === "Mensajes" ? "Mensajes" : it.label}</span>
+              <Badge n={countFor(it)} />
+            </Link>
+          );
+        }
+        const open = openG === g.title;
+        const groupCount = g.items.reduce((s, it) => s + countFor(it), 0);
+        return (
+          <div key={g.title}>
+            <button type="button" onClick={() => setOpenG(open ? null : g.title)} className={rowCls(false) + (activeGroup === g.title ? " !text-primary" : "")} aria-expanded={open}>
+              <GIcon className="h-4 w-4 shrink-0" /><span>{g.title}</span>
+              {!open && <Badge n={groupCount} />}
+              <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform ${groupCount && !open ? "" : "ml-auto"} ${open ? "rotate-180" : ""}`} />
+            </button>
+            {open && (
+              <div className="pb-1">
+                {g.items.map((it) => {
+                  const active = isActive(it);
+                  return (
+                    <Link key={it.to} to={it.to} onClick={onNavigate}
+                      className={`relative flex items-center gap-2 pl-11 pr-4 ${large ? "py-2.5 text-sm" : "py-2 text-xs"} transition-colors ${active ? "text-primary font-semibold bg-sidebar-accent" : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"}`}>
+                      {active && <span className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />}
+                      <span className="truncate">{it.label}</span>
+                      <Badge n={countFor(it)} />
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </nav>
+  );
 }
 
 export function Sidebar({ role, companyName, logoUrl, retoActive }: { role: AppRole; companyName: string; logoUrl?: string | null; retoActive?: boolean }) {
   const items = navItemsFor(role, retoActive);
-  const path = useRouterState({ select: (r) => r.location.pathname });
-  const groups = groupNav(items);
-  const [openMap, setOpenMap] = useState<Record<string, boolean>>({});
-  const isActive = (it: NavItem) => path === it.to || (it.to !== "/admin" && path.startsWith(`${it.to}/`));
   const roleBadge = role === "super_admin" ? "ADMIN" : role === "sponsor" ? "SPONSOR" : "EMPRESA";
 
   return (
@@ -110,39 +171,7 @@ export function Sidebar({ role, companyName, logoUrl, retoActive }: { role: AppR
           <span className="mt-1 inline-block rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground text-uppercase-wide">{roleBadge}</span>
         </div>
       </div>
-      <nav className="py-2">
-        {groups.map((g) => {
-          const hasActive = g.items.some(isActive);
-          const open = g.collapsible ? (openMap[g.title] ?? hasActive) : true;
-          return (
-            <div key={g.title} className="mb-1">
-              {g.collapsible ? (
-                <button type="button" onClick={() => setOpenMap((m) => ({ ...m, [g.title]: !open }))}
-                  className="w-full flex items-center justify-between px-4 pt-3 pb-1 text-[10px] font-bold text-uppercase-wide text-muted-foreground hover:text-foreground">
-                  <span className="flex items-center gap-1.5"><Trophy className="h-3 w-3" />{g.title}</span>
-                  <ChevronDown className={`h-3 w-3 transition-transform ${open ? "rotate-180" : ""}`} />
-                </button>
-              ) : (
-                <div className="px-4 pt-3 pb-1 text-[10px] font-bold text-uppercase-wide text-muted-foreground">{g.title}</div>
-              )}
-              {open && g.items.map((it) => {
-                const active = isActive(it);
-                const Icon = it.icon;
-                return (
-                  <Link key={it.to} to={it.to}
-                    className={`relative flex items-center gap-3 px-4 py-2 text-xs text-uppercase-wide font-medium transition-colors ${
-                      active ? "text-primary bg-sidebar-accent" : "text-sidebar-foreground hover:bg-sidebar-accent"
-                    }`}>
-                    {active && <span className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />}
-                    <Icon className="h-4 w-4 shrink-0" />
-                    <span>{it.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          );
-        })}
-      </nav>
+      <NavMenu items={items} />
       <div className="px-3 py-3 border-t border-sidebar-border">
         <button onClick={() => signOut()}
           className="w-full flex items-center gap-2 rounded-md px-3 py-2 text-xs text-uppercase-wide font-medium text-muted-foreground hover:bg-sidebar-accent hover:text-foreground">
