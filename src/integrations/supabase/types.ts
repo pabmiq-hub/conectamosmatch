@@ -59,6 +59,51 @@ export type Database = {
           },
         ]
       }
+      chat_dm: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          sender_id: string
+          user_a: string
+          user_b: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          sender_id: string
+          user_a: string
+          user_b: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+          user_a?: string
+          user_b?: string
+        }
+        Relationships: []
+      }
+      chat_dm_reads: {
+        Row: {
+          last_read_at: string
+          partner_id: string
+          user_id: string
+        }
+        Insert: {
+          last_read_at?: string
+          partner_id: string
+          user_id: string
+        }
+        Update: {
+          last_read_at?: string
+          partner_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           body: string
@@ -1518,6 +1563,7 @@ export type Database = {
         }[]
       }
       chat_allowed: { Args: { _e: string; _s: string }; Returns: boolean }
+      chat_dm_allowed: { Args: { _a: string; _b: string }; Returns: boolean }
       get_my_role: {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
