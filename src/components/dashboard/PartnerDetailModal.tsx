@@ -1,4 +1,5 @@
-import { X, Globe, MapPin, User } from "lucide-react";
+import { X, Globe, MapPin, User, MessageSquare } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { LevelBadge } from "@/components/brand/LevelBadge";
 import { Building2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -29,7 +30,7 @@ interface Props {
 
 export function PartnerDetailModal({ open, onClose, partner, hideLevel, recommended }: Props) {
   const fetchResponsables = useServerFn(listEmpresaResponsables);
-  const [team, setTeam] = useState<{ full_name: string; role: string }[]>([]);
+  const [team, setTeam] = useState<{ id?: string; full_name: string; role: string }[]>([]);
 
   useEffect(() => {
     if (!open || !partner?.user_id) { setTeam([]); return; }
@@ -40,7 +41,7 @@ export function PartnerDetailModal({ open, onClose, partner, hideLevel, recommen
         if (cancelled) return;
         const mapped = (res.responsables ?? [])
           .filter((r: any) => r?.full_name)
-          .map((r: any) => ({ full_name: r.full_name as string, role: (r.cargo ?? "") as string }));
+          .map((r: any) => ({ id: r.id as string | undefined, full_name: r.full_name as string, role: (r.cargo ?? "") as string }));
         setTeam(mapped);
       } catch { if (!cancelled) setTeam([]); }
     })();
@@ -49,7 +50,8 @@ export function PartnerDetailModal({ open, onClose, partner, hideLevel, recommen
 
   if (!open || !partner) return null;
   const fromProp = (partner.responsables ?? []).filter((r) => r?.full_name);
-  const responsables = team.length > 0 ? team : fromProp;
+  const responsables: { id?: string; full_name: string; role: string }[] = team.length > 0 ? team : fromProp;
+  const chatBase = typeof window !== "undefined" && window.location.pathname.startsWith("/sponsor") ? "/sponsor" : "/empresa";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
@@ -117,11 +119,19 @@ export function PartnerDetailModal({ open, onClose, partner, hideLevel, recommen
             ) : (
               <div className="grid gap-2 sm:grid-cols-2">
                 {responsables.map((r, i) => (
-                  <div key={i} className="rounded-md border border-border bg-background px-3 py-2">
-                    <div className="inline-flex items-center gap-2 text-sm font-bold">
-                      <User className="h-3.5 w-3.5 text-muted-foreground" /> {r.full_name}
+                  <div key={i} className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="inline-flex items-center gap-2 text-sm font-bold">
+                        <User className="h-3.5 w-3.5 text-muted-foreground" /> {r.full_name}
+                      </div>
+                      {r.role && <div className="text-[11px] text-muted-foreground mt-0.5">{r.role}</div>}
                     </div>
-                    {r.role && <div className="text-[11px] text-muted-foreground mt-0.5">{r.role}</div>}
+                    {r.id && (
+                      <Link to={`${chatBase}/mensajes` as any} search={{ con: r.id } as any} aria-label={`Enviar mensaje a ${r.full_name}`} title="Enviar mensaje"
+                        className="shrink-0 rounded-lg border border-border bg-card p-2 text-muted-foreground hover:text-primary hover:border-primary transition-colors">
+                        <MessageSquare className="h-4 w-4" />
+                      </Link>
+                    )}
                   </div>
                 ))}
               </div>
