@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      attendee_availability: {
+        Row: {
+          attends: boolean
+          blocked_ranges: Json
+          created_at: string
+          event_date: string
+          event_id: string
+          id: string
+          max_meetings: number | null
+          notes: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+        }
+        Insert: {
+          attends?: boolean
+          blocked_ranges?: Json
+          created_at?: string
+          event_date: string
+          event_id: string
+          id?: string
+          max_meetings?: number | null
+          notes?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+        }
+        Update: {
+          attends?: boolean
+          blocked_ranges?: Json
+          created_at?: string
+          event_date?: string
+          event_id?: string
+          id?: string
+          max_meetings?: number | null
+          notes?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendee_availability_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendee_availability_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bulletin_posts: {
         Row: {
           author_id: string | null

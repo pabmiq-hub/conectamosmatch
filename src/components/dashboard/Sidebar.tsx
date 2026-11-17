@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useUnreadMessages } from "@/hooks/use-unread-messages";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { signOut, type AppRole } from "@/lib/auth";
-import { LayoutDashboard, User, Search, Users, Heart, Calendar, Megaphone, ClipboardList, LogOut, Settings, Building2, UsersRound, BookmarkCheck, Inbox, Trophy, Medal, Target, MessageCircleQuestion, MessageSquare, ChevronDown } from "lucide-react";
+import { LayoutDashboard, User, Search, Users, Heart, Calendar, Megaphone, ClipboardList, LogOut, Settings, Building2, UsersRound, BookmarkCheck, Inbox, Trophy, Medal, Target, MessageCircleQuestion, MessageSquare, ChevronDown, CalendarClock } from "lucide-react";
 
 export interface NavItem {
   to: string;
@@ -31,6 +31,7 @@ export const navByRole: Record<AppRole, NavItem[]> = {
     { to: "/empresa/mis-selecciones", label: "Mis Selecciones", icon: BookmarkCheck },
     { to: "/empresa/mis-matches", label: "Mis Matches", icon: Heart },
     { to: "/empresa/reuniones-1to1", label: "Reuniones 1to1", icon: ClipboardList },
+    { to: "/empresa/disponibilidad", label: "Mi disponibilidad", icon: CalendarClock },
     { to: "/empresa/mensajes", label: "Mensajes", icon: MessageSquare },
     { to: "/empresa/equipo", label: "Mi Equipo", icon: UsersRound },
     { to: "/empresa/tablon", label: "Tablón", icon: Megaphone },
@@ -45,6 +46,7 @@ export const navByRole: Record<AppRole, NavItem[]> = {
 
     { to: "/sponsor/mis-matches", label: "Mis Matches", icon: Heart },
     { to: "/sponsor/reuniones-1to1", label: "Reuniones 1to1", icon: ClipboardList },
+    { to: "/sponsor/disponibilidad", label: "Mi disponibilidad", icon: CalendarClock },
     { to: "/sponsor/mensajes", label: "Mensajes", icon: MessageSquare },
     { to: "/sponsor/equipo", label: "Mi Equipo", icon: UsersRound },
     { to: "/sponsor/tablon", label: "Tablón", icon: Megaphone },
@@ -70,7 +72,7 @@ const SECTION: Record<string, string> = {
   dashboard: "Inicio", "mi-ficha": "Inicio", equipo: "Inicio", usuarios: "Inicio", eventos: "Inicio",
   "ver-sponsors": "Networking", "ver-empresas": "Networking", "mis-selecciones": "Networking",
   "me-han-seleccionado": "Networking", "mis-matches": "Networking", matches: "Networking", selecciones: "Networking",
-  "reuniones-1to1": "Agenda", reuniones: "Agenda", agenda: "Agenda", tablon: "Agenda",
+  "reuniones-1to1": "Agenda", reuniones: "Agenda", agenda: "Agenda", disponibilidad: "Agenda", tablon: "Agenda",
   mensajes: "Mensajes",
 };
 const GROUP_ICON: Record<string, typeof LayoutDashboard> = { Inicio: LayoutDashboard, Networking: Heart, Agenda: Calendar, Mensajes: MessageSquare, "Reto 2.700": Trophy };
