@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { SPONSOR_LEVELS } from "@/lib/sponsor-levels";
 import { X, Pencil, Wand2, Loader2, Crown, ArrowRightLeft, ShieldCheck, Save, UserPlus } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { getUserForEdit, updateUserProfile, transferAccountAdmin, resetUserPassword, listAccountMembers, updateAccountMember } from "@/lib/admin-users.functions";
@@ -368,7 +369,7 @@ export function EditUserModal({ userId, onClose, onSaved }: { userId: string; on
                   ) : (
                     <>
                       <Field label="Categoría" value={f.sponsorship_category} onChange={(v) => set("sponsorship_category", v)} />
-                      <Select label="Nivel" value={f.sponsorship_level} onChange={(v) => set("sponsorship_level", v)} options={["GOLD", "PREMIUM", "BASIC", "STARTUP"]} />
+                      <Select label="Nivel" value={f.sponsorship_level} onChange={(v) => set("sponsorship_level", v)} options={[...SPONSOR_LEVELS]} />
                     </>
                   )}
                   <Field label="Tagline" value={f.tagline} onChange={(v) => set("tagline", v)} />

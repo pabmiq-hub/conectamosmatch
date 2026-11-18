@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { sponsorLevelSchema } from "./sponsor-levels";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { assertSuperAdmin, assertBootstrapAdmin } from "./admin-shared.server";
@@ -20,7 +21,7 @@ const sponsorSchema = z.object({
   company_name: z.string().min(1).max(200),
   sector: z.string().max(120).optional().default(""),
   sponsorship_category: z.string().max(1000).optional().default(""),
-  sponsorship_level: z.enum(["GOLD","PREMIUM","BASIC","STARTUP"]).default("BASIC"),
+  sponsorship_level: sponsorLevelSchema.default("BASIC"),
   website: z.string().max(300).optional().default(""),
   linkedin_url: z.string().max(300).optional().default(""),
   tagline: z.string().max(300).optional().default(""),
@@ -392,7 +393,7 @@ const bulkRowSchema = z.object({
   looking_for: optStr, // retos que la empresa quiere resolver
   // sponsor
   sponsorship_category: optStr,
-  sponsorship_level: z.enum(["GOLD","PREMIUM","BASIC","STARTUP"]).optional(),
+  sponsorship_level: sponsorLevelSchema.optional(),
   target_audience: optStr, // retos que la solución resuelve / a quién se dirige
 });
 
@@ -709,7 +710,7 @@ const confirmedGroupSchema = z.object({
     location_city: z.string().optional().default(""),
     looking_for: z.string().optional().default(""),
     sponsorship_category: z.string().optional().default(""),
-    sponsorship_level: z.enum(["GOLD","PREMIUM","BASIC","STARTUP"]).optional(),
+    sponsorship_level: sponsorLevelSchema.optional(),
     target_audience: z.string().optional().default(""),
   }),
 });
@@ -720,6 +721,7 @@ export const confirmGroupedImport = createServerFn({ method: "POST" })
     z.object({
       groups: z.array(confirmedGroupSchema).min(1).max(200),
       rows_by_idx: z.record(z.string(), z.any()),
+      event_id: z.string().uuid().optional().nullable(),
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -731,7 +733,24 @@ export const confirmGroupedImport = createServerFn({ method: "POST" })
     const processGroup = async (g: typeof data.groups[number]) => {
       try {
         let accountId: string;
-        if (g.account_type === "empresa") {
+        const table = g.account_type === "empresa" ? "empresa_profiles" : "sponsor_profiles";
+        const { data: existing } = await supabaseAdmin.from(table).select("id").ilike("company_name", g.company_name.trim()).limit(1).maybeSingle();
+        if (existing?.id) {
+          // Cuenta ya existe: actualizar solo los campos que vienen rellenos en el Excel.
+          const patch: Record<string, any> = {};
+          for (const [k, v] of Object.entries(g.account_fields)) {
+            if (v === undefined || v === null || v === "") continue;
+            if (g.account_type === "empresa" && ["sponsorship_category", "sponsorship_level", "target_audience"].includes(k)) continue;
+            if (g.account_type === "sponsor" && ["company_size", "looking_for"].includes(k)) continue;
+            if (g.account_type === "sponsor" && k === "location_city") continue;
+            patch[k] = v;
+          }
+          if (Object.keys(patch).length) {
+            const { error: ue } = await supabaseAdmin.from(table).update(patch as any).eq("id", existing.id);
+            if (ue) throw new Error(ue.message);
+          }
+          accountId = existing.id;
+        } else if (g.account_type === "empresa") {
           const { data: prof, error: e } = await supabaseAdmin
             .from("empresa_profiles")
             .insert({
@@ -823,6 +842,15 @@ export const confirmGroupedImport = createServerFn({ method: "POST" })
               account_role,
             });
 
+            if (data.event_id) {
+              const { data: reg } = await supabaseAdmin.from("event_registrations").select("id").eq("event_id", data.event_id).eq("user_id", userId).maybeSingle();
+              if (!reg) {
+                await supabaseAdmin.from("event_registrations").insert({
+                  event_id: data.event_id, user_id: userId, role_at_event: g.account_type, status: "confirmed",
+                  attendee_name: r.full_name, attendee_email: r.email, attendee_company: g.company_name, attendee_role_title: r.role || null,
+                });
+              }
+            }
             members.push({ email: r.email, role: account_role });
           } catch (e: any) {
             failed.push({ email: r.email, error: e?.message ?? "Error" });
@@ -1206,7 +1234,7 @@ const editUserSchema = z.object({
       location_city: z.string().max(120).optional(),
       company_size: z.enum(["1-10", "11-50", "51-200", "201-500", "500+"]).optional(),
       sponsorship_category: z.string().max(120).optional(),
-      sponsorship_level: z.enum(["GOLD", "PREMIUM", "BASIC", "STARTUP"]).optional(),
+      sponsorship_level: sponsorLevelSchema.optional(),
       categories: z.array(z.string().max(200)).max(40).optional(),
       logo_url: z.string().max(1000).nullable().optional(),
     })

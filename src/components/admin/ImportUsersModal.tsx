@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { X, Upload, Download, FileSpreadsheet, Users, Crown, ArrowLeft, Scissors, Merge, Building2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -6,6 +7,36 @@ import * as XLSX from "xlsx";
 import { analyzeExcelGroups, confirmGroupedImport } from "@/lib/admin-users.functions";
 
 type AccountType = "empresa" | "sponsor";
+
+/** Cabeceras en español (o variantes) → columna interna. */
+const HEADER_ALIASES: Record<string, string> = {
+  nombre: "full_name", "nombre completo": "full_name", "nombre y apellidos": "full_name", responsable: "full_name",
+  email: "email", correo: "email", "correo electronico": "email", "e-mail": "email",
+  contrasena: "password", password: "password",
+  telefono: "phone", movil: "phone", phone: "phone",
+  puesto: "role", cargo: "role", "job title": "role", job_title: "role", role: "role",
+  empresa: "company_name", compania: "company_name", solucion: "company_name", cuenta: "company_name", company_name: "company_name",
+  sector: "sector", web: "website", website: "website", "pagina web": "website", linkedin: "linkedin_url", linkedin_url: "linkedin_url",
+  eslogan: "tagline", tagline: "tagline",
+  descripcion: "description", "descripcion empresa": "description", "descripcion de la empresa": "description", description: "description",
+  tamano: "company_size", "tamano empresa": "company_size", company_size: "company_size",
+  ciudad: "location_city", location_city: "location_city",
+  retos: "looking_for", "que busca": "looking_for", looking_for: "looking_for",
+  categoria: "sponsorship_category", sponsorship_category: "sponsorship_category",
+  modalidad: "sponsorship_level", nivel: "sponsorship_level", "tipo sponsor": "sponsorship_level", patrocinio: "sponsorship_level", sponsorship_level: "sponsorship_level",
+  "publico objetivo": "target_audience", target_audience: "target_audience",
+};
+function normHeader(h: string) {
+  return h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+}
+function mapRow(r: Record<string, unknown>) {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(r)) {
+    const key = HEADER_ALIASES[normHeader(k)] ?? k;
+    if (out[key] === undefined || out[key] === "") out[key] = v;
+  }
+  return out;
+}
 
 type GroupMember = {
   idx: number;
@@ -38,6 +69,13 @@ export function ImportUsersModal({ onClose, onDone }: { onClose: () => void; onD
   const [groups, setGroups] = useState<WorkingGroup[]>([]);
   const [rowsByIdx, setRowsByIdx] = useState<Record<string, any>>({});
   const [parseErrors, setParseErrors] = useState<{ idx: number; email: string; error: string }[]>([]);
+  const [events, setEvents] = useState<{ id: string; title: string }[]>([]);
+  const [eventId, setEventId] = useState<string>("");
+  useEffect(() => {
+    supabase.from("events").select("id, title, status").order("event_date", { ascending: false }).then(({ data }) => {
+      setEvents((data ?? []).filter((e: any) => e.status !== "cancelled"));
+    });
+  }, []);
   const [result, setResult] = useState<{ created: number; failed: { email: string; error: string }[] } | null>(null);
 
   function downloadTemplate(type: AccountType) {
@@ -45,14 +83,14 @@ export function ImportUsersModal({ onClose, onDone }: { onClose: () => void; onD
     let filename: string;
     if (type === "empresa") {
       rows = [
-        { full_name: "Ana López", email: "ana@acme.com", password: "Cambiame123", phone: "+34600000000", role: "CEO", company_name: "Acme SL", sector: "Tech", company_size: "11-50", location_city: "Madrid", website: "https://acme.com", linkedin_url: "", tagline: "", description: "" },
-        { full_name: "Luis Pérez", email: "luis@acme.com", password: "Cambiame123", phone: "", role: "Director de Marketing", company_name: "Acme SL", sector: "Tech", company_size: "11-50", location_city: "Madrid", website: "https://acme.com", linkedin_url: "", tagline: "", description: "" },
+        { Nombre: "Ana López", Email: "ana@acme.com", "Contraseña": "", "Teléfono": "+34600000000", Puesto: "CEO", Empresa: "Acme SL", "Descripción": "Qué hace la empresa", Sector: "Tech", "Tamaño": "11-50", Ciudad: "Madrid", Web: "https://acme.com", LinkedIn: "", Retos: "Qué busca en el evento" },
+        { Nombre: "Luis Pérez", Email: "luis@acme.com", "Contraseña": "", "Teléfono": "", Puesto: "Director de Marketing", Empresa: "Acme SL", "Descripción": "", Sector: "", "Tamaño": "", Ciudad: "", Web: "", LinkedIn: "", Retos: "" },
       ];
       filename = "plantilla-empresas.xlsx";
     } else {
       rows = [
-        { full_name: "Marta Ruiz", email: "marta@solucion.com", password: "Cambiame123", phone: "", role: "Head of Partnerships", company_name: "Solución SA", sector: "Cloud", location_city: "Barcelona", website: "https://solucion.com", linkedin_url: "", tagline: "", description: "", sponsorship_category: "Cloud", sponsorship_level: "GOLD", target_audience: "Retail, ecommerce y marcas que necesitan escalar su infraestructura cloud y reducir costes operativos" },
-        { full_name: "Carlos Gil", email: "carlos@solucion.com", password: "Cambiame123", phone: "", role: "Sales Manager", company_name: "Solución SA", sector: "Cloud", location_city: "Barcelona", website: "https://solucion.com", linkedin_url: "", tagline: "", description: "", sponsorship_category: "Cloud", sponsorship_level: "GOLD", target_audience: "Retail, ecommerce y marcas que necesitan escalar su infraestructura cloud y reducir costes operativos" },
+        { Nombre: "Marta Ruiz", Email: "marta@solucion.com", "Contraseña": "", "Teléfono": "", Puesto: "Head of Partnerships", Empresa: "Solución SA", "Descripción": "Qué ofrece la solución", Modalidad: "GOLD", "Categoría": "Cloud", Sector: "Cloud", Ciudad: "Barcelona", Web: "https://solucion.com", LinkedIn: "", "Público objetivo": "A quién se dirige y qué retos resuelve" },
+        { Nombre: "Carlos Gil", Email: "carlos@solucion.com", "Contraseña": "", "Teléfono": "", Puesto: "Sales Manager", Empresa: "Solución SA", "Descripción": "", Modalidad: "GOLD", "Categoría": "", Sector: "", Ciudad: "", Web: "", LinkedIn: "", "Público objetivo": "" },
       ];
       filename = "plantilla-soluciones.xlsx";
     }
@@ -76,7 +114,7 @@ export function ImportUsersModal({ onClose, onDone }: { onClose: () => void; onD
         return;
       }
       // Force account_type from the selected flow so the user doesn't have to fill it
-      const rows = rawRows.map((r) => ({ ...r, account_type: accountType }));
+      const rows = rawRows.map((r) => ({ ...mapRow(r), account_type: accountType }));
       const res = await analyzeFn({ data: { rows } });
       const wg: WorkingGroup[] = res.groups.map((g) => {
         const adminMember = g.members.find((m) => m.suggested_admin) ?? g.members[0];
@@ -152,6 +190,7 @@ export function ImportUsersModal({ onClose, onDone }: { onClose: () => void; onD
           account_fields: g.account_fields,
         })),
         rows_by_idx: rowsByIdx,
+        event_id: eventId || null,
       };
       const res = await confirmFn({ data: payload });
       setResult({ created: res.created_accounts.length, failed: res.failed });
@@ -168,8 +207,8 @@ export function ImportUsersModal({ onClose, onDone }: { onClose: () => void; onD
   const totalMembers = groups.reduce((acc, g) => acc + g.members.length, 0);
   const typeLabel = accountType === "empresa" ? "empresas" : "soluciones";
   const requiredCols = accountType === "empresa"
-    ? "full_name, email, password, company_name"
-    : "full_name, email, password, company_name, sponsorship_level";
+    ? "Nombre, Email, Empresa"
+    : "Nombre, Email, Empresa, Modalidad";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
@@ -247,7 +286,16 @@ export function ImportUsersModal({ onClose, onDone }: { onClose: () => void; onD
           <div className="space-y-5">
             <div className="rounded-lg border border-border bg-background p-4 text-xs text-muted-foreground space-y-2">
               <p>Estás importando <strong className="text-foreground">{typeLabel}</strong>. La plataforma agrupará automáticamente a las personas de la misma cuenta (por nombre o dominio de email).</p>
-              <p>Columnas obligatorias: <strong className="text-foreground">{requiredCols}</strong>. La columna <strong className="text-foreground">role</strong> es el cargo de la persona (ej. "CEO", "Director de Marketing").{accountType === "sponsor" && <> La columna <strong className="text-foreground">target_audience</strong> describe los retos que la solución resuelve y a quién se dirige.</>}</p>
+              <p>Columnas obligatorias: <strong className="text-foreground">{requiredCols}</strong>. Si falta la contraseña, se genera una automáticamente.</p>
+              <p>Puedes usar cabeceras en español: <strong className="text-foreground">Nombre, Email, Teléfono, Puesto (o Cargo), Empresa, Descripción, Sector, Web, Ciudad</strong>{accountType === "sponsor" && <>, <strong className="text-foreground">Modalidad</strong> (Platinum, Gold, Silver…; marca su tope de reuniones), <strong className="text-foreground">Categoría</strong> y <strong className="text-foreground">Público objetivo</strong></>}. El puesto y la descripción quedan precargados en «Mi Ficha» y se pueden editar.</p>
+              <p>Si la cuenta ya existe (mismo nombre), no se duplica: se completan sus datos y se añaden las personas nuevas.</p>
+            </div>
+            <div>
+              <label className="text-xs text-uppercase-wide text-muted-foreground">Inscribir en el evento (opcional)</label>
+              <select value={eventId} onChange={(e) => setEventId(e.target.value)} className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
+                <option value="">No inscribir en ningún evento</option>
+                {events.map((ev) => <option key={ev.id} value={ev.id}>{ev.title}</option>)}
+              </select>
             </div>
             <button onClick={() => downloadTemplate(accountType)} className="w-full inline-flex items-center justify-center gap-2 rounded-md border border-border py-2.5 text-xs font-bold text-uppercase-wide hover:bg-muted">
               <Download className="h-4 w-4" /> Descargar plantilla de {typeLabel}
