@@ -12,6 +12,7 @@ import { listAllParticipants } from "@/lib/admin-meetings.functions";
 import { listAgenda } from "@/lib/admin-agenda.functions";
 import { CreateMeetingModal } from "@/components/admin/CreateMeetingModal";
 import { ImportMeetingsModal } from "@/components/admin/ImportMeetingsModal";
+import { GenerateMeetingsModal } from "@/components/admin/GenerateMeetingsModal";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -61,6 +62,7 @@ function AdminReuniones() {
   const clearAll = useServerFn(clearMeetings);
   const [events, setEvents] = useState<any[]>([]);
   const { eventId, setEventId } = useAdminEvent();
+  const [showGenerate, setShowGenerate] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
   const [matches, setMatches] = useState<any[]>([]);
   const [participants, setParticipants] = useState<{ empresas: any[]; sponsors: any[] }>({ empresas: [], sponsors: [] });
@@ -283,13 +285,14 @@ function AdminReuniones() {
           <button onClick={runClear} disabled={busy || !eventId} className="inline-flex items-center gap-2 rounded-md border border-destructive/40 px-4 py-2 text-xs font-bold text-destructive text-uppercase-wide hover:bg-destructive/10 disabled:opacity-50">
             <Trash2 className="h-4 w-4" /> Limpiar reuniones
           </button>
-          <button onClick={runAuto} disabled={busy || !eventId} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide disabled:opacity-50">
-            <Wand2 className="h-4 w-4" /> {busy ? "Asignando…" : "Auto-asignar slots"}
+          <button onClick={() => setShowGenerate(true)} disabled={busy || !eventId} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide disabled:opacity-50">
+            <Wand2 className="h-4 w-4" /> Generar propuesta
           </button>
         </div>
       } />
 
       {showCreate && <CreateMeetingModal eventId={eventId || null} onClose={() => setShowCreate(false)} onCreated={load} />}
+      {showGenerate && eventId && <GenerateMeetingsModal eventId={eventId} rooms={(events.find((e: any) => e.id === eventId) as any)?.rooms ?? []} onClose={() => setShowGenerate(false)} onApproved={load} />}
       {showImport && eventId && <ImportMeetingsModal eventId={eventId} onClose={() => setShowImport(false)} onImported={load} />}
 
       <Dialog open={showSortDialog} onOpenChange={setShowSortDialog}>

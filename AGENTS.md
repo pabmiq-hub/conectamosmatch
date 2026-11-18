@@ -3,3 +3,4 @@
 - Reto 2.700 end-to-end checks live in `scripts/reto-2700/simulacion.ts` (run with bun); it only touches the hidden TEST event, verifies real data is unchanged and leaves the test event clean — rerun it after any `reto_*` SQL change.
 
 - Open chat is person-to-person in `chat_dm` (user_a < user_b); sending is gated in RLS by `chat_dm_allowed` (both active empresa/solución profiles) — permission lives in the DB, not the UI. Old `chat_messages` is kept unused.
+- Meeting proposals come from the pure engine in `src/lib/meeting-generator.ts` (tested), fed by event rules + availability; nothing is written until the admin approves the draft — keeps scheduling rules testable and reversible.

@@ -463,3 +463,125 @@ export const importMeetingsFromExcel = createServerFn({ method: "POST" })
 
     return { imported, total: data.rows.length, errors };
   });
+
+// =====================================================================
+// ============ Generador de propuestas (borrador) =====================
+// =====================================================================
+
+function madridParts(iso: string) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
+  }).formatToParts(new Date(iso));
+  const g = (t: string) => parts.find((p) => p.type === t)?.value ?? "00";
+  return { date: `${g("year")}-${g("month")}-${g("day")}`, time: `${String(Number(g("hour")) % 24).padStart(2, "0")}:${g("minute")}` };
+}
+const addMin = (t: string, n: number) => { const [h, m] = t.split(":").map(Number); const x = h * 60 + m + n; return `${String(Math.floor(x / 60)).padStart(2, "0")}:${String(x % 60).padStart(2, "0")}`; };
+
+export const generateMeetingProposal = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ event_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+    const { generateProposal } = await import("./meeting-generator");
+    const { data: ev, error: evErr } = await supabaseAdmin.from("events").select("*").eq("id", data.event_id).single();
+    if (evErr || !ev) throw new Error("Evento no encontrado");
+    const e: any = ev;
+    const slotMinutes: number = e.slot_duration_minutes ?? 15;
+    const windows = (Array.isArray(e.meeting_windows) ? e.meeting_windows : []) as any[];
+
+    const [{ data: matches }, { data: meetings }, { data: avail }, { data: sponsors }, { data: empresas }] = await Promise.all([
+      supabaseAdmin.from("matches").select("id, empresa_user_id, sponsor_user_id, empresa_account_id, sponsor_account_id").eq("event_id", data.event_id).eq("status", "mutual"),
+      supabaseAdmin.from("meetings_1to1").select("empresa_user_id, sponsor_user_id, empresa_account_id, sponsor_account_id, scheduled_time, duration_minutes, room, status").eq("event_id", data.event_id),
+      supabaseAdmin.from("attendee_availability").select("user_id, event_date, attends, blocked_ranges, max_meetings").eq("event_id", data.event_id),
+      supabaseAdmin.from("sponsor_profiles").select("id, company_name, sponsorship_level"),
+      supabaseAdmin.from("empresa_profiles").select("id, company_name"),
+    ]);
+
+    const levels = (e.sponsor_meetings_by_level ?? {}) as Record<string, number>;
+    const accountCap: Record<string, number> = {};
+    const accountName: Record<string, string> = {};
+    for (const s of sponsors ?? []) {
+      accountName[s.id] = s.company_name;
+      const lv = String(s.sponsorship_level ?? "").toUpperCase();
+      accountCap[s.id] = levels[lv] ?? e.sponsor_default_max_meetings ?? 8;
+    }
+    for (const em of empresas ?? []) { accountName[em.id] = em.company_name; accountCap[em.id] = e.empresa_max_meetings ?? 8; }
+
+    const active = (meetings ?? []).filter((m: any) => m.status !== "cancelled");
+    const pairHasMeeting = new Set(active.map((m: any) => `${m.empresa_account_id}|${m.sponsor_account_id}`));
+    const existing: any[] = [];
+    for (const m of active) {
+      if (!m.scheduled_time) continue;
+      const p = madridParts(m.scheduled_time);
+      const end = addMin(p.time, m.duration_minutes ?? slotMinutes);
+      for (const u of [m.empresa_user_id, m.sponsor_user_id]) {
+        if (!u) continue;
+        existing.push({ user_id: u, date: p.date, start: p.time, end, room: u === m.empresa_user_id ? m.room : null, empresa_account_id: m.empresa_account_id, sponsor_account_id: m.sponsor_account_id });
+      }
+    }
+
+    const seenPairs = new Set<string>();
+    const matchInputs = (matches ?? [])
+      .filter((m: any) => m.empresa_user_id && m.sponsor_user_id && m.empresa_account_id && m.sponsor_account_id)
+      .filter((m: any) => {
+        const k = `${m.empresa_account_id}|${m.sponsor_account_id}`;
+        if (pairHasMeeting.has(k) || seenPairs.has(k)) return false;
+        seenPairs.add(k); return true;
+      })
+      .map((m: any) => ({ match_id: m.id, empresa_user_id: m.empresa_user_id, sponsor_user_id: m.sponsor_user_id, empresa_account_id: m.empresa_account_id, sponsor_account_id: m.sponsor_account_id }));
+
+    const availability: Record<string, any> = {};
+    for (const a of avail ?? []) {
+      availability[`${a.user_id}|${a.event_date}`] = { attends: a.attends, blocked: (a.blocked_ranges as any[]) ?? [], max: a.max_meetings };
+    }
+
+    const result = generateProposal({ windows, slotMinutes, rooms: (e.rooms ?? []).length ? e.rooms : ["Mesa 1"], matches: matchInputs, availability, accountCap, existing });
+
+    const userIds = Array.from(new Set(matchInputs.flatMap((m) => [m.empresa_user_id, m.sponsor_user_id])));
+    const userName: Record<string, string> = {};
+    for (let i = 0; i < userIds.length; i += 200) {
+      const { data: pr } = await supabaseAdmin.from("profiles").select("id, full_name, email").in("id", userIds.slice(i, i + 200));
+      for (const p of pr ?? []) userName[p.id] = p.full_name || p.email || "";
+    }
+    return {
+      ...result,
+      accountName, userName,
+      stats: { windows: windows.length, slotMinutes, rooms: (e.rooms ?? []).length, pending: matchInputs.length },
+    };
+  });
+
+export const approveMeetingProposal = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({
+    event_id: z.string().uuid(),
+    proposals: z.array(z.object({
+      match_id: z.string().uuid().nullable(),
+      empresa_user_id: z.string().uuid(), sponsor_user_id: z.string().uuid(),
+      empresa_account_id: z.string().uuid(), sponsor_account_id: z.string().uuid(),
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), start: z.string().regex(/^\d{2}:\d{2}$/), end: z.string().regex(/^\d{2}:\d{2}$/),
+      room: z.string().max(100), label: z.string().max(80).optional().nullable(),
+    })).min(1).max(2000),
+  }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+    const { data: ev } = await supabaseAdmin.from("events").select("slot_duration_minutes").eq("id", data.event_id).single();
+    const ids = Array.from(new Set(data.proposals.flatMap((p) => [p.empresa_user_id, p.sponsor_user_id])));
+    const { data: pr } = await supabaseAdmin.from("profiles").select("id, full_name, email, account_role").in("id", ids);
+    const pm = new Map((pr ?? []).map((p: any) => [p.id, p]));
+    const resp = (id: string) => { const p: any = pm.get(id); return p ? { full_name: p.full_name ?? "", role: p.account_role ?? "", email: p.email ?? "" } : null; };
+    const rows = data.proposals.map((p) => ({
+      event_id: data.event_id, match_id: p.match_id,
+      empresa_user_id: p.empresa_user_id, sponsor_user_id: p.sponsor_user_id,
+      empresa_account_id: p.empresa_account_id, sponsor_account_id: p.sponsor_account_id,
+      scheduled_time: madridIso(p.date, p.start), duration_minutes: ev?.slot_duration_minutes ?? 15,
+      room: p.room, bloque: p.label || null, tipo_match: "Match mutuo", status: "confirmed" as const,
+      assigned_by: context.userId, empresa_responsable: resp(p.empresa_user_id), sponsor_responsable: resp(p.sponsor_user_id),
+    }));
+    let created = 0;
+    for (let i = 0; i < rows.length; i += 100) {
+      const { data: ok, error } = await supabaseAdmin.from("meetings_1to1").insert(rows.slice(i, i + 100)).select("id");
+      if (error) throw new Error(`Se crearon ${created}; error: ${error.message}`);
+      created += ok?.length ?? 0;
+    }
+    return { created };
+  });
