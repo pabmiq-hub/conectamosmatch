@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -23,7 +24,8 @@ type SourceAgg = {
 
 export const listAccountSelections = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((input: unknown) => z.object({ event_id: z.string().uuid().nullable().optional() }).parse(input ?? {}))
+  .handler(async ({ context, data: input }) => {
     await assertSuperAdmin(context.userId);
 
     const [{ data: emps }, { data: sps }, { data: profs }] = await Promise.all([
@@ -36,11 +38,12 @@ export const listAccountSelections = createServerFn({ method: "POST" })
     const likes: { from_user_id: string; to_user_id: string; created_at: string | null }[] = [];
     const PAGE = 1000;
     for (let from = 0; ; from += PAGE) {
-      const { data, error } = await supabaseAdmin
+      let lq = supabaseAdmin
         .from("likes")
         .select("from_user_id, to_user_id, created_at")
-        .order("created_at", { ascending: false })
-        .range(from, from + PAGE - 1);
+        .order("created_at", { ascending: false });
+      if (input.event_id) lq = lq.eq("event_id", input.event_id);
+      const { data, error } = await lq.range(from, from + PAGE - 1);
       if (error) throw new Response(error.message, { status: 400 });
       if (!data || data.length === 0) break;
       likes.push(...(data as any));

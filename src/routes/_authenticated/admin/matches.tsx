@@ -6,6 +6,7 @@ import { Heart, ArrowRight, Trash2, FileSpreadsheet, FileText, ChevronDown, Chev
 import { toast } from "sonner";
 import { listMatches, breakMatch } from "@/lib/admin-matches.functions";
 import { listEvents } from "@/lib/admin-events.functions";
+import { useAdminEvent } from "@/hooks/use-admin-event";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -24,7 +25,7 @@ function AdminMatches() {
   const [allEmpresas, setAllEmpresas] = useState<any[]>([]);
   const [allSponsors, setAllSponsors] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
-  const [eventId, setEventId] = useState<string>("");
+  const { eventId, setEventId } = useAdminEvent();
   const [sponsorId, setSponsorId] = useState<string>("");
   const [mode, setMode] = useState<Mode>("by-empresa");
   const [showZero, setShowZero] = useState(true);

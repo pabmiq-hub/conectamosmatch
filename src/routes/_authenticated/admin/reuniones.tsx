@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useAdminEvent } from "@/hooks/use-admin-event";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { ClipboardList, Wand2, Trash2, Plus, FileSpreadsheet, FileText, Heart, Sparkles, Building2, CalendarCheck, Upload, ArrowUpDown } from "lucide-react";
@@ -59,7 +60,7 @@ function AdminReuniones() {
   const del = useServerFn(deleteMeeting);
   const clearAll = useServerFn(clearMeetings);
   const [events, setEvents] = useState<any[]>([]);
-  const [eventId, setEventId] = useState<string>("");
+  const { eventId, setEventId } = useAdminEvent();
   const [rows, setRows] = useState<any[]>([]);
   const [matches, setMatches] = useState<any[]>([]);
   const [participants, setParticipants] = useState<{ empresas: any[]; sponsors: any[] }>({ empresas: [], sponsors: [] });
@@ -83,7 +84,7 @@ function AdminReuniones() {
         const [r, p] = await Promise.all([listEv({ data: undefined as any }), listParts()]);
         setEvents(r.events);
         setParticipants(p);
-        if (r.events[0]) setEventId(r.events[0].id);
+        if (!r.events.some((e: any) => e.id === localStorage.getItem("admin-active-event")) && r.events[0]) setEventId(r.events[0].id);
       } catch (e: any) { toast.error(e?.message ?? "Error"); }
     })();
   }, []);

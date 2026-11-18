@@ -5,6 +5,7 @@ import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { BookmarkCheck, ChevronDown, ChevronRight, Building2, Sparkles, Search, FileSpreadsheet, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { listAccountSelections } from "@/lib/admin-selections.functions";
+import { AdminEventSelector, useAdminEvent } from "@/hooks/use-admin-event";
 import { SortToggle, sortByName, type SortDir } from "@/components/dashboard/SortToggle";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -53,6 +54,7 @@ function buildRows(accounts: any[], side: Side) {
 
 function AdminSelecciones() {
   const fn = useServerFn(listAccountSelections);
+  const { eventId, ready } = useAdminEvent();
   const [empresas, setEmpresas] = useState<any[]>([]);
   const [sponsors, setSponsors] = useState<any[]>([]);
   const [side, setSide] = useState<Side>("empresa");
@@ -65,16 +67,17 @@ function AdminSelecciones() {
   const [exportChoice, setExportChoice] = useState<ExportChoice>("both");
 
   useEffect(() => {
+    if (!ready) return;
     (async () => {
       try {
-        const r = await fn({ data: undefined as any });
+        const r = await fn({ data: { event_id: eventId || null } });
         setEmpresas(r.empresas);
         setSponsors(r.sponsors);
       } catch (e: any) {
         toast.error(e?.message ?? "Error");
       }
     })();
-  }, []);
+  }, [eventId, ready]);
 
   const accounts = side === "empresa" ? empresas : sponsors;
   const filtered = useMemo(() => {
@@ -181,6 +184,7 @@ function AdminSelecciones() {
         subtitle="Cuántas cuentas únicas ha seleccionado cada empresa y cada solución"
         right={
           <div className="flex flex-wrap gap-2">
+            <AdminEventSelector />
             <button onClick={() => openExport("excel")} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide hover:bg-muted">
               <FileSpreadsheet className="h-4 w-4" /> Excel
             </button>
