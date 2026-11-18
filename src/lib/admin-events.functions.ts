@@ -25,6 +25,17 @@ const eventSchema = z.object({
   meetings_start_at: z.string().optional().nullable(),
   meetings_end_at: z.string().optional().nullable(),
   max_likes_per_user: z.number().int().min(1).max(500).default(20),
+  empresa_min_likes: z.number().int().min(0).max(500).default(12),
+  empresa_max_likes: z.number().int().min(1).max(500).optional().nullable(),
+  sponsor_max_likes: z.number().int().min(1).max(500).optional().nullable(),
+  likes_deadline: z.string().optional().nullable(),
+  empresa_max_meetings: z.number().int().min(1).max(100).default(8),
+  sponsor_default_max_meetings: z.number().int().min(1).max(100).default(8),
+  sponsor_meetings_by_level: z.record(z.string().max(40), z.number().int().min(0).max(100)).default({}),
+  meeting_windows: z
+    .array(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), start: z.string().regex(/^\d{2}:\d{2}$/), end: z.string().regex(/^\d{2}:\d{2}$/), label: z.string().max(80).optional().default("") }))
+    .max(50)
+    .default([]),
 });
 
 export const listEvents = createServerFn({ method: "POST" })

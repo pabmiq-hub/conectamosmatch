@@ -418,23 +418,31 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           description: string | null
+          empresa_max_likes: number | null
+          empresa_max_meetings: number
+          empresa_min_likes: number
           end_date: string | null
           event_date: string | null
           id: string
           is_active: boolean | null
           is_virtual: boolean | null
+          likes_deadline: string | null
           location_address: string | null
           location_city: string | null
           location_name: string | null
           max_empresas: number | null
           max_likes_per_user: number
           max_sponsors: number | null
+          meeting_windows: Json
           meetings_end_at: string | null
           meetings_per_user: number
           meetings_start_at: string | null
           rooms: string[]
           slot_duration_minutes: number
           slug: string | null
+          sponsor_default_max_meetings: number
+          sponsor_max_likes: number | null
+          sponsor_meetings_by_level: Json
           status: Database["public"]["Enums"]["event_status_t"] | null
           title: string
           virtual_url: string | null
@@ -444,23 +452,31 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          empresa_max_likes?: number | null
+          empresa_max_meetings?: number
+          empresa_min_likes?: number
           end_date?: string | null
           event_date?: string | null
           id?: string
           is_active?: boolean | null
           is_virtual?: boolean | null
+          likes_deadline?: string | null
           location_address?: string | null
           location_city?: string | null
           location_name?: string | null
           max_empresas?: number | null
           max_likes_per_user?: number
           max_sponsors?: number | null
+          meeting_windows?: Json
           meetings_end_at?: string | null
           meetings_per_user?: number
           meetings_start_at?: string | null
           rooms?: string[]
           slot_duration_minutes?: number
           slug?: string | null
+          sponsor_default_max_meetings?: number
+          sponsor_max_likes?: number | null
+          sponsor_meetings_by_level?: Json
           status?: Database["public"]["Enums"]["event_status_t"] | null
           title: string
           virtual_url?: string | null
@@ -470,23 +486,31 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          empresa_max_likes?: number | null
+          empresa_max_meetings?: number
+          empresa_min_likes?: number
           end_date?: string | null
           event_date?: string | null
           id?: string
           is_active?: boolean | null
           is_virtual?: boolean | null
+          likes_deadline?: string | null
           location_address?: string | null
           location_city?: string | null
           location_name?: string | null
           max_empresas?: number | null
           max_likes_per_user?: number
           max_sponsors?: number | null
+          meeting_windows?: Json
           meetings_end_at?: string | null
           meetings_per_user?: number
           meetings_start_at?: string | null
           rooms?: string[]
           slot_duration_minutes?: number
           slug?: string | null
+          sponsor_default_max_meetings?: number
+          sponsor_max_likes?: number | null
+          sponsor_meetings_by_level?: Json
           status?: Database["public"]["Enums"]["event_status_t"] | null
           title?: string
           virtual_url?: string | null

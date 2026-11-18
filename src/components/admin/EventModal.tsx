@@ -4,6 +4,7 @@ import { X, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { createEvent, updateEvent } from "@/lib/admin-events.functions";
 
+type Window = { date: string; start: string; end: string; label?: string };
 type EventStatus = "draft" | "published" | "ongoing" | "finished" | "cancelled";
 
 export function EventModal({ event, onClose, onSaved }: { event: any | null; onClose: () => void; onSaved: () => void }) {
@@ -31,6 +32,14 @@ export function EventModal({ event, onClose, onSaved }: { event: any | null; onC
     meetings_start_at: "",
     meetings_end_at: "",
     max_likes_per_user: 20,
+    empresa_min_likes: 12,
+    empresa_max_likes: "",
+    sponsor_max_likes: "",
+    likes_deadline: "",
+    empresa_max_meetings: 8,
+    sponsor_default_max_meetings: 8,
+    levels: [{ level: "PLATINUM", max: 12 }, { level: "GOLD", max: 8 }, { level: "SILVER", max: 4 }] as { level: string; max: number }[],
+    windows: [] as Window[],
   });
   const [newRoom, setNewRoom] = useState("");
 
@@ -57,6 +66,14 @@ export function EventModal({ event, onClose, onSaved }: { event: any | null; onC
         meetings_start_at: event.meetings_start_at ? new Date(event.meetings_start_at).toISOString().slice(0, 16) : "",
         meetings_end_at: event.meetings_end_at ? new Date(event.meetings_end_at).toISOString().slice(0, 16) : "",
         max_likes_per_user: event.max_likes_per_user ?? 20,
+        empresa_min_likes: event.empresa_min_likes ?? 12,
+        empresa_max_likes: event.empresa_max_likes?.toString() ?? "",
+        sponsor_max_likes: event.sponsor_max_likes?.toString() ?? "",
+        likes_deadline: event.likes_deadline ? new Date(event.likes_deadline).toISOString().slice(0, 16) : "",
+        empresa_max_meetings: event.empresa_max_meetings ?? 8,
+        sponsor_default_max_meetings: event.sponsor_default_max_meetings ?? 8,
+        levels: Object.entries((event.sponsor_meetings_by_level ?? {}) as Record<string, number>).map(([level, max]) => ({ level, max })),
+        windows: Array.isArray(event.meeting_windows) ? event.meeting_windows : [],
       });
     }
   }, [event]);
@@ -98,7 +115,17 @@ export function EventModal({ event, onClose, onSaved }: { event: any | null; onC
         meetings_start_at: f.meetings_start_at ? new Date(f.meetings_start_at).toISOString() : null,
         meetings_end_at: f.meetings_end_at ? new Date(f.meetings_end_at).toISOString() : null,
         max_likes_per_user: f.max_likes_per_user,
+        empresa_min_likes: f.empresa_min_likes,
+        empresa_max_likes: f.empresa_max_likes ? parseInt(f.empresa_max_likes) : null,
+        sponsor_max_likes: f.sponsor_max_likes ? parseInt(f.sponsor_max_likes) : null,
+        likes_deadline: f.likes_deadline ? new Date(f.likes_deadline).toISOString() : null,
+        empresa_max_meetings: f.empresa_max_meetings,
+        sponsor_default_max_meetings: f.sponsor_default_max_meetings,
+        sponsor_meetings_by_level: Object.fromEntries(f.levels.filter((l) => l.level.trim()).map((l) => [l.level.trim().toUpperCase(), l.max])),
+        meeting_windows: f.windows.filter((w) => w.date && w.start && w.end),
       };
+      const badWin = payload.meeting_windows.find((w) => w.end <= w.start);
+      if (badWin) { setBusy(false); return toast.error(`La franja del ${badWin.date} termina antes de empezar`); }
       if (event?.id) {
         await update({ data: { id: event.id, patch: payload } });
         toast.success("Evento actualizado");
@@ -164,10 +191,66 @@ export function EventModal({ event, onClose, onSaved }: { event: any | null; onC
             </div>
           </Section>
 
+          <Section title="Reglas de selección («Me interesa»)">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label>Empresas: mínimo obligatorio</Label>
+                <input type="number" min={0} max={500} value={f.empresa_min_likes} onChange={(e) => set("empresa_min_likes", parseInt(e.target.value) || 0)} className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm" />
+              </div>
+              <Field label="Empresas: máximo (vacío = sin límite)" type="number" value={f.empresa_max_likes} onChange={(v) => set("empresa_max_likes", v)} />
+              <Field label="Soluciones: máximo (vacío = sin límite)" type="number" value={f.sponsor_max_likes} onChange={(v) => set("sponsor_max_likes", v)} />
+              <Field label="Fecha límite para seleccionar" type="datetime-local" value={f.likes_deadline} onChange={(v) => set("likes_deadline", v)} />
+            </div>
+          </Section>
+
+          <Section title="Topes de reuniones 1 a 1">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label>Máx. reuniones por empresa</Label>
+                <input type="number" min={1} max={100} value={f.empresa_max_meetings} onChange={(e) => set("empresa_max_meetings", parseInt(e.target.value) || 1)} className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <Label>Máx. reuniones por solución (sin modalidad)</Label>
+                <input type="number" min={1} max={100} value={f.sponsor_default_max_meetings} onChange={(e) => set("sponsor_default_max_meetings", parseInt(e.target.value) || 1)} className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm" />
+              </div>
+            </div>
+            <div className="mt-4">
+              <Label>Máx. reuniones por modalidad de solución</Label>
+              <div className="mt-2 space-y-2">
+                {f.levels.map((l, i) => (
+                  <div key={i} className="flex gap-2">
+                    <input value={l.level} placeholder="Modalidad (ej. GOLD)" onChange={(e) => set("levels", f.levels.map((x, j) => j === i ? { ...x, level: e.target.value } : x))} className="flex-1 rounded-md border border-border bg-input px-3 py-2 text-sm uppercase" />
+                    <input type="number" min={0} max={100} value={l.max} onChange={(e) => set("levels", f.levels.map((x, j) => j === i ? { ...x, max: parseInt(e.target.value) || 0 } : x))} className="w-24 rounded-md border border-border bg-input px-3 py-2 text-sm" />
+                    <button type="button" onClick={() => set("levels", f.levels.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => set("levels", [...f.levels, { level: "", max: 8 }])} className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs font-bold text-uppercase-wide"><Plus className="h-3 w-3" /> Añadir modalidad</button>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">Se aplica según la «modalidad» de la ficha de cada solución.</p>
+            </div>
+          </Section>
+
+          <Section title="Franjas de reuniones por día">
+            <div className="space-y-2">
+              {f.windows.length === 0 && <p className="text-xs text-muted-foreground">Sin franjas. Añade una por cada bloque de reuniones (puede haber varias el mismo día).</p>}
+              {f.windows.map((w, i) => (
+                <div key={i} className="grid grid-cols-2 md:grid-cols-[1fr_auto_auto_1fr_auto] gap-2 items-center">
+                  <input type="date" value={w.date} onChange={(e) => set("windows", f.windows.map((x, j) => j === i ? { ...x, date: e.target.value } : x))} className="rounded-md border border-border bg-input px-3 py-2 text-sm" />
+                  <input type="time" value={w.start} onChange={(e) => set("windows", f.windows.map((x, j) => j === i ? { ...x, start: e.target.value } : x))} className="rounded-md border border-border bg-input px-3 py-2 text-sm" />
+                  <input type="time" value={w.end} onChange={(e) => set("windows", f.windows.map((x, j) => j === i ? { ...x, end: e.target.value } : x))} className="rounded-md border border-border bg-input px-3 py-2 text-sm" />
+                  <input value={w.label ?? ""} placeholder="Nombre (opcional)" onChange={(e) => set("windows", f.windows.map((x, j) => j === i ? { ...x, label: e.target.value } : x))} className="rounded-md border border-border bg-input px-3 py-2 text-sm" />
+                  <button type="button" onClick={() => set("windows", f.windows.filter((_, j) => j !== i))} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
+                </div>
+              ))}
+              <button type="button" onClick={() => { const last = f.windows[f.windows.length - 1]; set("windows", [...f.windows, { date: last?.date ?? "", start: "", end: "", label: "" }]); }} className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs font-bold text-uppercase-wide"><Plus className="h-3 w-3" /> Añadir franja</button>
+              <p className="text-xs text-muted-foreground">Horas en hora de Madrid. Las reuniones se reparten en huecos de la duración del slot.</p>
+            </div>
+          </Section>
+
           <Section title="Reuniones 1 a 1">
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <Label>Reuniones por usuario</Label>
+                <Label>Reuniones por usuario (general)</Label>
                 <input type="number" min={1} max={50} value={f.meetings_per_user} onChange={(e) => set("meetings_per_user", parseInt(e.target.value) || 8)} className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm" />
               </div>
               <div>

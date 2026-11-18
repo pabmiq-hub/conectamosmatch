@@ -15,13 +15,13 @@ export const Route = createFileRoute("/_authenticated/empresa/mis-selecciones")(
   component: MisSeleccionesEmpresa,
 });
 
-const MIN_REQUIRED = 12;
 
 function MisSeleccionesEmpresa() {
   const getLikedAccounts = useServerFn(listMyLikedAccountIds);
   const getMatches = useServerFn(listMyAccountMatches);
   const [me, setMe] = useState<string | null>(null);
   const [eventId, setEventId] = useState<string | null>(null);
+  const [MIN_REQUIRED, setMinRequired] = useState(12);
   const [items, setItems] = useState<any[]>([]);
   const [matchedAccountSet, setMatchedAccountSet] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<PartnerDetail | null>(null);
@@ -33,8 +33,9 @@ function MisSeleccionesEmpresa() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setMe(user.id);
-      const { data: ev } = await supabase.from("events").select("id").in("status", ["published","ongoing"]).order("event_date").limit(1).maybeSingle();
+      const { data: ev } = await supabase.from("events").select("id, empresa_min_likes").in("status", ["published","ongoing"]).order("event_date").limit(1).maybeSingle();
       setEventId(ev?.id ?? null);
+    setMinRequired((ev as any)?.empresa_min_likes ?? 12);
 
       const likedAccounts = await getLikedAccounts({ data: { eventId: ev?.id ?? null } });
       const ids = likedAccounts.accountIds;

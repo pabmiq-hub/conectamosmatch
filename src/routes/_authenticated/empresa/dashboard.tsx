@@ -16,6 +16,7 @@ function EmpresaDashboard() {
   const [companyName, setCompanyName] = useState("");
   const [stats, setStats] = useState({ likes: 0, matches: 0, meetings: 0 });
   const [eventTitle, setEventTitle] = useState<string>("");
+  const [minLikes, setMinLikes] = useState(12);
   const [agenda, setAgenda] = useState<any[]>([]);
   const getLikedAccounts = useServerFn(listMyLikedAccountIds);
 
@@ -26,9 +27,9 @@ function EmpresaDashboard() {
       const { data: ep } = await supabase.from("empresa_profiles").select("company_name").eq("user_id", user.id).maybeSingle();
       setCompanyName(ep?.company_name ?? "");
 
-      const { data: ev } = await supabase.from("events").select("id, title").in("status", ["published","ongoing"]).order("event_date", { ascending: true }).limit(1).maybeSingle();
+      const { data: ev } = await supabase.from("events").select("id, title, empresa_min_likes").in("status", ["published","ongoing"]).order("event_date", { ascending: true }).limit(1).maybeSingle();
       if (ev) {
-        setEventTitle(ev.title);
+        setEventTitle(ev.title); setMinLikes((ev as any).empresa_min_likes ?? 12);
         const { data: ag } = await supabase.from("event_agenda").select("*").eq("event_id", ev.id).order("order_index");
         setAgenda(ag ?? []);
       }
@@ -50,7 +51,7 @@ function EmpresaDashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard icon={Bookmark} value={`${stats.likes} / 12 mín.`} label="Soluciones seleccionadas" hint={stats.likes >= 12 ? "✓ Mínimo alcanzado" : `Te faltan ${12 - stats.likes} para llegar al mínimo`} accent to="/empresa/ver-sponsors" />
+        <StatCard icon={Bookmark} value={`${stats.likes} / ${minLikes} mín.`} label="Soluciones seleccionadas" hint={stats.likes >= minLikes ? "✓ Mínimo alcanzado" : `Te faltan ${minLikes - stats.likes} para llegar al mínimo`} accent to="/empresa/ver-sponsors" />
         <StatCard icon={Heart} value={stats.matches} label="Matches mutuos" accent to="/empresa/mis-matches" />
         <StatCard icon={Calendar} value={stats.meetings} label="1to1 agendadas" accent to="/empresa/reuniones-1to1" />
       </div>

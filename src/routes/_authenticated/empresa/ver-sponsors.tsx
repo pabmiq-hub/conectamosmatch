@@ -15,12 +15,12 @@ export const Route = createFileRoute("/_authenticated/empresa/ver-sponsors")({
   component: VerSponsors,
 });
 
-const MIN_REQUIRED = 12;
 
 function VerSponsors() {
   const getLikedAccounts = useServerFn(listMyLikedAccountIds);
   const [me, setMe] = useState<string | null>(null);
   const [eventId, setEventId] = useState<string | null>(null);
+  const [MIN_REQUIRED, setMinRequired] = useState(12);
   const [items, setItems] = useState<any[]>([]);
   const [likedAccountIds, setLikedAccountIds] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<PartnerDetail | null>(null);
@@ -34,8 +34,9 @@ function VerSponsors() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     setMe(user.id);
-    const { data: ev } = await supabase.from("events").select("id").in("status", ["published","ongoing"]).order("event_date").limit(1).maybeSingle();
+    const { data: ev } = await supabase.from("events").select("id, empresa_min_likes").in("status", ["published","ongoing"]).order("event_date").limit(1).maybeSingle();
     setEventId(ev?.id ?? null);
+    setMinRequired((ev as any)?.empresa_min_likes ?? 12);
     const { data: sp } = await supabase.from("sponsor_profiles").select("id, user_id, company_name, description, logo_url, sector, sponsorship_level, website, location_city, responsables, categories");
     setItems(sp ?? []);
     const liked = await getLikedAccounts({ data: { eventId: ev?.id ?? null } });
