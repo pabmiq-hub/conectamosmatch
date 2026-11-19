@@ -36,6 +36,10 @@ const HEADER_ALIASES: Record<string, keyof ParsedRow | "ignore"> = {
   "solucion": "sponsor",
   "solución": "sponsor",
   "tipo sponsor": "tipo_sponsor",
+  "tipo solucion": "tipo_sponsor",
+  "tipo solución": "tipo_sponsor",
+  "modalidad solucion": "tipo_sponsor",
+  "modalidad solución": "tipo_sponsor",
   "tipo match": "tipo_match",
   "notas": "notas",
 };
@@ -182,7 +186,7 @@ export function ImportMeetingsModal({ eventId, onClose, onImported }: { eventId:
         <div className="space-y-4">
           <div className="rounded-lg border border-dashed border-border p-4 bg-muted/30">
             <p className="text-xs text-muted-foreground mb-3">
-              Columnas esperadas: <strong>Empresa</strong>, <strong>Responsable empresa</strong>, <strong>Slot</strong>, <strong>Día</strong>, <strong>Bloque</strong>, <strong>Hora</strong>, <strong>Mesa</strong>, <strong>Submesa</strong>, <strong>Sponsor</strong>, <strong>Tipo Sponsor</strong>, <strong>Tipo Match</strong>, <strong>Notas</strong>. Todas se importan y conservan.
+              Columnas esperadas: <strong>Empresa</strong>, <strong>Responsable empresa</strong>, <strong>Slot</strong>, <strong>Día</strong>, <strong>Bloque</strong>, <strong>Hora</strong>, <strong>Mesa</strong>, <strong>Submesa</strong>, <strong>Solución</strong>, <strong>Modalidad solución</strong>, <strong>Tipo Match</strong>, <strong>Notas</strong>. Todas se importan y conservan.
             </p>
             <label className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-xs font-bold text-uppercase-wide cursor-pointer hover:bg-muted">
               <Upload className="h-4 w-4" />

@@ -321,7 +321,7 @@ function AdminUsuarios() {
                   <li key={p.id} onClick={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Usuario" })} className="flex items-center gap-4 px-4 py-4 cursor-pointer hover:bg-muted/30 transition-colors">
                     <div className="min-w-0 flex-1">
                       <div className="text-[16px] font-semibold leading-tight truncate" style={{ color: "#111827" }}>{p.full_name ?? p.email}</div>
-                      <div className="text-[13px] font-normal truncate mt-0.5" style={{ color: "#6B7280" }}>{p.email} · rol {p.role}</div>
+                      <div className="text-[13px] font-normal truncate mt-0.5" style={{ color: "#6B7280" }}>{p.email} · rol {p.role === "sponsor" ? "solución" : p.role}</div>
                     </div>
                     <RowActions p={p} onReset={onReset} onToggle={onToggle} onDelete={onDelete} onView={() => setViewing({ id: p.id, label: p.full_name ?? p.email ?? "Usuario" })} onEdit={() => setEditing(p.id)} />
                   </li>

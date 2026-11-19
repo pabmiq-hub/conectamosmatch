@@ -108,7 +108,7 @@ export function RetoParticipantsAdmin({ eventId, locked, onChanged }: { eventId:
               <div className="truncate font-bold">{p.display_name}</div>
               <div className="truncate text-xs text-muted-foreground">{[p.cargo, p.company_name].filter(Boolean).join(" · ") || "Sin empresa"}</div>
             </div>
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{p.participant_type === "sponsor" ? "Sponsor" : "DRH"}</span>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{p.participant_type === "sponsor" ? "Solución" : "Empresa"}</span>
             <button className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-40"
               disabled={busy || locked} onClick={() => remove(p)} aria-label={`Dar de baja a ${p.display_name}`}>
               <UserMinus className="h-4 w-4" />
@@ -173,7 +173,7 @@ function AddDialog({ open, onOpenChange, cands, inReto, busy, onAdd }: {
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Añadir participantes</DialogTitle>
-          <DialogDescription>Usuarios activos de empresa (DRH) y solución (sponsor) que aún no juegan.</DialogDescription>
+          <DialogDescription>Usuarios activos de empresa y solución que aún no juegan.</DialogDescription>
         </DialogHeader>
         <div className="flex gap-2">
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, email o empresa…"

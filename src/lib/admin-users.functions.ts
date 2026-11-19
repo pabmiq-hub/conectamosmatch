@@ -15,6 +15,7 @@ const empresaSchema = z.object({
   linkedin_url: z.string().max(300).optional().default(""),
   tagline: z.string().max(300).optional().default(""),
   description: z.string().max(2000).optional().default(""),
+  logo_url: z.string().max(1000).nullable().optional(),
 });
 
 const sponsorSchema = z.object({
@@ -26,6 +27,7 @@ const sponsorSchema = z.object({
   linkedin_url: z.string().max(300).optional().default(""),
   tagline: z.string().max(300).optional().default(""),
   description: z.string().max(2000).optional().default(""),
+  logo_url: z.string().max(1000).nullable().optional(),
 });
 
 const responsableSchema = z.object({
@@ -46,6 +48,7 @@ const createSchema = z.object({
   empresa: empresaSchema.optional(),
   sponsor: sponsorSchema.optional(),
   responsable: responsableSchema.optional(),
+  event_id: z.string().uuid().optional(),
 });
 
 async function createOne(d: z.infer<typeof createSchema>) {
@@ -119,6 +122,22 @@ export const createUserAccount = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertBootstrapAdmin(context.userId);
     const userId = await createOne(data);
+    if (data.event_id) {
+      const { data: owner } = await supabaseAdmin.from("profiles").select("account_id").eq("id", userId).maybeSingle();
+      const accountId = owner?.account_id;
+      const company = (data.empresa ?? data.sponsor)?.company_name ?? null;
+      const { data: members } = accountId
+        ? await supabaseAdmin.from("profiles").select("id, full_name, email, cargo").eq("account_id", accountId)
+        : { data: [] as any[] };
+      const rows = (members ?? []).map((m: any) => ({
+        event_id: data.event_id, user_id: m.id, role_at_event: data.role, status: "confirmed" as const,
+        attendee_name: m.full_name, attendee_email: m.email, attendee_company: company, attendee_role_title: m.cargo ?? null,
+      }));
+      if (rows.length) {
+        const { error } = await supabaseAdmin.from("event_registrations").insert(rows as any);
+        if (error) throw new Error(`Cuenta creada, pero no se pudo inscribir en el evento: ${error.message}`);
+      }
+    }
     return { userId, email: data.email };
   });
 

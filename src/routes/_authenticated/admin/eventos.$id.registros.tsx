@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { Users, Download, Trash2, Upload, UserPlus, KeyRound, Mail, Send } from "lucide-react";
 import { ImportUsersModal } from "@/components/admin/ImportUsersModal";
+import { NewUserModal } from "@/components/admin/NewUserModal";
 import { AddExistingAccountsModal } from "@/components/admin/AddExistingAccountsModal";
 import { useAdminEvent } from "@/hooks/use-admin-event";
 import { toast } from "sonner";
@@ -58,6 +59,7 @@ function AdminRegistros() {
   const [rows, setRows] = useState<any[]>([]);
   const [showImport, setShowImport] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
+  const [showNew, setShowNew] = useState(false);
   const { eventId, setEventId, ready } = useAdminEvent();
   useEffect(() => { if (ready && eventId !== id) setEventId(id); }, [ready, id]);
 
@@ -84,6 +86,7 @@ function AdminRegistros() {
       <PageHeader title="Participantes" subtitle={`Total: ${rows.length}`} right={
         <div className="flex flex-wrap gap-2">
         <button onClick={() => setShowImport(true)} className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-bold text-uppercase-wide text-primary-foreground"><Upload className="h-3 w-3" /> Subir participantes (Excel)</button>
+        <button onClick={() => setShowNew(true)} className="inline-flex items-center gap-2 rounded-md border border-primary/50 px-3 py-2 text-xs font-bold text-uppercase-wide text-primary"><UserPlus className="h-3 w-3" /> Nuevo participante</button>
         <button onClick={() => setShowAdd(true)} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide"><UserPlus className="h-3 w-3" /> Añadir cuentas existentes</button>
         <button onClick={onSendAll} disabled={sendingAll || rows.length === 0} className="inline-flex items-center gap-2 rounded-md border border-primary/50 px-3 py-2 text-xs font-bold text-uppercase-wide text-primary disabled:opacity-50"><Send className="h-3 w-3" /> {sendingAll ? "Enviando…" : "Enviar claves a todos"}</button>
         <button onClick={exportCSV} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide"><Download className="h-3 w-3" /> Exportar CSV</button>
@@ -105,6 +108,7 @@ function AdminRegistros() {
           </div>
         </div>
       )}
+      {showNew && <NewUserModal eventId={id} onClose={() => setShowNew(false)} onCreated={load} />}
       {showAdd && <AddExistingAccountsModal eventId={id} onClose={() => setShowAdd(false)} onDone={load} />}
       {showImport && <ImportUsersModal defaultEventId={id} onClose={() => setShowImport(false)} onDone={load} />}
       {rows.length === 0 ? <EmptyState icon={Users} title="Sin participantes" hint="Pulsa «Subir participantes (Excel)» o «Añadir cuentas existentes» para inscribirlos en este evento. Solo quienes estén aquí aparecerán en las selecciones, matches y reuniones del evento." /> : (
@@ -119,7 +123,7 @@ function AdminRegistros() {
                   <td className="px-4 py-3 font-medium text-xs">{r.attendee_name}</td>
                   <td className="px-4 py-3 text-xs">{r.attendee_company}</td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">{r.attendee_email}</td>
-                  <td className="px-4 py-3"><span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{r.role_at_event}</span></td>
+                  <td className="px-4 py-3"><span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{r.role_at_event === "sponsor" ? "Solución" : r.role_at_event === "empresa" ? "Empresa" : r.role_at_event}</span></td>
                   <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold text-uppercase-wide bg-muted`}>{r.status}</span></td>
                   <td className="px-4 py-3 text-right">
                     <button disabled={!r.user_id || busyId === r.id} onClick={() => { setEditing(r); setNewPwd(""); setAlsoSend(true); }} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Editar contraseña"><KeyRound className="h-4 w-4" /></button>

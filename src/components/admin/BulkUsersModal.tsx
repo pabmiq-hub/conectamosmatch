@@ -72,7 +72,7 @@ export function BulkUsersModal({ mode, onClose, onDone }: { mode: Mode; onClose:
       const { results } = await reset({ data: { exceptIds: Array.from(keep) } });
       const ok = results.filter((r) => r.ok);
       downloadXlsx(`credenciales-${new Date().toISOString().slice(0,10)}.xlsx`, "Credenciales", ok.map((r) => ({
-        Nombre: r.full_name, Email: r.email, Rol: r.role, "Nueva contraseña": r.password,
+        Nombre: r.full_name, Email: r.email, Rol: r.role === "sponsor" ? "solución" : r.role, "Nueva contraseña": r.password,
       })));
       toast.success(`${ok.length} contraseñas generadas y exportadas`);
       onDone();
@@ -137,7 +137,7 @@ export function BulkUsersModal({ mode, onClose, onDone }: { mode: Mode; onClose:
                 <input type="checkbox" checked={keep.has(r.id)} onChange={() => toggle(r.id)} />
                 <div className="min-w-0 flex-1">
                   <div className="font-medium text-xs truncate">{r.name}</div>
-                  <div className="text-[11px] text-muted-foreground truncate">{r.email} · {r.role}</div>
+                  <div className="text-[11px] text-muted-foreground truncate">{r.email} · {r.role === "sponsor" ? "solución" : r.role}</div>
                 </div>
                 {keep.has(r.id) && <span className="text-[10px] font-bold text-uppercase-wide text-success">Conservar</span>}
               </label>

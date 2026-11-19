@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { LogoUploader } from "@/components/dashboard/LogoUploader";
 import { Building2, Sparkles, X, Copy, Check, UserCog } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { createUserAccount } from "@/lib/admin-users.functions";
@@ -8,7 +10,10 @@ import { toast } from "sonner";
 type Role = "empresa" | "sponsor";
 type Step = 1 | 2 | 3 | 4;
 
-export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+export function NewUserModal({ onClose, onCreated, eventId }: { onClose: () => void; onCreated: () => void; eventId?: string }) {
+  const [adminId, setAdminId] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  useEffect(() => { supabase.auth.getUser().then(({ data }) => setAdminId(data.user?.id ?? null)); }, []);
   const create = useServerFn(createUserAccount);
   const [step, setStep] = useState<Step>(1);
   const [role, setRole] = useState<Role | null>(null);
@@ -54,16 +59,17 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
           phone: o.phone,
           cargo: o.cargo,
           role,
+          event_id: eventId,
           empresa: role === "empresa" ? {
             company_name: c.company_name, sector: c.sector, company_size: c.company_size,
             website: c.website, location_city: c.location_city, linkedin_url: c.linkedin_url,
-            tagline: c.tagline, description: c.description,
+            tagline: c.tagline, description: c.description, logo_url: logoUrl,
           } : undefined,
           sponsor: role === "sponsor" ? {
             company_name: c.company_name, sector: c.sector,
             sponsorship_category: c.sponsorship_category, sponsorship_level: c.sponsorship_level,
             website: c.website, linkedin_url: c.linkedin_url,
-            tagline: c.tagline, description: c.description,
+            tagline: c.tagline, description: c.description, logo_url: logoUrl,
           } : undefined,
         },
       });
@@ -128,6 +134,7 @@ export function NewUserModal({ onClose, onCreated }: { onClose: () => void; onCr
           </div>
         ) : step === 2 ? (
           <div className="space-y-4">
+            {adminId && <LogoUploader userId={adminId} value={logoUrl} onChange={setLogoUrl} />}
             <div className="grid md:grid-cols-2 gap-4">
               <Field label="Nombre de la empresa *" value={c.company_name} onChange={(v) => setC1("company_name", v)} />
               <Field label="Sector" value={c.sector} onChange={(v) => setC1("sector", v)} placeholder="Tech, Health, Retail…" />

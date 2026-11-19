@@ -194,8 +194,8 @@ function AdminReuniones() {
       Bloque: r.bloque ?? "",
       Hora: r.scheduled_time ? new Date(r.scheduled_time).toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" }) : "",
       Mesa: r.room ?? "",
-      Sponsor: r.sponsor_name ?? "",
-      "Tipo Sponsor": r.tipo_sponsor ?? "",
+      "Solución": r.sponsor_name ?? "",
+      "Modalidad solución": r.tipo_sponsor ?? "",
       "Tipo Match": r.tipo_match ?? "",
       Notas: r.notes ?? "",
       Origen: r.match_id ? "Match" : "Manual",
@@ -209,9 +209,9 @@ function AdminReuniones() {
       if (sortBy === "empresa") {
         const cmp = (a.Empresa || "").localeCompare(b.Empresa || "", "es");
         if (cmp !== 0) return cmp;
-        return (a.Sponsor || "").localeCompare(b.Sponsor || "", "es");
+        return (a["Solución"] || "").localeCompare(b["Solución"] || "", "es");
       }
-      const cmp = (a.Sponsor || "").localeCompare(b.Sponsor || "", "es");
+      const cmp = (a["Solución"] || "").localeCompare(b["Solución"] || "", "es");
       if (cmp !== 0) return cmp;
       return (a.Empresa || "").localeCompare(b.Empresa || "", "es");
     };

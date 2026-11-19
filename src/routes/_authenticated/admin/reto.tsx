@@ -95,7 +95,7 @@ function AdminReto() {
 
   const exportRanking = () => {
     const sheet = (metric: "connections" | "points") => rankBy(rows, metric).map((r) => ({
-      Puesto: r.rank, Nombre: r.display_name, Empresa: r.company_name ?? "", Perfil: r.participant_type === "sponsor" ? "Sponsor" : "DRH",
+      Puesto: r.rank, Nombre: r.display_name, Empresa: r.company_name ?? "", Perfil: r.participant_type === "sponsor" ? "Solución" : "Empresa",
       Conexiones: r.connections, "Bonus misiones": r.bonus, Puntos: r.points,
     }));
     const byId = new Map(rows.map((r) => [r.user_id, r]));
@@ -266,7 +266,7 @@ function AdminReto() {
           <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
             <Stat label="Conexiones validadas" value={summary.validated} />
             <Stat label="Marcas pendientes" value={summary.pending} hint="Una persona marcó y la otra aún no" />
-            <Stat label="Participantes" value={summary.participants} hint={`${summary.drh} DRH · ${summary.sponsors} sponsors`} />
+            <Stat label="Participantes" value={summary.participants} hint={`${summary.drh} empresas · ${summary.sponsors} soluciones`} />
             <Stat label="Bonus de misiones" value={summary.bonus_total} hint={`${summary.awards} misiones conseguidas`} />
             <Stat label="Te presento" value={summary.intros_validated} hint={`${summary.intros_pending} pendientes`} />
             <Stat label="Puntos retirados" value={summary.revokes} hint="Anotaciones de retirada en el historial" />
