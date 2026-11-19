@@ -1662,6 +1662,7 @@ export type Database = {
         Returns: number
       }
       reto_admin_close: { Args: { _event: string }; Returns: boolean }
+      reto_admin_delete_event: { Args: { _event: string }; Returns: undefined }
       reto_admin_enable_event: { Args: { _event: string }; Returns: undefined }
       reto_admin_mission_action: {
         Args: { _action: string; _id: string }

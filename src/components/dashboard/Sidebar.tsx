@@ -159,7 +159,7 @@ function AdminNav({ onNavigate, large }: { onNavigate?: () => void; large?: bool
       {row("/admin/reto-misiones", "Misiones", Target)}
       {row("/admin/reto-comodines", "Comodines", MessageCircleQuestion)}
       <div className="px-4 pt-3 pb-1 text-[10px] font-bold text-uppercase-wide text-muted-foreground">Ajustes</div>
-      {row("/admin/eventos", "Configuración", Settings, true)}
+      {row(`/admin/eventos/${eventId}/configuracion`, "Configuración", Settings)}
     </nav>
   );
 }

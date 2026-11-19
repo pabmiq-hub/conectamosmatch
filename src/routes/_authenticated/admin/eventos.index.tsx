@@ -18,7 +18,7 @@ function dayLabel(date: string | null, idx: number) {
   return `Día ${idx + 1} · ${s.charAt(0).toUpperCase() + s.slice(1)}`;
 }
 
-export const Route = createFileRoute("/_authenticated/admin/eventos")({
+export const Route = createFileRoute("/_authenticated/admin/eventos/")({
   component: AdminEventos,
 });
 

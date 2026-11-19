@@ -208,3 +208,12 @@ export function fromMadridLocal(v: string): string | null {
   const diff = new Date(`${local}:00Z`).getTime() - guess.getTime();
   return new Date(guess.getTime() - diff).toISOString();
 }
+
+/** Borra por completo el Reto de un evento (solo tablas reto_*; el resto del evento no se toca). */
+export async function adminDeleteReto(eventId: string): Promise<void> {
+  const { error } = await retoDb.rpc("reto_admin_delete_event", { _event: eventId });
+  if (error) {
+    if (/reto_admin_delete_event/.test(error.message ?? "")) throw new Error("Falta activar la función de borrado del Reto en la base de datos (contacta con soporte técnico).");
+    throw dbError(error);
+  }
+}

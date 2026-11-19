@@ -42,7 +42,6 @@ function AdminRegistros() {
 
   return (
     <div className="space-y-6">
-      <Link to="/admin/eventos" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><ArrowLeft className="h-3 w-3" /> Volver a eventos</Link>
       <PageHeader title="Participantes" subtitle={`Total: ${rows.length} · Check-in: ${rows.filter((r) => r.checked_in_at).length}`} right={
         <div className="flex flex-wrap gap-2">
         <button onClick={() => setShowImport(true)} className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-bold text-uppercase-wide text-primary-foreground"><Upload className="h-3 w-3" /> Subir participantes (Excel)</button>

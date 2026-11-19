@@ -6,12 +6,14 @@ import {
   AlertOctagon, Download, Flag, LockOpen, MessageCircleQuestion, Power, RefreshCw, Target, Trophy,
 } from "lucide-react";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
+import { useAdminEvent } from "@/hooks/use-admin-event";
+import { Trash2 } from "lucide-react";
 import { RetoProgress } from "@/components/reto/RetoProgress";
 import { RetoParticipantsAdmin } from "@/components/reto/admin/RetoParticipantsAdmin";
 import { RetoWinnersAdmin } from "@/components/reto/admin/RetoWinnersAdmin";
 import { fetchScoreboard, rankBy, retoDb, type ScoreRow } from "@/lib/reto";
 import {
-  adminClose, adminEnableEvent, adminReopen, adminSummary, fetchAll, fetchRetoConfig, finalizeIfDue,
+  adminClose, adminDeleteReto, adminEnableEvent, adminReopen, adminSummary, fetchAll, fetchRetoConfig, finalizeIfDue,
   fromMadridLocal, reciprocalPairs, retoPhase, toMadridLocal, type RetoConfig, type RetoPhase, type RetoSummary,
 } from "@/lib/reto-admin";
 
@@ -47,14 +49,13 @@ const madrid = (iso: string | null | undefined) => iso
 function AdminReto() {
   const [events, setEvents] = useState<Ev[]>([]);
   const [configured, setConfigured] = useState<string[]>([]);
-  const [eventId, setEventId] = useState<string | null>(null);
+  const { eventId: activeEvent, ready } = useAdminEvent();
   const [cfg, setCfg] = useState<RetoConfig | null>(null);
   const [summary, setSummary] = useState<RetoSummary | null>(null);
   const [summaryErr, setSummaryErr] = useState<string | null>(null);
   const [rows, setRows] = useState<ScoreRow[]>([]);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [newEvent, setNewEvent] = useState("");
 
   const loadEvents = useCallback(async () => {
     const [{ data: evs }, { data: cfgs }] = await Promise.all([
@@ -64,7 +65,6 @@ function AdminReto() {
     const ids = (cfgs ?? []).map((c: any) => c.event_id as string);
     setEvents(evs ?? []);
     setConfigured(ids);
-    setEventId((cur) => cur && ids.includes(cur) ? cur : ids[0] ?? null);
     setLoading(false);
   }, []);
 
@@ -76,6 +76,7 @@ function AdminReto() {
   }, []);
 
   useEffect(() => { loadEvents(); }, [loadEvents]);
+  const eventId: string | null = activeEvent && configured.includes(activeEvent) ? activeEvent : null;
   useEffect(() => { if (eventId) load(eventId); }, [eventId, load]);
 
   const run = async (fn: () => Promise<unknown>, ok: string) => {
@@ -159,24 +160,20 @@ function AdminReto() {
 
   if (loading) return <div className="text-xs text-muted-foreground text-uppercase-wide">Cargando…</div>;
 
-  const others = events.filter((e) => !configured.includes(e.id));
-  const enableBlock = (
-    <div className="flex flex-wrap items-center gap-2">
-      <select value={newEvent} onChange={(e) => setNewEvent(e.target.value)} className="rounded-lg border border-border bg-card px-3 py-2 text-sm">
-        <option value="">Preparar el Reto en otro evento…</option>
-        {others.map((e) => <option key={e.id} value={e.id}>{e.title}</option>)}
-      </select>
-      <button className={btn} disabled={!newEvent || busy}
-        onClick={() => run(async () => { await adminEnableEvent(newEvent); setNewEvent(""); await loadEvents(); setEventId(newEvent); }, "Reto preparado (desactivado) en el evento")}>
-        Preparar
-      </button>
-    </div>
-  );
+  if (!ready) return null;
+  if (!activeEvent) return <EmptyState icon={Trophy} title="Elige un evento" hint="Entra en un evento desde «Eventos» para gestionar su Reto." />;
+  const activeTitle = events.find((e) => e.id === activeEvent)?.title ?? "este evento";
 
   if (!eventId) return (
     <div className="space-y-4">
-      <EmptyState icon={Trophy} title="Ningún evento tiene el Reto 2.700" hint="Elige un evento para prepararlo. Quedará desactivado hasta que lo actives." />
-      {enableBlock}
+      <PageHeader title="Reto 2.700" subtitle={activeTitle} />
+      <EmptyState icon={Trophy} title="No hay Reto configurado para este evento" hint="Al crearlo quedará desactivado hasta que lo actives." />
+      <div className="flex justify-center">
+        <button className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-bold text-uppercase-wide text-primary-foreground disabled:opacity-50" disabled={busy}
+          onClick={() => run(async () => { await adminEnableEvent(activeEvent); await loadEvents(); }, "Reto creado en este evento")}>
+          <Trophy className="h-4 w-4" /> Crear Reto
+        </button>
+      </div>
     </div>
   );
 
@@ -188,13 +185,17 @@ function AdminReto() {
       <PageHeader
         title="Reto 2.700"
         subtitle="Solo los administradores ven este panel. Las conexiones y puntos los calcula siempre la base de datos."
-        right={<button onClick={() => load(eventId)} disabled={busy} className={btn}><RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} /> Actualizar</button>}
+        right={<div className="flex flex-wrap gap-2">
+          <button onClick={() => load(eventId)} disabled={busy} className={btn}><RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} /> Actualizar</button>
+          <button disabled={busy} className="inline-flex items-center gap-2 rounded-lg border border-destructive/40 px-3 py-2 text-xs font-bold text-uppercase-wide text-destructive hover:bg-destructive/10 disabled:opacity-50"
+            onClick={() => { if (confirm(`¿Eliminar el Reto de «${activeTitle}»? Se borrarán participantes, conexiones, puntos, misiones y resultados del Reto de este evento. El resto del evento no se toca. No se puede deshacer.`)) run(async () => { await adminDeleteReto(eventId); await loadEvents(); }, "Reto eliminado"); }}>
+            <Trash2 className="h-4 w-4" /> Eliminar Reto
+          </button>
+        </div>}
       />
 
       <div className="flex flex-wrap items-center gap-3">
-        <select value={eventId} onChange={(e) => setEventId(e.target.value)} className="rounded-lg border border-border bg-card px-3 py-2 text-sm">
-          {configured.map((id) => <option key={id} value={id}>{events.find((e) => e.id === id)?.title ?? id}</option>)}
-        </select>
+        <span className="font-display text-sm font-bold text-uppercase-wide">{activeTitle}</span>
         <span className={`rounded-full px-3 py-1 text-[10px] font-bold text-uppercase-wide ${PHASE[phase].cls}`}>{PHASE[phase].label}</span>
       </div>
 
@@ -316,7 +317,6 @@ function AdminReto() {
         </div>
       </details>
 
-      {others.length > 0 && enableBlock}
     </div>
   );
 }

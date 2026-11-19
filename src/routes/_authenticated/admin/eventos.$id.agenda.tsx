@@ -35,7 +35,6 @@ function AdminAgenda() {
 
   return (
     <div className="space-y-6">
-      <Link to="/admin/eventos" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><ArrowLeft className="h-3 w-3" /> Volver a eventos</Link>
       <PageHeader title="Agenda del evento" subtitle="Ponencias, mesas redondas, descansos y networking" right={
         <button onClick={() => { setEditing(null); setShow(true); }} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide">
           <Plus className="h-4 w-4" /> Nuevo item
