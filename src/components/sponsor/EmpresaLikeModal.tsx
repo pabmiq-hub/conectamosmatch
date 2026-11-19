@@ -25,8 +25,14 @@ export function EmpresaLikeModal({
       const resp = r.responsables as any[];
       const existingSet = new Set(r.myExistingLikes);
       const eligible = resp.filter((x) => !existingSet.has(x.id)).map((x) => x.id);
-      // Auto-like when there is exactly one eligible responsable — skip the banner
-      if (eligible.length === 1) {
+      // Companies like a solución as a whole (no picking people); otherwise auto-like a single responsable
+      const wholeAccount = accountLabel === "solución";
+      if (wholeAccount && eligible.length === 0) {
+        toast.info(`Ya has mostrado interés en ${empresaName}`);
+        onClose();
+        return;
+      }
+      if (eligible.length === 1 || (wholeAccount && eligible.length > 0)) {
         try {
           const res = await like({ data: { responsableIds: eligible, eventId } });
           toast.success(`💛 Like enviado a ${empresaName}`);

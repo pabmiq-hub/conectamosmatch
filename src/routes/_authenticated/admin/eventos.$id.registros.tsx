@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
-import { Users, Download, Trash2, Upload, UserPlus, KeyRound, Mail, Send, CalendarClock, Pencil } from "lucide-react";
+import { Users, Download, Trash2, Upload, UserPlus, KeyRound, Mail, CalendarClock, Pencil } from "lucide-react";
 import { SortToggle, type SortDir } from "@/components/dashboard/SortToggle";
 import {
   filterAndSortRegistrations,
@@ -56,7 +56,7 @@ function AdminRegistros() {
     else toast.error(res.error);
   }
 
-  function downloadCredentialsExcel(results: any[]) {
+  function downloadCredentialsExcel(results: any[], group: RoleFilter = "all") {
     if (!results?.length) return;
     const fmt = (iso: string) => new Date(iso).toLocaleString("es-ES", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
     const data = results.map((x) => {
@@ -75,19 +75,21 @@ function AdminRegistros() {
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Claves");
-    const slug = "evento".toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const slug = (group === "empresa" ? "empresas" : group === "sponsor" ? "soluciones" : "todos").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     XLSX.writeFile(wb, `claves-${slug}-${id.slice(0, 8)}-${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
 
-  async function onSendAll() {
-    const n = rows.filter((r) => r.user_id && r.status !== "cancelled").length;
-    if (!window.confirm(`Se generará una nueva contraseña para ${n} participantes y se les enviará por email. Sus contraseñas actuales dejarán de funcionar. Al terminar se descargará un Excel con las mismas claves enviadas. ¿Continuar?`)) return;
+  async function onSendAll(group: RoleFilter) {
+    const n = new Set(rows.filter((r) => r.user_id && r.status !== "cancelled" && (group === "all" || r.role_at_event === group)).map((r) => r.user_id)).size;
+    if (!n) { toast.info("No hay participantes de ese tipo"); return; }
+    const who = group === "empresa" ? "empresas" : group === "sponsor" ? "soluciones" : "participantes";
+    if (!window.confirm(`Se generará una nueva contraseña para ${n} ${who} y se les enviará por email. Sus contraseñas actuales dejarán de funcionar. Al terminar se descargará un Excel con las mismas claves enviadas. ¿Continuar?`)) return;
     setSendingAll(true);
     try {
-      const res = await sendAll({ data: { event_id: id } });
+      const res = await sendAll({ data: { event_id: id, role: group } });
       if (res.failed.length) toast.error(`${res.sent}/${res.total} enviados. Error: ${res.failed[0].error}`, { duration: 10000 });
       else toast.success(`${res.sent}/${res.total} correos enviados`);
-      downloadCredentialsExcel(res.results);
+      downloadCredentialsExcel(res.results, group);
     } catch (e: any) { toast.error(e?.message ?? "Error"); }
     finally { setSendingAll(false); }
   }
@@ -161,7 +163,12 @@ function AdminRegistros() {
         <button onClick={() => setShowImport(true)} className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-bold text-uppercase-wide text-primary-foreground"><Upload className="h-3 w-3" /> Subir participantes (Excel)</button>
         <button onClick={() => setShowNew(true)} className="inline-flex items-center gap-2 rounded-md border border-primary/50 px-3 py-2 text-xs font-bold text-uppercase-wide text-primary"><UserPlus className="h-3 w-3" /> Nuevo participante</button>
         <button onClick={() => setShowAdd(true)} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide"><UserPlus className="h-3 w-3" /> Añadir cuentas existentes</button>
-        <button onClick={onSendAll} disabled={sendingAll || rows.length === 0} className="inline-flex items-center gap-2 rounded-md border border-primary/50 px-3 py-2 text-xs font-bold text-uppercase-wide text-primary disabled:opacity-50"><Send className="h-3 w-3" /> {sendingAll ? "Enviando…" : "Enviar claves a todos"}</button>
+        <select value="" disabled={sendingAll || rows.length === 0} onChange={(e) => e.target.value && onSendAll(e.target.value as RoleFilter)} className="rounded-md border border-primary/50 bg-card px-3 py-2 text-xs font-bold text-uppercase-wide text-primary disabled:opacity-50">
+          <option value="">{sendingAll ? "Enviando…" : "Enviar claves…"}</option>
+          <option value="all">A todos ({counts.all})</option>
+          <option value="empresa">Sólo empresas ({counts.empresa})</option>
+          <option value="sponsor">Sólo soluciones ({counts.sponsor})</option>
+        </select>
         <select value="" disabled={rows.length === 0} onChange={(e) => e.target.value && setBulkRole(e.target.value as RoleFilter)} className="rounded-md border border-destructive/50 bg-card px-3 py-2 text-xs font-bold text-uppercase-wide text-destructive disabled:opacity-50">
           <option value="">Borrar…</option>
           <option value="all">Todos los participantes ({counts.all})</option>

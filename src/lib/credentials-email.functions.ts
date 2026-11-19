@@ -52,12 +52,14 @@ export const sendEventCredentials = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({
     event_id: z.string().uuid(),
     userIds: z.array(z.string().uuid()).max(500).optional(),
+    role: z.enum(["all", "empresa", "sponsor"]).optional(),
   }).parse(input))
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.userId);
     const title = await eventTitle(data.event_id);
-    const { data: regs } = await supabaseAdmin.from("event_registrations").select("user_id, status").eq("event_id", data.event_id);
-    let ids = Array.from(new Set((regs ?? []).filter((r: any) => r.user_id && r.status !== "cancelled").map((r: any) => r.user_id as string)));
+    const { data: regs } = await supabaseAdmin.from("event_registrations").select("user_id, status, role_at_event").eq("event_id", data.event_id);
+    const role = data.role ?? "all";
+    let ids = Array.from(new Set((regs ?? []).filter((r: any) => r.user_id && r.status !== "cancelled" && (role === "all" || r.role_at_event === role)).map((r: any) => r.user_id as string)));
     if (data.userIds) { const only = new Set(data.userIds); ids = ids.filter((i) => only.has(i)); }
     const sent: string[] = [];
     const failed: { email: string; error: string }[] = [];
