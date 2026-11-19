@@ -51,6 +51,26 @@ const createSchema = z.object({
   event_id: z.string().uuid().optional(),
 });
 
+function translateAuthError(msg: string) {
+  if (/already been registered|already registered|already exists/i.test(msg)) return "Ya existe un usuario con este correo electrónico.";
+  if (/password/i.test(msg)) return "La contraseña no es válida (mínimo 8 caracteres).";
+  if (/invalid.*email|email.*invalid/i.test(msg)) return "El correo electrónico no es válido.";
+  return msg;
+}
+
+async function saveAccountProfile(table: "empresa_profiles" | "sponsor_profiles", userId: string, payload: Record<string, unknown>) {
+  // The handle_new_user trigger may already have created a default row for this user: update it instead of inserting a duplicate.
+  const { data: existing } = await supabaseAdmin.from(table).select("id").eq("user_id", userId).maybeSingle();
+  if (existing?.id) {
+    const { error } = await supabaseAdmin.from(table).update(payload as any).eq("id", existing.id);
+    if (error) throw new Error(error.message);
+    return existing.id as string;
+  }
+  const { data, error } = await supabaseAdmin.from(table).insert({ user_id: userId, ...payload } as any).select("id").single();
+  if (error) throw new Error(error.message);
+  return data.id as string;
+}
+
 async function createOne(d: z.infer<typeof createSchema>) {
   const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
     email: d.email,
@@ -58,62 +78,68 @@ async function createOne(d: z.infer<typeof createSchema>) {
     email_confirm: true,
     user_metadata: { full_name: d.full_name, role: d.role },
   });
-  if (error || !created.user) throw new Error(error?.message ?? "No se pudo crear");
+  if (error || !created.user) throw new Error(translateAuthError(error?.message ?? "No se pudo crear"));
   const userId = created.user.id;
+  const createdIds = [userId];
 
-  let accountId: string | null = null;
-  if (d.role === "empresa" && d.empresa) {
-    const { data: prof, error: e } = await supabaseAdmin
-      .from("empresa_profiles")
-      .insert({ user_id: userId, ...d.empresa })
-      .select("id")
-      .single();
-    if (e) throw new Error(e.message);
-    accountId = prof.id;
-  } else if (d.role === "sponsor" && d.sponsor) {
-    const { data: prof, error: e } = await supabaseAdmin
-      .from("sponsor_profiles")
-      .insert({ user_id: userId, ...d.sponsor })
-      .select("id")
-      .single();
-    if (e) throw new Error(e.message);
-    accountId = prof.id;
-  }
+  try {
+    let accountId: string | null = null;
+    if (d.role === "empresa" && d.empresa) accountId = await saveAccountProfile("empresa_profiles", userId, d.empresa as any);
+    else if (d.role === "sponsor" && d.sponsor) accountId = await saveAccountProfile("sponsor_profiles", userId, d.sponsor as any);
 
-  await supabaseAdmin.from("profiles").upsert({
-    id: userId,
-    email: d.email,
-    full_name: d.full_name,
-    phone: d.phone,
-    cargo: d.cargo || null,
-    role: d.role,
-    account_id: accountId,
-    account_role: "owner",
-  });
-
-  // Optional: create an additional "manager" responsable tied to the same account
-  if (accountId && d.responsable) {
-    const r = d.responsable;
-    const { data: rCreated, error: rErr } = await supabaseAdmin.auth.admin.createUser({
-      email: r.email,
-      password: r.password,
-      email_confirm: true,
-      user_metadata: { full_name: r.full_name, role: d.role },
-    });
-    if (rErr || !rCreated.user) throw new Error(`Responsable: ${rErr?.message ?? "no se pudo crear"}`);
-    await supabaseAdmin.from("profiles").upsert({
-      id: rCreated.user.id,
-      email: r.email,
-      full_name: r.full_name,
-      phone: r.phone,
-      cargo: r.cargo || null,
+    const { error: pErr } = await supabaseAdmin.from("profiles").upsert({
+      id: userId,
+      email: d.email,
+      full_name: d.full_name,
+      phone: d.phone,
+      cargo: d.cargo || null,
       role: d.role,
       account_id: accountId,
-      account_role: "manager",
+      account_role: "owner",
     });
+    if (pErr) throw new Error(pErr.message);
+
+    if (accountId && d.responsable) {
+      const r = d.responsable;
+      const { data: rCreated, error: rErr } = await supabaseAdmin.auth.admin.createUser({
+        email: r.email,
+        password: r.password,
+        email_confirm: true,
+        user_metadata: { full_name: r.full_name, role: d.role },
+      });
+      if (rErr || !rCreated.user) throw new Error(`Responsable: ${translateAuthError(rErr?.message ?? "no se pudo crear")}`);
+      createdIds.push(rCreated.user.id);
+      // Remove any default account the trigger created for the manager; they belong to the owner's account.
+      const otherTable = d.role === "empresa" ? "empresa_profiles" : "sponsor_profiles";
+      await supabaseAdmin.from(otherTable).delete().eq("user_id", rCreated.user.id);
+      const { error: rpErr } = await supabaseAdmin.from("profiles").upsert({
+        id: rCreated.user.id,
+        email: r.email,
+        full_name: r.full_name,
+        phone: r.phone,
+        cargo: r.cargo || null,
+        role: d.role,
+        account_id: accountId,
+        account_role: "manager",
+      });
+      if (rpErr) throw new Error(rpErr.message);
+    }
+  } catch (e) {
+    await rollbackUsers(createdIds);
+    throw e;
   }
 
   return userId;
+}
+
+async function rollbackUsers(ids: string[]) {
+  for (const id of ids) {
+    await supabaseAdmin.from("event_registrations").delete().eq("user_id", id);
+    await supabaseAdmin.from("empresa_profiles").delete().eq("user_id", id);
+    await supabaseAdmin.from("sponsor_profiles").delete().eq("user_id", id);
+    await supabaseAdmin.from("profiles").delete().eq("id", id);
+    await supabaseAdmin.auth.admin.deleteUser(id);
+  }
 }
 
 export const createUserAccount = createServerFn({ method: "POST" })
@@ -135,7 +161,10 @@ export const createUserAccount = createServerFn({ method: "POST" })
       }));
       if (rows.length) {
         const { error } = await supabaseAdmin.from("event_registrations").insert(rows as any);
-        if (error) throw new Error(`Cuenta creada, pero no se pudo inscribir en el evento: ${error.message}`);
+        if (error) {
+          await rollbackUsers(rows.map((r: any) => r.user_id));
+          throw new Error(`No se pudo inscribir en el evento: ${error.message}`);
+        }
       }
     }
     return { userId, email: data.email };
