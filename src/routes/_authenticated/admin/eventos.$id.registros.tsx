@@ -1,8 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { Users, Download, Trash2, Upload, UserPlus, KeyRound, Mail, Send } from "lucide-react";
+import { SortToggle, type SortDir } from "@/components/dashboard/SortToggle";
+import {
+  filterAndSortRegistrations,
+  roleCounts,
+  roleLabel,
+  type RoleFilter,
+  type SortField,
+} from "@/lib/registration-list";
 import { ImportUsersModal } from "@/components/admin/ImportUsersModal";
 import { NewUserModal } from "@/components/admin/NewUserModal";
 import { AddExistingAccountsModal } from "@/components/admin/AddExistingAccountsModal";
@@ -57,6 +65,9 @@ function AdminRegistros() {
   }
   const del = useServerFn(deleteRegistration);
   const [rows, setRows] = useState<any[]>([]);
+  const [role, setRole] = useState<RoleFilter>("all");
+  const [sortField, setSortField] = useState<SortField>("company");
+  const [dir, setDir] = useState<SortDir>("asc");
   const [showImport, setShowImport] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [showNew, setShowNew] = useState(false);
@@ -69,10 +80,17 @@ function AdminRegistros() {
   }
   useEffect(() => { load(); }, [id]);
 
+  const counts = useMemo(() => roleCounts(rows), [rows]);
+
+  const visible = useMemo(
+    () => filterAndSortRegistrations(rows, { role, field: sortField, dir }),
+    [rows, role, sortField, dir],
+  );
+
   function exportCSV() {
     const header = ["Nombre", "Empresa", "Email", "Rol", "Cargo", "Estado", "Check-in", "Registrado"];
     const lines = [header.join(",")].concat(
-      rows.map((r) => [r.attendee_name, r.attendee_company, r.attendee_email, r.role_at_event, r.attendee_role_title, r.status, r.checked_in_at ?? "", r.registered_at]
+      visible.map((r) => [r.attendee_name, r.attendee_company, r.attendee_email, r.role_at_event, r.attendee_role_title, r.status, r.checked_in_at ?? "", r.registered_at]
         .map((v) => `"${(v ?? "").toString().replaceAll('"', '""')}"`).join(",")),
     );
     const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
@@ -92,6 +110,40 @@ function AdminRegistros() {
         <button onClick={exportCSV} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide"><Download className="h-3 w-3" /> Exportar CSV</button>
         </div>
       } />
+      {rows.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5">
+          <div className="inline-flex overflow-hidden rounded-md border border-border">
+            {([
+              { id: "all" as RoleFilter, label: "Todos" },
+              { id: "empresa" as RoleFilter, label: "Empresas" },
+              { id: "sponsor" as RoleFilter, label: "Soluciones" },
+            ]).map((f, i) => (
+              <button key={f.id} type="button" onClick={() => setRole(f.id)}
+                className={`px-3 py-1.5 text-[11px] font-bold text-uppercase-wide ${i > 0 ? "border-l border-border" : ""} ${role === f.id ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted"}`}>
+                {f.label} <span className="opacity-70">({counts[f.id]})</span>
+              </button>
+            ))}
+          </div>
+          <div className="inline-flex items-center gap-2">
+            <span className="text-[11px] font-bold text-uppercase-wide text-muted-foreground">Ordenar por</span>
+            <div className="inline-flex overflow-hidden rounded-md border border-border">
+              {([
+                { id: "company" as SortField, label: "Empresa" },
+                { id: "name" as SortField, label: "Nombre" },
+              ]).map((f, i) => (
+                <button key={f.id} type="button" onClick={() => setSortField(f.id)}
+                  className={`px-3 py-1.5 text-[11px] font-bold text-uppercase-wide ${i > 0 ? "border-l border-border" : ""} ${sortField === f.id ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted"}`}>
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            <SortToggle value={dir} onChange={setDir} label="Orden alfabético" />
+          </div>
+          <span className="ml-auto text-[11px] font-bold text-uppercase-wide text-muted-foreground">
+            {visible.length === rows.length ? `${rows.length} participantes` : `${visible.length} de ${rows.length}`}
+          </span>
+        </div>
+      )}
       {editing && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
           <div className="w-full max-w-sm rounded-xl border border-border bg-card p-5 space-y-4">
@@ -118,12 +170,12 @@ function AdminRegistros() {
               <th className="px-4 py-3 text-left">Nombre</th><th className="px-4 py-3 text-left">Empresa</th><th className="px-4 py-3 text-left">Email</th><th className="px-4 py-3 text-left">Rol</th><th className="px-4 py-3 text-left">Estado</th><th />
             </tr></thead>
             <tbody>
-              {rows.map((r) => (
+              {visible.map((r) => (
                 <tr key={r.id} className="border-t border-border">
                   <td className="px-4 py-3 font-medium text-xs">{r.attendee_name}</td>
                   <td className="px-4 py-3 text-xs">{r.attendee_company}</td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">{r.attendee_email}</td>
-                  <td className="px-4 py-3"><span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{r.role_at_event === "sponsor" ? "Solución" : r.role_at_event === "empresa" ? "Empresa" : r.role_at_event}</span></td>
+                  <td className="px-4 py-3"><span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{roleLabel(r)}</span></td>
                   <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold text-uppercase-wide bg-muted`}>{r.status}</span></td>
                   <td className="px-4 py-3 text-right">
                     <button disabled={!r.user_id || busyId === r.id} onClick={() => { setEditing(r); setNewPwd(""); setAlsoSend(true); }} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Editar contraseña"><KeyRound className="h-4 w-4" /></button>
@@ -136,6 +188,13 @@ function AdminRegistros() {
                   </td>
                 </tr>
               ))}
+              {visible.length === 0 && (
+                <tr className="border-t border-border">
+                  <td colSpan={6} className="px-4 py-6 text-center text-xs text-muted-foreground">
+                    No hay participantes de este tipo en el evento.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
