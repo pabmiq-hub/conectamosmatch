@@ -2,7 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
-import { Users, ArrowLeft, Check, Download, Trash2 } from "lucide-react";
+import { Users, ArrowLeft, Check, Download, Trash2, Upload } from "lucide-react";
+import { ImportUsersModal } from "@/components/admin/ImportUsersModal";
+import { useAdminEvent } from "@/hooks/use-admin-event";
 import { toast } from "sonner";
 import { listRegistrations, toggleCheckIn, deleteRegistration } from "@/lib/admin-registrations.functions";
 
@@ -16,6 +18,9 @@ function AdminRegistros() {
   const toggle = useServerFn(toggleCheckIn);
   const del = useServerFn(deleteRegistration);
   const [rows, setRows] = useState<any[]>([]);
+  const [showImport, setShowImport] = useState(false);
+  const { eventId, setEventId, ready } = useAdminEvent();
+  useEffect(() => { if (ready && eventId !== id) setEventId(id); }, [ready, id]);
 
   async function load() {
     try { const r = await list({ data: { event_id: id } }); setRows(r.registrations); }
@@ -38,10 +43,14 @@ function AdminRegistros() {
   return (
     <div className="space-y-6">
       <Link to="/admin/eventos" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><ArrowLeft className="h-3 w-3" /> Volver a eventos</Link>
-      <PageHeader title="Inscritos" subtitle={`Total: ${rows.length} · Check-in: ${rows.filter((r) => r.checked_in_at).length}`} right={
+      <PageHeader title="Participantes" subtitle={`Total: ${rows.length} · Check-in: ${rows.filter((r) => r.checked_in_at).length}`} right={
+        <div className="flex flex-wrap gap-2">
+        <button onClick={() => setShowImport(true)} className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-bold text-uppercase-wide text-primary-foreground"><Upload className="h-3 w-3" /> Subir participantes (Excel)</button>
         <button onClick={exportCSV} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide"><Download className="h-3 w-3" /> Exportar CSV</button>
+        </div>
       } />
-      {rows.length === 0 ? <EmptyState icon={Users} title="Sin inscritos" /> : (
+      {showImport && <ImportUsersModal defaultEventId={id} onClose={() => setShowImport(false)} onDone={load} />}
+      {rows.length === 0 ? <EmptyState icon={Users} title="Sin participantes" hint="Pulsa «Subir participantes (Excel)» para inscribirlos en este evento." /> : (
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-[10px] text-uppercase-wide text-muted-foreground"><tr>

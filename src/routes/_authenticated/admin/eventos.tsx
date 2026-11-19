@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useAdminEvent } from "@/hooks/use-admin-event";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
@@ -32,6 +33,8 @@ const statusColors: Record<string, string> = {
 function AdminEventos() {
   const list = useServerFn(listEvents);
   const del = useServerFn(deleteEvent);
+  const navigate = useNavigate();
+  const { setEventId: setAdminEvent } = useAdminEvent();
   const [events, setEvents] = useState<any[]>([]);
   const [editing, setEditing] = useState<any | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -70,6 +73,9 @@ function AdminEventos() {
                   <div className="flex items-center gap-1.5"><Users className="h-3 w-3" />{e.max_empresas ?? "∞"} emp · {e.max_sponsors ?? "∞"} spo</div>
                   <div className="flex items-center gap-1.5"><ClipboardList className="h-3 w-3" />{e.meetings_per_user ?? 8} reuniones</div>
                 </div>
+                <button onClick={() => { setAdminEvent(e.id); navigate({ to: "/admin" }); }} className="mt-2 w-full inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-2.5 text-[11px] font-bold text-uppercase-wide text-primary-foreground hover:opacity-90">
+                  Gestionar evento →
+                </button>
                 <div className="grid grid-cols-2 gap-2 pt-2">
                   <button onClick={() => { setEditing(e); setShowModal(true); }} className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border px-3 py-2 text-[11px] font-bold text-uppercase-wide hover:bg-muted">
                     <Edit3 className="h-3 w-3" /> Editar

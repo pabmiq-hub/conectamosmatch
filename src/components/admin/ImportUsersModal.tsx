@@ -59,7 +59,7 @@ type WorkingGroup = Group & {
   admin_idx: number;
 };
 
-export function ImportUsersModal({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+export function ImportUsersModal({ onClose, onDone, defaultEventId }: { onClose: () => void; onDone: () => void; defaultEventId?: string }) {
   const analyzeFn = useServerFn(analyzeExcelGroups);
   const confirmFn = useServerFn(confirmGroupedImport);
 
@@ -70,7 +70,7 @@ export function ImportUsersModal({ onClose, onDone }: { onClose: () => void; onD
   const [rowsByIdx, setRowsByIdx] = useState<Record<string, any>>({});
   const [parseErrors, setParseErrors] = useState<{ idx: number; email: string; error: string }[]>([]);
   const [events, setEvents] = useState<{ id: string; title: string }[]>([]);
-  const [eventId, setEventId] = useState<string>("");
+  const [eventId, setEventId] = useState<string>(defaultEventId ?? "");
   useEffect(() => {
     supabase.from("events").select("id, title, status").order("event_date", { ascending: false }).then(({ data }) => {
       setEvents((data ?? []).filter((e: any) => e.status !== "cancelled"));

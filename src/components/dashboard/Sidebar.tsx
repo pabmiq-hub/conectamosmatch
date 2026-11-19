@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { useUnreadMessages } from "@/hooks/use-unread-messages";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useAdminEvent } from "@/hooks/use-admin-event";
+import { listEvents } from "@/lib/admin-events.functions";
 import { signOut, type AppRole } from "@/lib/auth";
-import { LayoutDashboard, User, Search, Users, Heart, Calendar, Megaphone, ClipboardList, LogOut, Settings, Building2, UsersRound, BookmarkCheck, Inbox, Trophy, Medal, Target, MessageCircleQuestion, MessageSquare, ChevronDown, CalendarClock } from "lucide-react";
+import { LayoutDashboard, User, Search, Users, Heart, Calendar, Megaphone, ClipboardList, LogOut, Settings, Building2, UsersRound, BookmarkCheck, Inbox, Trophy, Medal, Target, MessageCircleQuestion, MessageSquare, ChevronDown, CalendarClock, ArrowLeft, UserPlus, ListChecks } from "lucide-react";
 
 export interface NavItem {
   to: string;
@@ -95,8 +98,73 @@ function Badge({ n }: { n: number }) {
   return <span className="ml-auto min-w-5 h-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">{n > 99 ? "99+" : n}</span>;
 }
 
-/** Shared accordion nav for desktop sidebar and mobile drawer. */
-export function NavMenu({ items, onNavigate, large }: { items: NavItem[]; onNavigate?: () => void; large?: boolean }) {
+/** Shared nav: superadmin gets a global or per-event menu; others the accordion. */
+export function NavMenu(props: { items: NavItem[]; onNavigate?: () => void; large?: boolean }) {
+  if (props.items[0]?.to === "/admin") return <AdminNav onNavigate={props.onNavigate} large={props.large} />;
+  return <UserNav {...props} />;
+}
+
+/** Superadmin menu: global (all events) or exclusive to the active event. */
+function AdminNav({ onNavigate, large }: { onNavigate?: () => void; large?: boolean }) {
+  const path = useRouterState({ select: (r) => r.location.pathname });
+  const navigate = useNavigate();
+  const listEv = useServerFn(listEvents);
+  const { eventId, setEventId, ready } = useAdminEvent();
+  const [events, setEvents] = useState<any[]>([]);
+  useEffect(() => { listEv({ data: undefined as any }).then((r) => setEvents(r.events)).catch(() => {}); }, []);
+  // Entering an event's own page makes it the active event.
+  const m = path.match(/^\/admin\/eventos\/([^/]+)\//);
+  useEffect(() => { if (ready && m && m[1] !== eventId) setEventId(m[1]); }, [ready, m?.[1]]);
+  const ev = events.find((e) => e.id === eventId);
+  const py = large ? "py-3 text-sm" : "py-2.5 text-xs";
+  const row = (to: string, label: string, Icon: typeof LayoutDashboard, exact = false) => {
+    const active = exact ? path === to : path === to || path.startsWith(`${to}/`);
+    return (
+      <Link key={to + label} to={to as any} onClick={onNavigate} className={`relative w-full flex items-center gap-3 px-4 ${py} text-uppercase-wide font-medium transition-colors ${active ? "text-primary bg-sidebar-accent" : "text-sidebar-foreground hover:bg-sidebar-accent"}`}>
+        {active && <span className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />}
+        <Icon className="h-4 w-4 shrink-0" /><span className="truncate">{label}</span>
+      </Link>
+    );
+  };
+  if (!ready) return null;
+  if (!eventId) {
+    return (
+      <nav className="py-2">
+        <div className="px-4 pb-2 text-[10px] font-bold text-uppercase-wide text-muted-foreground">General</div>
+        {row("/admin", "Resumen global", LayoutDashboard, true)}
+        {row("/admin/eventos", "Eventos", Calendar, true)}
+        {row("/admin/usuarios", "Usuarios", Users)}
+        <p className="px-4 pt-3 text-[11px] text-muted-foreground">Entra en un evento con «Gestionar evento» para ver su menú.</p>
+      </nav>
+    );
+  }
+  return (
+    <nav className="py-2">
+      <button type="button" onClick={() => { setEventId(""); onNavigate?.(); navigate({ to: "/admin/eventos" }); }} className="w-full flex items-center gap-2 px-4 py-2 text-[11px] text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="h-3 w-3" /> Todos los eventos
+      </button>
+      <div className="mx-3 mb-2 rounded-md border border-primary/40 bg-primary/5 px-3 py-2">
+        <div className="text-[10px] font-bold text-uppercase-wide text-primary">Evento</div>
+        <div className="text-xs font-semibold leading-tight break-words">{ev?.title ?? "…"}</div>
+      </div>
+      {row("/admin", "Resumen", LayoutDashboard, true)}
+      {row(`/admin/eventos/${eventId}/registros`, "Participantes", UserPlus)}
+      {row("/admin/selecciones", "Selecciones", BookmarkCheck)}
+      {row("/admin/matches", "Matches", Heart)}
+      {row("/admin/reuniones", "Reuniones 1to1", ClipboardList)}
+      {row(`/admin/eventos/${eventId}/agenda`, "Agenda y franjas", ListChecks)}
+      {row("/admin/tablon", "Tablón", Megaphone)}
+      <div className="px-4 pt-3 pb-1 text-[10px] font-bold text-uppercase-wide text-muted-foreground">Reto</div>
+      {row("/admin/reto", "Centro de mando", Trophy)}
+      {row("/admin/reto-misiones", "Misiones", Target)}
+      {row("/admin/reto-comodines", "Comodines", MessageCircleQuestion)}
+      <div className="px-4 pt-3 pb-1 text-[10px] font-bold text-uppercase-wide text-muted-foreground">Ajustes</div>
+      {row("/admin/eventos", "Configuración", Settings, true)}
+    </nav>
+  );
+}
+
+function UserNav({ items, onNavigate, large }: { items: NavItem[]; onNavigate?: () => void; large?: boolean }) {
   const path = useRouterState({ select: (r) => r.location.pathname });
   const unread = useUnreadMessages();
   const groups = groupNav(items);
