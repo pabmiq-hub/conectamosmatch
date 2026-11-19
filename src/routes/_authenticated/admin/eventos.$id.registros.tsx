@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
-import { Users, Download, Trash2, Upload, UserPlus, KeyRound, Mail, Send, CalendarClock } from "lucide-react";
+import { Users, Download, Trash2, Upload, UserPlus, KeyRound, Mail, Send, CalendarClock, Pencil } from "lucide-react";
 import { SortToggle, type SortDir } from "@/components/dashboard/SortToggle";
 import {
   filterAndSortRegistrations,
@@ -13,6 +13,7 @@ import {
 } from "@/lib/registration-list";
 import { ImportUsersModal } from "@/components/admin/ImportUsersModal";
 import { NewUserModal } from "@/components/admin/NewUserModal";
+import { EditUserModal } from "@/components/admin/EditUserModal";
 import { AddExistingAccountsModal } from "@/components/admin/AddExistingAccountsModal";
 import { useAdminEvent } from "@/hooks/use-admin-event";
 import { toast } from "sonner";
@@ -67,6 +68,7 @@ function AdminRegistros() {
   }
   const del = useServerFn(deleteRegistration);
   const [availFor, setAvailFor] = useState<any>(null);
+  const [editUserId, setEditUserId] = useState<string | null>(null);
   const [rows, setRows] = useState<any[]>([]);
   const [role, setRole] = useState<RoleFilter>("all");
   const [sortField, setSortField] = useState<SortField>("company");
@@ -163,6 +165,7 @@ function AdminRegistros() {
           </div>
         </div>
       )}
+      {editUserId && <EditUserModal userId={editUserId} onClose={() => setEditUserId(null)} onSaved={load} />}
       {showNew && <NewUserModal eventId={id} onClose={() => setShowNew(false)} onCreated={load} />}
       {showAdd && <AddExistingAccountsModal eventId={id} onClose={() => setShowAdd(false)} onDone={load} />}
       {showImport && <ImportUsersModal defaultEventId={id} onClose={() => setShowImport(false)} onDone={load} />}
@@ -180,7 +183,8 @@ function AdminRegistros() {
                   <td className="px-4 py-3 text-xs text-muted-foreground">{r.attendee_email}</td>
                   <td className="px-4 py-3"><span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{roleLabel(r)}</span></td>
                   <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold text-uppercase-wide bg-muted`}>{r.status}</span></td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <button disabled={!r.user_id} onClick={() => setEditUserId(r.user_id)} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Editar participante"><Pencil className="h-4 w-4" /></button>
                     <button disabled={!r.user_id || busyId === r.id} onClick={() => { setEditing(r); setNewPwd(""); setAlsoSend(true); }} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Editar contraseña"><KeyRound className="h-4 w-4" /></button>
                     <button disabled={!r.user_id} onClick={() => setAvailFor(r)} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Disponibilidad y restricciones de agenda"><CalendarClock className="h-4 w-4" /></button>
                     <button disabled={!r.user_id || busyId === r.id} onClick={() => sendOne(r)} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Enviar claves por email"><Mail className="h-4 w-4" /></button>

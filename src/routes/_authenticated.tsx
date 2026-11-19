@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
 import { getMyActiveRetoEvent } from "@/lib/reto";
 import { RetoEntryPopup } from "@/components/reto/RetoEntryPopup";
+import { fetchMyEventScope } from "@/hooks/use-my-event";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -19,6 +20,7 @@ function AuthLayout() {
   const [ready, setReady] = useState(false);
   const [retoActive, setRetoActive] = useState(false);
   const [retoEventId, setRetoEventId] = useState<string | null>(null);
+  const [allowAvailability, setAllowAvailability] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -66,6 +68,7 @@ function AuthLayout() {
       }
       setReady(true);
       if (role !== "super_admin") {
+        fetchMyEventScope().then((s) => { if (mounted) setAllowAvailability(!!s.event?.allow_participant_availability); }).catch(() => {});
         getMyActiveRetoEvent(session.user.id).then((ev) => { if (mounted) { setRetoActive(!!ev); setRetoEventId(ev); } }).catch(() => {});
       }
     })();
@@ -83,9 +86,9 @@ function AuthLayout() {
 
   return (
     <div className="min-h-screen flex bg-background">
-      <Sidebar role={profile.role} companyName={companyName} logoUrl={logoUrl} retoActive={retoActive} />
+      <Sidebar role={profile.role} companyName={companyName} logoUrl={logoUrl} retoActive={retoActive} allowAvailability={allowAvailability} />
       <div className="flex-1 flex flex-col min-w-0">
-        <Topbar userName={profile.full_name ?? profile.email} role={profile.role} companyName={companyName} logoUrl={logoUrl} retoActive={retoActive} title={profile.role === "super_admin" ? "Panel de administración" : ""} />
+        <Topbar userName={profile.full_name ?? profile.email} role={profile.role} companyName={companyName} logoUrl={logoUrl} retoActive={retoActive} allowAvailability={allowAvailability} title={profile.role === "super_admin" ? "Panel de administración" : ""} />
         <main className="flex-1 p-4 md:p-8">
           <Outlet />
         </main>

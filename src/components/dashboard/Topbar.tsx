@@ -5,9 +5,9 @@ import { NotificationsBell } from "@/components/dashboard/NotificationsBell";
 import { signOut, type AppRole } from "@/lib/auth";
 import { navItemsFor, NavMenu } from "@/components/dashboard/Sidebar";
 
-export function Topbar({ title, userName, role, companyName, logoUrl, retoActive }: { title?: string; userName?: string | null; role?: AppRole; companyName?: string; logoUrl?: string | null; retoActive?: boolean }) {
+export function Topbar({ title, userName, role, companyName, logoUrl, retoActive, allowAvailability }: { title?: string; userName?: string | null; role?: AppRole; companyName?: string; logoUrl?: string | null; retoActive?: boolean; allowAvailability?: boolean }) {
   const [open, setOpen] = useState(false);
-  const items = role ? navItemsFor(role, retoActive) : [];
+  const items = role ? navItemsFor(role, retoActive, allowAvailability) : [];
   const roleBadge = role === "super_admin" ? "ADMIN" : role === "sponsor" ? "SPONSOR" : "EMPRESA";
 
   return (

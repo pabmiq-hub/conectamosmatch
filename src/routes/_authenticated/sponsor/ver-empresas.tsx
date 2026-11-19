@@ -71,9 +71,9 @@ function VerEmpresasSponsor() {
         {filtered.map((e) => {
           const liked = e.id ? likedAccountIds.has(e.id) : false;
           return (
-            <PartnerCard key={e.user_id ?? e.company_name} name={e.company_name} description={e.description} logoUrl={e.logo_url} sector={e.sector} size={e.company_size} liked={liked}
+            <PartnerCard key={e.user_id ?? e.company_name} name={e.company_name} logoUrl={e.logo_url} sector={e.sector} size={e.company_size} liked={liked}
               actions={<>
-                <ActionButton icon={Eye} label="Ver" onClick={() => setSelected(e)} />
+                <ActionButton icon={Eye} label="Ver" onClick={() => setSelected({ ...e, description: null })} />
                 {me && e.user_id && (
                   <AccountInterestButton
                       disabled={!eventId}
