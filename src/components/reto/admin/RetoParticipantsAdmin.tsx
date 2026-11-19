@@ -35,7 +35,29 @@ export function RetoParticipantsAdmin({ eventId, locked, onChanged }: { eventId:
     setCands((profs ?? []).map((p: any) => ({ ...p, company: companyOf(p) })));
   }, [eventId]);
 
-  useEffect(() => { load(); }, [load]);
+  // Por defecto, todos los inscritos del evento juegan: se sincronizan al abrir el panel.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!locked) {
+        try {
+          const [{ data: regs }, { data: cur }] = await Promise.all([
+            retoDb.from("event_registrations").select("user_id").eq("event_id", eventId).neq("status", "cancelled"),
+            retoDb.from("reto_participants").select("user_id").eq("event_id", eventId),
+          ]);
+          const have = new Set((cur ?? []).map((r: any) => r.user_id));
+          const missing = [...new Set((regs ?? []).map((r: any) => r.user_id).filter((u: any) => u && !have.has(u)))] as string[];
+          if (missing.length && !cancelled) {
+            const n = await adminAddParticipants(eventId, missing);
+            if (n) { toast.success(`${n} inscrito${n === 1 ? "" : "s"} del evento añadido${n === 1 ? "" : "s"} al Reto`); onChanged(); }
+          }
+        } catch (e: any) { toast.error(e.message ?? "No se pudo sincronizar con los inscritos"); }
+      }
+      if (!cancelled) load();
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [load, locked, eventId]);
 
   const inReto = useMemo(() => new Set(parts.map((p) => p.user_id)), [parts]);
   const visible = useMemo(() => {
@@ -91,7 +113,7 @@ export function RetoParticipantsAdmin({ eventId, locked, onChanged }: { eventId:
         </div>
       </div>
       <p className="text-xs text-muted-foreground">
-        El listado usa los usuarios que ya existen en la plataforma. Para personas nuevas, créalas antes en Usuarios → Importar y después súbelas aquí con un Excel que tenga una columna «Email».
+        Todos los inscritos del evento se añaden automáticamente al abrir esta página. También puedes añadir otros usuarios a mano. Para personas nuevas, créalas antes en Usuarios → Importar y después súbelas aquí con un Excel que tenga una columna «Email».
         {locked && " El Reto está cerrado: reábrelo para cambiar participantes."}
       </p>
 
