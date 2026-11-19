@@ -30,7 +30,7 @@ export function RetoParticipantsAdmin({ eventId, locked, onChanged }: { eventId:
     setParts(ps ?? []);
     const companyOf = (p: any) => {
       const list = p.role === "sponsor" ? sps : emps;
-      return (list ?? []).find((c: any) => c.id === p.account_id || c.user_id === p.id)?.company_name ?? null;
+      const l = list ?? []; return (l.find((c: any) => c.id === p.account_id) ?? l.find((c: any) => c.user_id === p.id))?.company_name ?? null;
     };
     setCands((profs ?? []).map((p: any) => ({ ...p, company: companyOf(p) })));
   }, [eventId]);
