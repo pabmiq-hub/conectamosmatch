@@ -22,6 +22,7 @@ import { AvailabilityEditor } from "@/components/dashboard/AvailabilityEditor";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { listRegistrations, deleteRegistration, deleteRegistrationsBulk } from "@/lib/admin-registrations.functions";
 import { setPasswordAndMaybeSend, sendEventCredentials } from "@/lib/credentials-email.functions";
+import { deleteWholeAccount } from "@/lib/admin-users.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/eventos/$id/registros")({
   component: AdminRegistros,
@@ -92,6 +93,15 @@ function AdminRegistros() {
       downloadCredentialsExcel(res.results, group);
     } catch (e: any) { toast.error(e?.message ?? "Error"); }
     finally { setSendingAll(false); }
+  }
+  const delAccount = useServerFn(deleteWholeAccount);
+  async function onDeleteAccount(g: any) {
+    const first = g.people.find((p: any) => p.user_id);
+    if (!first) return toast.error("Esta cuenta no tiene personas con usuario");
+    const tipo = g.role === "sponsor" ? "la solución" : "la empresa";
+    if (!window.confirm(`Vas a eliminar ${tipo} «${g.company}» y sus ${g.people.length} persona(s) vinculada(s) de toda la plataforma. Esta acción no se puede deshacer. ¿Continuar?`)) return;
+    try { const r = await delAccount({ data: { userId: first.user_id } }); toast.success(`Cuenta eliminada (${r.deleted} personas)`); load(); }
+    catch (e: any) { toast.error(e?.message ?? "Error"); }
   }
   const del = useServerFn(deleteRegistration);
   const delBulk = useServerFn(deleteRegistrationsBulk);
@@ -208,7 +218,7 @@ function AdminRegistros() {
             ]).map((f, i) => (
               <button key={f.id} type="button" onClick={() => setRole(f.id)}
                 className={`px-3 py-1.5 text-[11px] font-bold text-uppercase-wide ${i > 0 ? "border-l border-border" : ""} ${role === f.id ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted"}`}>
-                {f.label} <span className="opacity-70">({counts[f.id]})</span>
+                {f.label} <span className="opacity-70">({counts[f.id]} {counts[f.id] === 1 ? "persona" : "personas"})</span>
               </button>
             ))}
           </div>
@@ -273,6 +283,8 @@ function AdminRegistros() {
                 <span className="flex-1 truncate text-sm font-semibold">{g.company}</span>
                 <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{g.role === "sponsor" ? "Solución" : "Empresa"}</span>
                 <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">{g.people.length} {g.people.length === 1 ? "persona" : "personas"}</span>
+                <button type="button" title="Editar cuenta" disabled={!g.people[0]?.user_id} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditUserId(g.people[0].user_id); }} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40"><Pencil className="h-4 w-4" /></button>
+                <button type="button" title="Eliminar cuenta y sus personas" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDeleteAccount(g); }} className="p-1.5 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
               </summary>
               <ul className="divide-y divide-border border-t border-border bg-muted/10">
                 {g.people.map((r: any) => (

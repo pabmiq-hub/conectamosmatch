@@ -1419,3 +1419,34 @@ export const updateAccountMember = createServerFn({ method: "POST" })
 
 
 
+
+/** Deletes a whole empresa/solución account (resolved from any member) and every person linked to it. */
+export const deleteWholeAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ userId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+    const { data: prof } = await supabaseAdmin.from("profiles").select("account_id").eq("id", data.userId).maybeSingle();
+    const accountId = prof?.account_id ?? null;
+    const ids = new Set<string>([data.userId]);
+    if (accountId) {
+      const { data: members } = await supabaseAdmin.from("profiles").select("id").eq("account_id", accountId);
+      (members ?? []).forEach((m: any) => ids.add(m.id));
+    }
+    if (ids.has(context.userId)) throw new Response("No puedes eliminar tu propia cuenta", { status: 400 });
+    const list = Array.from(ids);
+    await supabaseAdmin.from("event_registrations").delete().in("user_id", list);
+    if (accountId) {
+      await supabaseAdmin.from("empresa_profiles").delete().eq("id", accountId);
+      await supabaseAdmin.from("sponsor_profiles").delete().eq("id", accountId);
+    }
+    await supabaseAdmin.from("empresa_profiles").delete().in("user_id", list);
+    await supabaseAdmin.from("sponsor_profiles").delete().in("user_id", list);
+    const errors: string[] = [];
+    for (const id of list) {
+      const { error } = await supabaseAdmin.auth.admin.deleteUser(id);
+      if (error) errors.push(error.message);
+    }
+    if (errors.length) throw new Response(errors[0], { status: 400 });
+    return { ok: true, deleted: list.length };
+  });
