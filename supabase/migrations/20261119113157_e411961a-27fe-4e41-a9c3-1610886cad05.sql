@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.meetings_visible(uuid) FROM PUBLIC, anon;

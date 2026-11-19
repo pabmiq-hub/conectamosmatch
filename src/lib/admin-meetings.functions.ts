@@ -598,3 +598,35 @@ export const approveMeetingProposal = createServerFn({ method: "POST" })
     }
     return { created };
   });
+
+export const setMeetingsPublished = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ event_id: z.string().uuid(), published: z.boolean() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+    const { error } = await supabaseAdmin
+      .from("events")
+      .update({ meetings_published: data.published, meetings_published_at: data.published ? new Date().toISOString() : null })
+      .eq("id", data.event_id);
+    if (error) throw new Error(error.message);
+    let notified = 0;
+    if (data.published) {
+      const { data: ms } = await supabaseAdmin
+        .from("meetings_1to1")
+        .select("empresa_user_id, sponsor_user_id, status, scheduled_time")
+        .eq("event_id", data.event_id);
+      const emp = new Set<string>(); const sp = new Set<string>();
+      for (const m of ms ?? []) {
+        if (m.status === "cancelled" || !m.scheduled_time) continue;
+        if (m.empresa_user_id) emp.add(m.empresa_user_id);
+        if (m.sponsor_user_id) sp.add(m.sponsor_user_id);
+      }
+      const rows = [
+        ...[...emp].map((u) => ({ user_id: u, type: "meetings_published", title: "Tus reuniones 1to1 ya están publicadas", body: "Consulta tu agenda de reuniones", link: "/empresa/reuniones-1to1" })),
+        ...[...sp].map((u) => ({ user_id: u, type: "meetings_published", title: "Tus reuniones 1to1 ya están publicadas", body: "Consulta tu agenda de reuniones", link: "/sponsor/reuniones-1to1" })),
+      ];
+      for (let i = 0; i < rows.length; i += 200) await supabaseAdmin.from("notifications").insert(rows.slice(i, i + 200));
+      notified = rows.length;
+    }
+    return { ok: true, notified };
+  });

@@ -10,6 +10,7 @@ export const Route = createFileRoute("/_authenticated/sponsor/reuniones-1to1")({
 
 function ReunionesSponsor() {
   const [rows, setRows] = useState<any[]>([]);
+  const [published, setPublished] = useState(true);
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -21,6 +22,10 @@ function ReunionesSponsor() {
       const teamIds = (teamProfiles ?? []).map((p: any) => p.id);
       const teamMap = new Map((teamProfiles ?? []).map((p: any) => [p.id, p]));
       const ev = (await fetchMyEventScope()).event;
+      if (ev) {
+        const { data: evRow } = await supabase.from("events").select("meetings_published").eq("id", ev.id).maybeSingle();
+        setPublished(!!evRow?.meetings_published);
+      }
       const { data: meetings } = teamIds.length && ev
         ? await supabase.from("meetings_1to1").select("*").in("sponsor_user_id", teamIds).eq("event_id", ev.id).order("scheduled_time")
         : { data: [] as any[] };
@@ -47,5 +52,5 @@ function ReunionesSponsor() {
     })();
   }, []);
 
-  return <MeetingsList rows={rows} />;
+  return <MeetingsList rows={rows} published={published} />;
 }

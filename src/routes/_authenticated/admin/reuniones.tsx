@@ -6,7 +6,7 @@ import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { ClipboardList, Wand2, Trash2, Plus, FileSpreadsheet, FileText, Heart, Sparkles, Building2, CalendarCheck, Upload, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { listEvents } from "@/lib/admin-events.functions";
-import { listMeetings, autoAssignSlots, updateMeeting, deleteMeeting, clearMeetings } from "@/lib/admin-meetings.functions";
+import { listMeetings, autoAssignSlots, updateMeeting, deleteMeeting, clearMeetings, setMeetingsPublished } from "@/lib/admin-meetings.functions";
 import { listMatches } from "@/lib/admin-matches.functions";
 import { listAllParticipants } from "@/lib/admin-meetings.functions";
 import { listAgenda } from "@/lib/admin-agenda.functions";
@@ -60,6 +60,7 @@ function AdminReuniones() {
   const upd = useServerFn(updateMeeting);
   const del = useServerFn(deleteMeeting);
   const clearAll = useServerFn(clearMeetings);
+  const setPublished = useServerFn(setMeetingsPublished);
   const [events, setEvents] = useState<any[]>([]);
   const { eventId, setEventId, ready } = useAdminEvent();
   const [showGenerate, setShowGenerate] = useState(false);
@@ -167,6 +168,24 @@ function AdminReuniones() {
       const r = await autoAssign({ data: { event_id: eventId } });
       toast.success(`Asignadas ${r.assigned} · Sin slot ${r.skipped}`);
       load();
+    } catch (e: any) { toast.error(e?.message ?? "Error"); }
+    finally { setBusy(false); }
+  }
+
+  const currentEvent: any = events.find((e: any) => e.id === eventId);
+  const isPublished = !!currentEvent?.meetings_published;
+  async function togglePublish() {
+    if (!eventId) return;
+    const next = !isPublished;
+    const msg = next
+      ? "¿Publicar las reuniones 1to1? Empresas y soluciones las verán en su panel y recibirán un aviso."
+      : "¿Volver a borrador? Los participantes dejarán de ver sus reuniones hasta que las publiques de nuevo.";
+    if (!confirm(msg)) return;
+    setBusy(true);
+    try {
+      const r = await setPublished({ data: { event_id: eventId, published: next } });
+      setEvents((evs) => evs.map((e: any) => e.id === eventId ? { ...e, meetings_published: next } : e));
+      toast.success(next ? `Reuniones publicadas · ${r.notified} avisos enviados` : "Reuniones en borrador");
     } catch (e: any) { toast.error(e?.message ?? "Error"); }
     finally { setBusy(false); }
   }
@@ -292,6 +311,18 @@ function AdminReuniones() {
           </button>
         </div>
       } />
+
+      {eventId && currentEvent && (
+        <div className={`flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4 ${isPublished ? "border-primary/40 bg-primary/5" : "border-accent bg-accent/30"}`}>
+          <div>
+            <p className="text-sm font-bold">{isPublished ? "Publicadas: los participantes ven sus reuniones" : "Borrador: solo tú ves estas reuniones"}</p>
+            <p className="text-xs text-muted-foreground">{isPublished ? "Los cambios que hagas se verán al momento en sus paneles." : "Revisa y edita lo que necesites. Empresas y soluciones no verán nada hasta que publiques."}</p>
+          </div>
+          <button onClick={togglePublish} disabled={busy} className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-xs font-bold text-uppercase-wide disabled:opacity-50 ${isPublished ? "border border-border hover:bg-muted" : "bg-primary text-primary-foreground"}`}>
+            {isPublished ? "Volver a borrador" : "Publicar reuniones"}
+          </button>
+        </div>
+      )}
 
       {showCreate && <CreateMeetingModal eventId={eventId || null} onClose={() => setShowCreate(false)} onCreated={load} />}
       {showGenerate && eventId && <GenerateMeetingsModal eventId={eventId} rooms={(events.find((e: any) => e.id === eventId) as any)?.rooms ?? []} onClose={() => setShowGenerate(false)} onApproved={load} />}

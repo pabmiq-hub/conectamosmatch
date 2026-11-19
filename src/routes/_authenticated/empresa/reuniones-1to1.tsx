@@ -11,6 +11,7 @@ export const Route = createFileRoute("/_authenticated/empresa/reuniones-1to1")({
 
 function ReunionesEmpresa() {
   const [rows, setRows] = useState<any[]>([]);
+  const [published, setPublished] = useState(true);
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -22,6 +23,10 @@ function ReunionesEmpresa() {
       const teamIds = (teamProfiles ?? []).map((p: any) => p.id);
       const teamMap = new Map((teamProfiles ?? []).map((p: any) => [p.id, p]));
       const ev = (await fetchMyEventScope()).event;
+      if (ev) {
+        const { data: evRow } = await supabase.from("events").select("meetings_published").eq("id", ev.id).maybeSingle();
+        setPublished(!!evRow?.meetings_published);
+      }
       const { data: meetings } = teamIds.length && ev
         ? await supabase.from("meetings_1to1").select("*").in("empresa_user_id", teamIds).eq("event_id", ev.id).order("scheduled_time")
         : { data: [] as any[] };
@@ -48,10 +53,10 @@ function ReunionesEmpresa() {
     })();
   }, []);
 
-  return <MeetingsList rows={rows} />;
+  return <MeetingsList rows={rows} published={published} />;
 }
 
-export function MeetingsList({ rows }: { rows: any[] }) {
+export function MeetingsList({ rows, published = true }: { rows: any[]; published?: boolean }) {
   const grouped = new Map<string, any[]>();
   for (const r of rows) {
     const d = r.scheduled_time ? new Date(r.scheduled_time) : null;
@@ -67,7 +72,7 @@ export function MeetingsList({ rows }: { rows: any[] }) {
   return (
     <div className="space-y-6">
       <PageHeader title="Mis reuniones 1to1" subtitle="Speed-meetings de 15 minutos asignadas por el organizador" />
-      {rows.length === 0 ? <EmptyState icon={ClipboardList} title="Sin reuniones asignadas" hint="El organizador asignará tus 1to1 en base a tus matches" /> : (
+      {!published ? <EmptyState icon={ClipboardList} title="Agenda de reuniones en preparación" hint="La organización está confeccionando las reuniones 1to1. Se publicarán próximamente." /> : rows.length === 0 ? <EmptyState icon={ClipboardList} title="Sin reuniones asignadas" hint="El organizador asignará tus 1to1 en base a tus matches" /> : (
         <div className="space-y-8">
           {days.map(([dayLabel, dayRows]) => (
             <div key={dayLabel} className="space-y-3">

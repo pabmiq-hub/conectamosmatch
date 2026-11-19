@@ -437,6 +437,8 @@ export type Database = {
           meeting_windows: Json
           meetings_end_at: string | null
           meetings_per_user: number
+          meetings_published: boolean
+          meetings_published_at: string | null
           meetings_start_at: string | null
           rooms: string[]
           slot_duration_minutes: number
@@ -472,6 +474,8 @@ export type Database = {
           meeting_windows?: Json
           meetings_end_at?: string | null
           meetings_per_user?: number
+          meetings_published?: boolean
+          meetings_published_at?: string | null
           meetings_start_at?: string | null
           rooms?: string[]
           slot_duration_minutes?: number
@@ -507,6 +511,8 @@ export type Database = {
           meeting_windows?: Json
           meetings_end_at?: string | null
           meetings_per_user?: number
+          meetings_published?: boolean
+          meetings_published_at?: string | null
           meetings_start_at?: string | null
           rooms?: string[]
           slot_duration_minutes?: number
@@ -1659,6 +1665,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      meetings_visible: { Args: { _event: string }; Returns: boolean }
       my_account_id: { Args: never; Returns: string }
       reto_admin_add_participants: {
         Args: { _event: string; _users: string[] }
