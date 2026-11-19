@@ -414,6 +414,7 @@ export type Database = {
       }
       events: {
         Row: {
+          allow_participant_availability: boolean
           cover_image_url: string | null
           created_at: string | null
           created_by: string | null
@@ -448,6 +449,7 @@ export type Database = {
           virtual_url: string | null
         }
         Insert: {
+          allow_participant_availability?: boolean
           cover_image_url?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -482,6 +484,7 @@ export type Database = {
           virtual_url?: string | null
         }
         Update: {
+          allow_participant_availability?: boolean
           cover_image_url?: string | null
           created_at?: string | null
           created_by?: string | null

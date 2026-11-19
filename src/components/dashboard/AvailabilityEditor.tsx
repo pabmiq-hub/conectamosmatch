@@ -73,10 +73,13 @@ export function AvailabilityEditor({ eventId, targetUserId, onSaved }: { eventId
     error ? toast.error("No se pudo guardar: " + error.message) : (toast.success("Disponibilidad guardada"), onSaved?.());
   };
 
+  const readOnly = !adminMode && event && !event.allow_participant_availability;
   if (loaded && !event) return <p className="text-sm text-muted-foreground">{adminMode ? "No se encontró el evento." : "No hay ningún evento publicado ahora mismo."}</p>;
 
   return (
     <div className="space-y-4">
+      {readOnly && <p className="rounded-lg border bg-muted/40 p-3 text-sm">La organización gestiona la disponibilidad de este evento. Si necesitas cambiar algo, contacta con ella.</p>}
+      <fieldset disabled={!!readOnly} className="space-y-4 disabled:opacity-70">
       {event && <p className="text-sm text-muted-foreground">{event.title} · {adminMode ? "Restricciones que se respetarán al proponer sus reuniones 1to1." : "La organización usará esto para proponer tus reuniones 1to1."}</p>}
       {Object.keys(days).sort().map((k) => {
         const s = days[k];
@@ -110,7 +113,8 @@ export function AvailabilityEditor({ eventId, targetUserId, onSaved }: { eventId
           </div>
         );
       })}
-      {event && <Button onClick={save} disabled={saving}>{saving ? "Guardando…" : "Guardar disponibilidad"}</Button>}
+      </fieldset>
+      {event && !readOnly && <Button onClick={save} disabled={saving}>{saving ? "Guardando…" : "Guardar disponibilidad"}</Button>}
     </div>
   );
 }

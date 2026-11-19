@@ -37,6 +37,7 @@ export function EventModal({ event, onClose, onSaved }: { event: any | null; onC
     sponsor_max_likes: "",
     likes_deadline: "",
     empresa_max_meetings: 8,
+    allow_participant_availability: false,
     sponsor_default_max_meetings: 8,
     levels: [{ level: "PLATINUM", max: 12 }, { level: "GOLD", max: 8 }, { level: "SILVER", max: 4 }] as { level: string; max: number }[],
     windows: [] as Window[],
@@ -71,6 +72,7 @@ export function EventModal({ event, onClose, onSaved }: { event: any | null; onC
         sponsor_max_likes: event.sponsor_max_likes?.toString() ?? "",
         likes_deadline: event.likes_deadline ? new Date(event.likes_deadline).toISOString().slice(0, 16) : "",
         empresa_max_meetings: event.empresa_max_meetings ?? 8,
+        allow_participant_availability: !!event.allow_participant_availability,
         sponsor_default_max_meetings: event.sponsor_default_max_meetings ?? 8,
         levels: Object.entries((event.sponsor_meetings_by_level ?? {}) as Record<string, number>).map(([level, max]) => ({ level, max })),
         windows: Array.isArray(event.meeting_windows) ? event.meeting_windows : [],
@@ -120,6 +122,7 @@ export function EventModal({ event, onClose, onSaved }: { event: any | null; onC
         sponsor_max_likes: f.sponsor_max_likes ? parseInt(f.sponsor_max_likes) : null,
         likes_deadline: f.likes_deadline ? new Date(f.likes_deadline).toISOString() : null,
         empresa_max_meetings: f.empresa_max_meetings,
+        allow_participant_availability: f.allow_participant_availability,
         sponsor_default_max_meetings: f.sponsor_default_max_meetings,
         sponsor_meetings_by_level: Object.fromEntries(f.levels.filter((l) => l.level.trim()).map((l) => [l.level.trim().toUpperCase(), l.max])),
         meeting_windows: f.windows.filter((w) => w.date && w.start && w.end),
@@ -204,6 +207,10 @@ export function EventModal({ event, onClose, onSaved }: { event: any | null; onC
           </Section>
 
           <Section title="Topes de reuniones 1 a 1">
+            <label className="mb-4 flex items-start gap-2 text-sm">
+              <input type="checkbox" className="mt-1" checked={f.allow_participant_availability} onChange={(e) => set("allow_participant_availability", e.target.checked)} />
+              <span><strong>Permitir disponibilidad</strong><span className="block text-xs text-muted-foreground">Si está marcado, empresas y soluciones pueden indicar su disponibilidad. Si no, solo el administrador la marca desde Participantes.</span></span>
+            </label>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <Label>Máx. reuniones por empresa</Label>
