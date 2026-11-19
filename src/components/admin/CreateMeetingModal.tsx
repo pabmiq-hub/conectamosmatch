@@ -19,7 +19,7 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
   const [room, setRoom] = useState("");
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { list().then(setParts as any).catch(() => setParts({ empresas: [], sponsors: [] })); }, []);
+  useEffect(() => { list({ data: { event_id: eventId } }).then(setParts as any).catch(() => setParts({ empresas: [], sponsors: [] })); }, [eventId]);
 
   const empParty = useMemo(() => parts?.empresas.find((e) => e.user_id === empresa), [parts, empresa]);
   const spParty = useMemo(() => parts?.sponsors.find((s) => s.user_id === sponsor), [parts, sponsor]);

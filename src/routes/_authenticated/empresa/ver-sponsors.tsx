@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchMyEventScope } from "@/hooks/use-my-event";
 import { PartnerCard } from "@/components/dashboard/PartnerCard";
 import { AccountInterestButton, ActionButton, Eye } from "@/components/dashboard/ActionButtons";
 import { PartnerDetailModal, type PartnerDetail } from "@/components/dashboard/PartnerDetailModal";
@@ -34,10 +35,15 @@ function VerSponsors() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     setMe(user.id);
-    const { data: ev } = await supabase.from("events").select("id, empresa_min_likes").in("status", ["published","ongoing"]).order("event_date").limit(1).maybeSingle();
+    const scope = await fetchMyEventScope();
+    const ev = scope.event;
     setEventId(ev?.id ?? null);
     setMinRequired((ev as any)?.empresa_min_likes ?? 12);
-    const { data: sp } = await supabase.from("sponsor_profiles").select("id, user_id, company_name, description, logo_url, sector, sponsorship_level, website, location_city, responsables, categories");
+    // Only the soluciones registered for this same event
+    const ids = scope.sponsorAccountIds;
+    const { data: sp } = ids.length
+      ? await supabase.from("sponsor_profiles").select("id, user_id, company_name, description, logo_url, sector, sponsorship_level, website, location_city, responsables, categories").in("id", ids)
+      : { data: [] as any[] };
     setItems(sp ?? []);
     const liked = await getLikedAccounts({ data: { eventId: ev?.id ?? null } });
     setLikedAccountIds(new Set(liked.accountIds));
@@ -124,6 +130,7 @@ function VerSponsors() {
                   <ActionButton icon={Eye} label="Ver" onClick={() => setSelected(s)} />
                   {me && s.user_id && (
                     <AccountInterestButton
+                      disabled={!eventId}
                       targetUserId={s.user_id}
                       eventId={eventId}
                       partnerName={s.company_name}
@@ -137,7 +144,7 @@ function VerSponsors() {
             />
           );
         })}
-        {filtered.length === 0 && <div className="col-span-full text-center text-sm text-muted-foreground py-12">No hay soluciones que coincidan con tu búsqueda.</div>}
+        {filtered.length === 0 && <div className="col-span-full text-center text-sm text-muted-foreground py-12">{items.length === 0 ? "Todavía no hay soluciones inscritas en tu evento." : "No hay soluciones que coincidan con tu búsqueda."}</div>}
       </div>
       <PartnerDetailModal open={!!selected} onClose={() => setSelected(null)} partner={selected} hideLevel />
       {likeTarget && (

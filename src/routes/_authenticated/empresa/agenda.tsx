@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchMyEventScope } from "@/hooks/use-my-event";
 import { AgendaTable, type AgendaMeeting } from "@/components/dashboard/AgendaTable";
 import { PageHeader } from "@/components/dashboard/EmptyState";
 
@@ -14,7 +15,7 @@ function AgendaEmpresa() {
   const [meetings, setMeetings] = useState<AgendaMeeting[]>([]);
   useEffect(() => {
     (async () => {
-      const { data: ev } = await supabase.from("events").select("*").in("status", ["published","ongoing"]).order("event_date").limit(1).maybeSingle();
+      const ev = (await fetchMyEventScope()).event;
       if (!ev) return;
       setEvent(ev);
       const { data: ag } = await supabase.from("event_agenda").select("*").eq("event_id", ev.id).order("order_index");

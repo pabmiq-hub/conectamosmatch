@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { assertSuperAdmin } from "./admin-shared.server";
+import { getEventScope } from "./event-scope.server";
 
 type AccountKind = "empresa" | "sponsor";
 type AccountRef = { id: string; company_name: string; logo_url?: string | null };
@@ -28,6 +29,8 @@ export const listAccountSelections = createServerFn({ method: "POST" })
   .handler(async ({ context, data: input }) => {
     await assertSuperAdmin(context.userId);
 
+    // Inside an event, only the accounts registered for that event are listed
+    const scope = input.event_id ? await getEventScope(supabaseAdmin, input.event_id) : null;
     const [{ data: emps }, { data: sps }, { data: profs }] = await Promise.all([
       supabaseAdmin.from("empresa_profiles").select("id, user_id, company_name, logo_url"),
       supabaseAdmin.from("sponsor_profiles").select("id, user_id, company_name, logo_url"),
@@ -55,9 +58,11 @@ export const listAccountSelections = createServerFn({ method: "POST" })
     const empAccounts = new Map<string, AccountRef & { kind: AccountKind }>();
     const spAccounts = new Map<string, AccountRef & { kind: AccountKind }>();
     (emps ?? []).forEach((e: any) => {
+      if (scope && !scope.accountIds.has(e.id)) return;
       empAccounts.set(e.id, { id: e.id, company_name: e.company_name, logo_url: e.logo_url, kind: "empresa" });
     });
     (sps ?? []).forEach((s: any) => {
+      if (scope && !scope.accountIds.has(s.id)) return;
       spAccounts.set(s.id, { id: s.id, company_name: s.company_name, logo_url: s.logo_url, kind: "sponsor" });
     });
     (profs ?? []).forEach((p: any) => {

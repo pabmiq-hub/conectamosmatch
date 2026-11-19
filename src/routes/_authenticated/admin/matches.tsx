@@ -25,7 +25,7 @@ function AdminMatches() {
   const [allEmpresas, setAllEmpresas] = useState<any[]>([]);
   const [allSponsors, setAllSponsors] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
-  const { eventId, setEventId } = useAdminEvent();
+  const { eventId, ready } = useAdminEvent();
   const [sponsorId, setSponsorId] = useState<string>("");
   const [mode, setMode] = useState<Mode>("by-empresa");
   const [showZero, setShowZero] = useState(true);
@@ -33,14 +33,17 @@ function AdminMatches() {
   useEffect(() => { (async () => { try { const r = await listEv({ data: undefined as any }); setEvents(r.events); } catch {} })(); }, []);
 
   async function load() {
+    // Each event is independent: never load matches without the active event
+    if (!ready) return;
+    if (!eventId) { setRows([]); setAllEmpresas([]); setAllSponsors([]); return; }
     try {
-      const r = await list({ data: { event_id: eventId || null, status: null } });
+      const r = await list({ data: { event_id: eventId, status: null } });
       setRows(r.matches);
       setAllEmpresas(r.allEmpresas ?? []);
       setAllSponsors(r.allSponsors ?? []);
     } catch (e: any) { toast.error(e?.message ?? "Error"); }
   }
-  useEffect(() => { load(); }, [eventId]);
+  useEffect(() => { load(); }, [eventId, ready]);
 
   const sponsorOptions = useMemo(
     () => [...allSponsors].sort((a, b) => (a.company_name ?? "").localeCompare(b.company_name ?? "", "es")),
@@ -109,11 +112,7 @@ function AdminMatches() {
         </div>
       } />
       <div className="flex flex-wrap items-center gap-3">
-        <label className="text-xs text-uppercase-wide text-muted-foreground">Evento</label>
-        <select value={eventId} onChange={(e) => setEventId(e.target.value)} className="rounded-md border border-border bg-card px-3 py-2 text-xs">
-          <option value="">Todos</option>
-          {events.map((e) => <option key={e.id} value={e.id}>{e.title}</option>)}
-        </select>
+        <span className="rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-xs font-bold text-primary">{events.find((e) => e.id === eventId)?.title ?? "Sin evento seleccionado"}</span>
         <label className="text-xs text-uppercase-wide text-muted-foreground ml-2">Solución</label>
         <select value={sponsorId} onChange={(e) => setSponsorId(e.target.value)} className="rounded-md border border-border bg-card px-3 py-2 text-xs min-w-[200px]">
           <option value="">Todas</option>

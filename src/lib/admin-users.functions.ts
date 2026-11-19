@@ -1150,6 +1150,12 @@ export const likeEmpresaAccount = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    // Selections only exist inside an event, between participants of that same event
+    if (!data.eventId) throw new Error("No estás inscrito en ningún evento activo");
+    const { getEventScope } = await import("./event-scope.server");
+    const scope = await getEventScope(supabaseAdmin, data.eventId);
+    if (!scope.userIds.has(userId)) throw new Error("Tu cuenta no está inscrita en este evento");
+    if (data.responsableIds.some((id) => !scope.userIds.has(id))) throw new Error("Esa cuenta no participa en este evento");
     const rows = data.responsableIds.map((toId) => ({
       from_user_id: userId,
       to_user_id: toId,

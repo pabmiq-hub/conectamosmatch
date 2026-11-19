@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchMyEventScope } from "@/hooks/use-my-event";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { ClipboardList, MapPin, User, Building2 } from "lucide-react";
 
@@ -20,8 +21,9 @@ function ReunionesEmpresa() {
         : { data: [] as any[] };
       const teamIds = (teamProfiles ?? []).map((p: any) => p.id);
       const teamMap = new Map((teamProfiles ?? []).map((p: any) => [p.id, p]));
-      const { data: meetings } = teamIds.length
-        ? await supabase.from("meetings_1to1").select("*").in("empresa_user_id", teamIds).order("scheduled_time")
+      const ev = (await fetchMyEventScope()).event;
+      const { data: meetings } = teamIds.length && ev
+        ? await supabase.from("meetings_1to1").select("*").in("empresa_user_id", teamIds).eq("event_id", ev.id).order("scheduled_time")
         : { data: [] as any[] };
 
       const sponsorAccIds = Array.from(new Set((meetings ?? []).map((m: any) => m.sponsor_account_id).filter(Boolean)));

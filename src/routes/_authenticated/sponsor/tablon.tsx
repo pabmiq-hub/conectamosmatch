@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchMyEventScope } from "@/hooks/use-my-event";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { Megaphone } from "lucide-react";
 
@@ -12,7 +13,11 @@ function TablonSponsor() {
   const [posts, setPosts] = useState<any[]>([]);
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from("bulletin_posts").select("*").order("created_at", { ascending: false });
+      // Global notices plus the ones of my current event only
+      const ev = (await fetchMyEventScope()).event;
+      let q = supabase.from("bulletin_posts").select("*").order("created_at", { ascending: false });
+      q = ev ? q.or(`scope.eq.global,event_id.eq.${ev.id}`) : q.eq("scope", "global");
+      const { data } = await q;
       setPosts(data ?? []);
     })();
   }, []);

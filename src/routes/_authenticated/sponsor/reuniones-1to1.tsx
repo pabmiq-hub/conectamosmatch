@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchMyEventScope } from "@/hooks/use-my-event";
 import { MeetingsList } from "@/routes/_authenticated/empresa/reuniones-1to1";
 
 export const Route = createFileRoute("/_authenticated/sponsor/reuniones-1to1")({
@@ -19,8 +20,9 @@ function ReunionesSponsor() {
         : { data: [] as any[] };
       const teamIds = (teamProfiles ?? []).map((p: any) => p.id);
       const teamMap = new Map((teamProfiles ?? []).map((p: any) => [p.id, p]));
-      const { data: meetings } = teamIds.length
-        ? await supabase.from("meetings_1to1").select("*").in("sponsor_user_id", teamIds).order("scheduled_time")
+      const ev = (await fetchMyEventScope()).event;
+      const { data: meetings } = teamIds.length && ev
+        ? await supabase.from("meetings_1to1").select("*").in("sponsor_user_id", teamIds).eq("event_id", ev.id).order("scheduled_time")
         : { data: [] as any[] };
 
       const empAccIds = Array.from(new Set((meetings ?? []).map((m: any) => m.empresa_account_id).filter(Boolean)));

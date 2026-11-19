@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { assertSuperAdmin } from "./admin-shared.server";
+import { getEventScope } from "./event-scope.server";
 
 export const listMeetings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -158,15 +159,20 @@ export const createMeeting = createServerFn({ method: "POST" })
     return { meeting: m };
   });
 
-export const listAllParticipants = createServerFn({ method: "GET" })
+export const listAllParticipants = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((input: unknown) => z.object({ event_id: z.string().uuid().nullable().optional() }).parse(input ?? {}))
+  .handler(async ({ context, data: input }) => {
     await assertSuperAdmin(context.userId);
-    const [{ data: emps }, { data: sps }, { data: profs }] = await Promise.all([
+    const scope = input.event_id ? await getEventScope(supabaseAdmin, input.event_id) : null;
+    const [{ data: empsRaw }, { data: spsRaw }, { data: profs }] = await Promise.all([
       supabaseAdmin.from("empresa_profiles").select("id, user_id, company_name").order("company_name"),
       supabaseAdmin.from("sponsor_profiles").select("id, user_id, company_name").order("company_name"),
       supabaseAdmin.from("profiles").select("id, account_id, full_name, email, account_role, role, is_active"),
     ]);
+    // Inside an event only its registered accounts are offered
+    const emps = (empsRaw ?? []).filter((e: any) => !scope || scope.accountIds.has(e.id));
+    const sps = (spsRaw ?? []).filter((s: any) => !scope || scope.accountIds.has(s.id));
 
     const ownerAccount = new Map<string, string>();
     const byAccount = new Map<string, any[]>();
@@ -350,8 +356,12 @@ export const importMeetingsFromExcel = createServerFn({ method: "POST" })
       supabaseAdmin.from("profiles").select("id, account_id, full_name, email, account_role, role, is_active"),
     ]);
 
-    const findEmpresa = buildNameIndex(emps ?? []);
-    const findSponsor = buildNameIndex(sps ?? []);
+    // Only accounts registered for this event can get meetings in it
+    const scope = await getEventScope(supabaseAdmin, data.event_id);
+    const findEmpresaAll = buildNameIndex(emps ?? []);
+    const findSponsorAll = buildNameIndex(sps ?? []);
+    const findEmpresa = buildNameIndex((emps ?? []).filter((e: any) => scope.accountIds.has(e.id)));
+    const findSponsor = buildNameIndex((sps ?? []).filter((s: any) => scope.accountIds.has(s.id)));
 
     const profByAccount = new Map<string, any[]>();
     (profs ?? []).forEach((p: any) => {
@@ -389,9 +399,9 @@ export const importMeetingsFromExcel = createServerFn({ method: "POST" })
     data.rows.forEach((r, i) => {
       const rowNum = i + 2; // header is row 1
       const emp = findEmpresa(r.empresa);
-      if (!emp) return errors.push({ row: rowNum, reason: `Empresa no encontrada: "${r.empresa}"` });
+      if (!emp) return errors.push({ row: rowNum, reason: findEmpresaAll(r.empresa) ? `Empresa no inscrita en este evento: "${r.empresa}"` : `Empresa no encontrada: "${r.empresa}"` });
       const sp = findSponsor(r.sponsor);
-      if (!sp) return errors.push({ row: rowNum, reason: `Solución no encontrada: "${r.sponsor}"` });
+      if (!sp) return errors.push({ row: rowNum, reason: findSponsorAll(r.sponsor) ? `Solución no inscrita en este evento: "${r.sponsor}"` : `Solución no encontrada: "${r.sponsor}"` });
 
       const dayDate = data.day_dates[r.dia - 1];
       if (!dayDate) return errors.push({ row: rowNum, reason: `Día ${r.dia} sin fecha asignada` });
@@ -521,8 +531,11 @@ export const generateMeetingProposal = createServerFn({ method: "POST" })
     }
 
     const seenPairs = new Set<string>();
+    const evScope = await getEventScope(supabaseAdmin, data.event_id);
     const matchInputs = (matches ?? [])
       .filter((m: any) => m.empresa_user_id && m.sponsor_user_id && m.empresa_account_id && m.sponsor_account_id)
+      // Only accounts registered for this event
+      .filter((m: any) => evScope.accountIds.has(m.empresa_account_id) && evScope.accountIds.has(m.sponsor_account_id))
       .filter((m: any) => {
         const k = `${m.empresa_account_id}|${m.sponsor_account_id}`;
         if (pairHasMeeting.has(k) || seenPairs.has(k)) return false;

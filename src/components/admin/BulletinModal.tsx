@@ -4,12 +4,12 @@ import { X } from "lucide-react";
 import { toast } from "sonner";
 import { createBulletin, updateBulletin } from "@/lib/admin-bulletin.functions";
 
-export function BulletinModal({ events, post, onClose, onSaved }: { events: { id: string; title: string }[]; post: any | null; onClose: () => void; onSaved: () => void }) {
+export function BulletinModal({ events, post, onClose, onSaved, defaultEventId }: { events: { id: string; title: string }[]; post: any | null; onClose: () => void; onSaved: () => void; defaultEventId?: string }) {
   const create = useServerFn(createBulletin);
   const update = useServerFn(updateBulletin);
   const [busy, setBusy] = useState(false);
-  const [scope, setScope] = useState<"global" | "event">("global");
-  const [eventId, setEventId] = useState<string>("");
+  const [scope, setScope] = useState<"global" | "event">(defaultEventId ? "event" : "global");
+  const [eventId, setEventId] = useState<string>(defaultEventId ?? "");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 

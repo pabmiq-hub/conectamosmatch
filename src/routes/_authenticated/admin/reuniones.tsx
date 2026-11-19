@@ -61,7 +61,7 @@ function AdminReuniones() {
   const del = useServerFn(deleteMeeting);
   const clearAll = useServerFn(clearMeetings);
   const [events, setEvents] = useState<any[]>([]);
-  const { eventId, setEventId } = useAdminEvent();
+  const { eventId, setEventId, ready } = useAdminEvent();
   const [showGenerate, setShowGenerate] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
   const [matches, setMatches] = useState<any[]>([]);
@@ -83,28 +83,30 @@ function AdminReuniones() {
   useEffect(() => {
     (async () => {
       try {
-        const [r, p] = await Promise.all([listEv({ data: undefined as any }), listParts()]);
+        const r = await listEv({ data: undefined as any });
         setEvents(r.events);
-        setParticipants(p);
         if (!r.events.some((e: any) => e.id === localStorage.getItem("admin-active-event")) && r.events[0]) setEventId(r.events[0].id);
       } catch (e: any) { toast.error(e?.message ?? "Error"); }
     })();
   }, []);
 
   async function load() {
-    if (!eventId) { setRows([]); setMatches([]); setAgendaItems([]); return; }
+    if (!ready) return;
+    if (!eventId) { setRows([]); setMatches([]); setAgendaItems([]); setParticipants({ empresas: [], sponsors: [] }); return; }
     try {
-      const [r, m, a] = await Promise.all([
+      const [r, m, a, p] = await Promise.all([
         list({ data: { event_id: eventId } }),
         listMatchesFn({ data: { event_id: eventId, status: "mutual" } }),
         listAgendaFn({ data: { event_id: eventId } }),
+        listParts({ data: { event_id: eventId } }),
       ]);
+      setParticipants(p);
       setRows(r.meetings);
       setMatches(m.matches);
       setAgendaItems(a.items ?? []);
     } catch (e: any) { toast.error(e?.message ?? "Error"); }
   }
-  useEffect(() => { load(); }, [eventId]);
+  useEffect(() => { load(); }, [eventId, ready]);
 
   // Account-pair key helpers
   const pairKey = (e: string | null | undefined, s: string | null | undefined) => `${e ?? "_"}::${s ?? "_"}`;
@@ -331,10 +333,7 @@ function AdminReuniones() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-3">
-        <label className="text-[10px] text-uppercase-wide text-muted-foreground">Evento</label>
-        <select value={eventId} onChange={(e) => setEventId(e.target.value)} className="rounded-md border border-border bg-card px-3 py-1.5 text-xs">
-          {events.map((e) => <option key={e.id} value={e.id}>{e.title}</option>)}
-        </select>
+        <span className="rounded-md border border-primary/40 bg-primary/5 px-3 py-1.5 text-xs font-bold text-primary">{events.find((e) => e.id === eventId)?.title ?? "Sin evento"}</span>
         <label className="text-[10px] text-uppercase-wide text-muted-foreground">Empresa</label>
         <select value={empresaFilter} onChange={(e) => setEmpresaFilter(e.target.value)} className="rounded-md border border-border bg-card px-3 py-1.5 text-xs min-w-[160px]">
           <option value="">Todas</option>

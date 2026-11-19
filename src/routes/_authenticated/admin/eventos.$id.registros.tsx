@@ -1,9 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
-import { Users, ArrowLeft, Check, Download, Trash2, Upload } from "lucide-react";
+import { Users, Check, Download, Trash2, Upload, UserPlus } from "lucide-react";
 import { ImportUsersModal } from "@/components/admin/ImportUsersModal";
+import { AddExistingAccountsModal } from "@/components/admin/AddExistingAccountsModal";
 import { useAdminEvent } from "@/hooks/use-admin-event";
 import { toast } from "sonner";
 import { listRegistrations, toggleCheckIn, deleteRegistration } from "@/lib/admin-registrations.functions";
@@ -19,6 +20,7 @@ function AdminRegistros() {
   const del = useServerFn(deleteRegistration);
   const [rows, setRows] = useState<any[]>([]);
   const [showImport, setShowImport] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
   const { eventId, setEventId, ready } = useAdminEvent();
   useEffect(() => { if (ready && eventId !== id) setEventId(id); }, [ready, id]);
 
@@ -45,11 +47,13 @@ function AdminRegistros() {
       <PageHeader title="Participantes" subtitle={`Total: ${rows.length} · Check-in: ${rows.filter((r) => r.checked_in_at).length}`} right={
         <div className="flex flex-wrap gap-2">
         <button onClick={() => setShowImport(true)} className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-bold text-uppercase-wide text-primary-foreground"><Upload className="h-3 w-3" /> Subir participantes (Excel)</button>
+        <button onClick={() => setShowAdd(true)} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide"><UserPlus className="h-3 w-3" /> Añadir cuentas existentes</button>
         <button onClick={exportCSV} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide"><Download className="h-3 w-3" /> Exportar CSV</button>
         </div>
       } />
+      {showAdd && <AddExistingAccountsModal eventId={id} onClose={() => setShowAdd(false)} onDone={load} />}
       {showImport && <ImportUsersModal defaultEventId={id} onClose={() => setShowImport(false)} onDone={load} />}
-      {rows.length === 0 ? <EmptyState icon={Users} title="Sin participantes" hint="Pulsa «Subir participantes (Excel)» para inscribirlos en este evento." /> : (
+      {rows.length === 0 ? <EmptyState icon={Users} title="Sin participantes" hint="Pulsa «Subir participantes (Excel)» o «Añadir cuentas existentes» para inscribirlos en este evento. Solo quienes estén aquí aparecerán en las selecciones, matches y reuniones del evento." /> : (
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-[10px] text-uppercase-wide text-muted-foreground"><tr>

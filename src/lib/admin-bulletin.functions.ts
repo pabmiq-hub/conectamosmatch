@@ -24,8 +24,12 @@ export const listBulletin = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.userId);
     let q = supabaseAdmin.from("bulletin_posts").select("*").order("created_at", { ascending: false });
-    if (data.scope !== "all") q = q.eq("scope", data.scope);
-    if (data.event_id) q = q.eq("event_id", data.event_id);
+    if (data.event_id) {
+      // Inside an event: its own posts plus the global ones
+      if (data.scope === "global") q = q.eq("scope", "global");
+      else if (data.scope === "event") q = q.eq("event_id", data.event_id);
+      else q = q.or(`scope.eq.global,event_id.eq.${data.event_id}`);
+    } else if (data.scope !== "all") q = q.eq("scope", data.scope);
     const { data: posts, error } = await q;
     if (error) throw new Response(error.message, { status: 400 });
     return { posts: posts ?? [] };

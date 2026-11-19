@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { listBulletin, deleteBulletin } from "@/lib/admin-bulletin.functions";
 import { listEvents } from "@/lib/admin-events.functions";
 import { BulletinModal } from "@/components/admin/BulletinModal";
+import { useAdminEvent } from "@/hooks/use-admin-event";
 
 export const Route = createFileRoute("/_authenticated/admin/tablon")({
   component: AdminTablon,
@@ -21,12 +22,14 @@ function AdminTablon() {
   const [scope, setScope] = useState<"all" | "global" | "event">("all");
   const [editing, setEditing] = useState<any | null>(null);
   const [show, setShow] = useState(false);
+  const { eventId, ready } = useAdminEvent();
 
   async function load() {
-    try { const r = await list({ data: { scope, event_id: null } }); setPosts(r.posts); }
+    if (!ready) return;
+    try { const r = await list({ data: { scope, event_id: eventId || null } }); setPosts(r.posts); }
     catch (e: any) { toast.error(e?.message ?? "Error"); }
   }
-  useEffect(() => { load(); }, [scope]);
+  useEffect(() => { load(); }, [scope, eventId, ready]);
   useEffect(() => {
     (async () => {
       try { const r = await listEv({ data: undefined as any }); setEvents(r.events.map((e: any) => ({ id: e.id, title: e.title }))); }
@@ -43,12 +46,12 @@ function AdminTablon() {
           <Plus className="h-4 w-4" /> Nuevo anuncio
         </button>
       } />
-      {show && <BulletinModal events={events} post={editing} onClose={() => setShow(false)} onSaved={load} />}
+      {show && <BulletinModal events={eventId ? events.filter((e) => e.id === eventId) : events} defaultEventId={eventId || undefined} post={editing} onClose={() => setShow(false)} onSaved={load} />}
 
       <div className="flex flex-wrap items-center gap-2">
         {(["all", "global", "event"] as const).map((s) => (
           <button key={s} onClick={() => setScope(s)} className={`rounded-full border px-3 py-1.5 text-xs font-bold text-uppercase-wide ${scope === s ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"}`}>
-            {s === "all" ? "Todos" : s === "global" ? "Globales" : "Por evento"}
+            {s === "all" ? "Todos" : s === "global" ? "Globales" : eventId ? "De este evento" : "Por evento"}
           </button>
         ))}
       </div>

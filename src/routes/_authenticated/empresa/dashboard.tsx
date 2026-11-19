@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchMyEventScope } from "@/hooks/use-my-event";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { AgendaTable } from "@/components/dashboard/AgendaTable";
 import { Bookmark, Heart, Calendar, Search } from "lucide-react";
@@ -27,7 +28,8 @@ function EmpresaDashboard() {
       const { data: ep } = await supabase.from("empresa_profiles").select("company_name").eq("user_id", user.id).maybeSingle();
       setCompanyName(ep?.company_name ?? "");
 
-      const { data: ev } = await supabase.from("events").select("id, title, empresa_min_likes").in("status", ["published","ongoing"]).order("event_date", { ascending: true }).limit(1).maybeSingle();
+      const scope = await fetchMyEventScope();
+      const ev = scope.event;
       if (ev) {
         setEventTitle(ev.title); setMinLikes((ev as any).empresa_min_likes ?? 12);
         const { data: ag } = await supabase.from("event_agenda").select("*").eq("event_id", ev.id).order("order_index");
@@ -36,8 +38,9 @@ function EmpresaDashboard() {
 
       const liked = await getLikedAccounts({ data: { eventId: ev?.id ?? null } });
       const likes = liked.accountIds.length;
-      const { count: matches } = await supabase.from("matches").select("*", { count: "exact", head: true }).eq("empresa_user_id", user.id).eq("status","mutual");
-      const { count: meetings } = await supabase.from("meetings_1to1").select("*", { count: "exact", head: true }).eq("empresa_user_id", user.id).not("scheduled_time", "is", null).neq("status", "cancelled");
+      if (!ev) { setStats({ likes: 0, matches: 0, meetings: 0 }); return; }
+      const { count: matches } = await supabase.from("matches").select("*", { count: "exact", head: true }).eq("empresa_user_id", user.id).eq("event_id", ev.id).eq("status","mutual");
+      const { count: meetings } = await supabase.from("meetings_1to1").select("*", { count: "exact", head: true }).eq("empresa_user_id", user.id).eq("event_id", ev.id).not("scheduled_time", "is", null).neq("status", "cancelled");
       setStats({ likes, matches: matches ?? 0, meetings: meetings ?? 0 });
     })();
   }, []);
@@ -47,7 +50,7 @@ function EmpresaDashboard() {
     <div className="space-y-8">
       <div>
         <h1 className="font-display text-3xl font-bold text-uppercase-wide">Bienvenido, {companyName}</h1>
-        {eventTitle && <p className="mt-1 text-xs text-uppercase-wide text-muted-foreground">Evento actual: {eventTitle}</p>}
+        <p className="mt-1 text-xs text-uppercase-wide text-muted-foreground">{eventTitle ? `Evento actual: ${eventTitle}` : "Todavía no estás inscrito en ningún evento activo"}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchMyEventScope } from "@/hooks/use-my-event";
 import { PartnerCard } from "@/components/dashboard/PartnerCard";
 import { AccountInterestButton, ActionButton, Eye } from "@/components/dashboard/ActionButtons";
 import { PageHeader } from "@/components/dashboard/EmptyState";
@@ -30,9 +31,14 @@ function VerEmpresasSponsor() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     setMe(user.id);
-    const { data: ev } = await supabase.from("events").select("id").in("status", ["published","ongoing"]).order("event_date").limit(1).maybeSingle();
+    const scope = await fetchMyEventScope();
+    const ev = scope.event;
     setEventId(ev?.id ?? null);
-    const { data } = await supabase.from("empresa_profiles").select("id, user_id, company_name, description, logo_url, sector, company_size, website, location_city, responsables");
+    // Only the empresas registered for this same event
+    const ids = scope.empresaAccountIds;
+    const { data } = ids.length
+      ? await supabase.from("empresa_profiles").select("id, user_id, company_name, description, logo_url, sector, company_size, website, location_city, responsables").in("id", ids)
+      : { data: [] as any[] };
     setItems(data ?? []);
     const liked = await getLikedAccounts({ data: { eventId: ev?.id ?? null } });
     setLikedAccountIds(new Set(liked.accountIds));
@@ -70,6 +76,7 @@ function VerEmpresasSponsor() {
                 <ActionButton icon={Eye} label="Ver" onClick={() => setSelected(e)} />
                 {me && e.user_id && (
                   <AccountInterestButton
+                      disabled={!eventId}
                     targetUserId={e.user_id}
                     eventId={eventId}
                     partnerName={e.company_name}

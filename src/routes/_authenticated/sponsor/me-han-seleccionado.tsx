@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchMyEventScope } from "@/hooks/use-my-event";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { PartnerCard } from "@/components/dashboard/PartnerCard";
 import { AccountInterestButton, ActionButton, Eye } from "@/components/dashboard/ActionButtons";
@@ -33,9 +34,9 @@ function EmpresasQueMeHanSeleccionado() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) setMe(user.id);
-      const { data: ev } = await supabase.from("events").select("id").in("status", ["published","ongoing"]).order("event_date").limit(1).maybeSingle();
+      const ev = (await fetchMyEventScope()).event;
       setEventId(ev?.id ?? null);
-      const r = await fn({ data: undefined as any });
+      const r = await fn({ data: { eventId: ev?.id ?? null } });
       setItems(r.items);
       const liked = await getLikedAccounts({ data: { eventId: ev?.id ?? null } });
       setLikedAccountIds(new Set(liked.accountIds));
@@ -101,6 +102,7 @@ function EmpresasQueMeHanSeleccionado() {
                         <ActionButton icon={Eye} label="Ver" onClick={() => setSelected(e)} />
                         {me && e.user_id && (
                           <AccountInterestButton
+                      disabled={!eventId}
                             targetUserId={e.user_id}
                             eventId={eventId}
                             partnerName={e.company_name}

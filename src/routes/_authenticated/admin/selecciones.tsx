@@ -5,7 +5,7 @@ import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { BookmarkCheck, ChevronDown, ChevronRight, Building2, Sparkles, Search, FileSpreadsheet, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { listAccountSelections } from "@/lib/admin-selections.functions";
-import { AdminEventSelector, useAdminEvent } from "@/hooks/use-admin-event";
+import { useAdminEvent } from "@/hooks/use-admin-event";
 import { SortToggle, sortByName, type SortDir } from "@/components/dashboard/SortToggle";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -68,9 +68,11 @@ function AdminSelecciones() {
 
   useEffect(() => {
     if (!ready) return;
+    // Each event is independent: without an active event there is nothing to show
+    if (!eventId) { setEmpresas([]); setSponsors([]); return; }
     (async () => {
       try {
-        const r = await fn({ data: { event_id: eventId || null } });
+        const r = await fn({ data: { event_id: eventId } });
         setEmpresas(r.empresas);
         setSponsors(r.sponsors);
       } catch (e: any) {
@@ -184,7 +186,6 @@ function AdminSelecciones() {
         subtitle="Cuántas cuentas únicas ha seleccionado cada empresa y cada solución"
         right={
           <div className="flex flex-wrap gap-2">
-            <AdminEventSelector />
             <button onClick={() => openExport("excel")} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide hover:bg-muted">
               <FileSpreadsheet className="h-4 w-4" /> Excel
             </button>

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchMyEventScope } from "@/hooks/use-my-event";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { AgendaTable } from "@/components/dashboard/AgendaTable";
 import { LevelBadge } from "@/components/brand/LevelBadge";
@@ -24,15 +25,17 @@ function SponsorDashboard() {
       const { data: sp } = await supabase.from("sponsor_profiles").select("company_name, sponsorship_level").eq("user_id", user.id).maybeSingle();
       setName(sp?.company_name ?? "");
       setLevel(sp?.sponsorship_level ?? "BASIC");
-      const { data: ev } = await supabase.from("events").select("id, title").in("status", ["published","ongoing"]).order("event_date").limit(1).maybeSingle();
+      const scope = await fetchMyEventScope();
+      const ev = scope.event;
       if (ev) {
         setEventTitle(ev.title);
         const { data: ag } = await supabase.from("event_agenda").select("*").eq("event_id", ev.id).order("order_index");
         setAgenda(ag ?? []);
       }
+      if (!ev) { setStats({ matches: 0, meetings: 0 }); return; }
       const [m, mt] = await Promise.all([
-        supabase.from("matches").select("*", { count: "exact", head: true }).eq("sponsor_user_id", user.id).eq("status","mutual"),
-        supabase.from("meetings_1to1").select("*", { count: "exact", head: true }).eq("sponsor_user_id", user.id).not("scheduled_time", "is", null).neq("status", "cancelled"),
+        supabase.from("matches").select("*", { count: "exact", head: true }).eq("sponsor_user_id", user.id).eq("event_id", ev.id).eq("status","mutual"),
+        supabase.from("meetings_1to1").select("*", { count: "exact", head: true }).eq("sponsor_user_id", user.id).eq("event_id", ev.id).not("scheduled_time", "is", null).neq("status", "cancelled"),
       ]);
       setStats({ matches: m.count ?? 0, meetings: mt.count ?? 0 });
     })();
@@ -44,7 +47,7 @@ function SponsorDashboard() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="font-display text-3xl font-bold text-uppercase-wide">Bienvenido, {name}</h1>
-          {eventTitle && <p className="mt-1 text-xs text-uppercase-wide text-muted-foreground">Evento actual: {eventTitle}</p>}
+          <p className="mt-1 text-xs text-uppercase-wide text-muted-foreground">{eventTitle ? `Evento actual: ${eventTitle}` : "Todavía no estás inscrito en ningún evento activo"}</p>
         </div>
         <LevelBadge level={level} />
       </div>

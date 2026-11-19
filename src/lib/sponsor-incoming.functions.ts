@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
@@ -21,7 +22,8 @@ type IncomingEmpresa = {
 
 export const listEmpresasWhoLikedMe = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<{ items: IncomingEmpresa[] }> => {
+  .inputValidator((input: unknown) => z.object({ eventId: z.string().uuid().nullable() }).parse(input ?? { eventId: null }))
+  .handler(async ({ context, data: input }): Promise<{ items: IncomingEmpresa[] }> => {
     const { userId } = context;
 
     // Find the sponsor account of the current user
@@ -53,10 +55,13 @@ export const listEmpresasWhoLikedMe = createServerFn({ method: "POST" })
     if (!myMemberIds.length) return { items: [] };
 
     // Likes received by any of my responsables
+    // Only likes made inside the current event
+    if (!input.eventId) return { items: [] };
     const { data: likes } = await supabaseAdmin
       .from("likes")
       .select("from_user_id, to_user_id, created_at")
       .in("to_user_id", myMemberIds)
+      .eq("event_id", input.eventId)
       .order("created_at", { ascending: false });
     const senderIds = Array.from(new Set((likes ?? []).map((l: any) => l.from_user_id).filter(Boolean)));
     if (!senderIds.length) return { items: [] };
@@ -97,6 +102,7 @@ export const listEmpresasWhoLikedMe = createServerFn({ method: "POST" })
       .from("matches")
       .select("empresa_account_id")
       .eq("sponsor_account_id", myAccountId)
+      .eq("event_id", input.eventId)
       .eq("status", "mutual");
     const matchedAccounts = new Set((matches ?? []).map((m: any) => m.empresa_account_id));
 

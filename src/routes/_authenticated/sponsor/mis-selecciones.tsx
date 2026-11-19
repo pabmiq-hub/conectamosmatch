@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchMyEventScope } from "@/hooks/use-my-event";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { PartnerCard } from "@/components/dashboard/PartnerCard";
 import { AccountInterestButton, ActionButton, Eye } from "@/components/dashboard/ActionButtons";
@@ -31,7 +32,7 @@ function MisSeleccionesSponsor() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setMe(user.id);
-      const { data: ev } = await supabase.from("events").select("id").in("status", ["published","ongoing"]).order("event_date").limit(1).maybeSingle();
+      const ev = (await fetchMyEventScope()).event;
       setEventId(ev?.id ?? null);
 
       const likedAccounts = await getLikedAccounts({ data: { eventId: ev?.id ?? null } });
@@ -44,7 +45,7 @@ function MisSeleccionesSponsor() {
         .in("id", ids);
       setItems(emp ?? []);
 
-      const { partnerAccountIds } = await getMatches({ data: undefined as any });
+      const { partnerAccountIds } = await getMatches({ data: { eventId: ev?.id ?? null } });
       setMatchedAccountSet(new Set(partnerAccountIds));
     })();
   }, []);

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchMyEventScope } from "@/hooks/use-my-event";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -25,7 +26,7 @@ export function AvailabilityEditor() {
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      const { data: ev } = await supabase.from("events").select("*").in("status", ["published", "ongoing"]).order("event_date").limit(1).maybeSingle();
+      const ev = (await fetchMyEventScope()).event;
       setLoaded(true);
       if (!user || !ev) return;
       setUserId(user.id); setEvent(ev);

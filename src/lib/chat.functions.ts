@@ -51,8 +51,21 @@ export const listChatDirectory = createServerFn({ method: "POST" })
     (sps ?? []).forEach((a: any) => accs.set(a.id, a));
     const readMap = new Map((reads ?? []).map((r: any) => [r.partner_id, r.last_read_at]));
 
+    // Directory = people taking part in my current event (plus anyone I already talked to)
+    const { getEventScope, pickCurrentEvent } = await import("./event-scope.server");
+    let teamIds = [userId];
+    if (me?.account_id) teamIds = (ps ?? []).filter((p: any) => p.account_id === me.account_id).map((p: any) => p.id).concat(userId);
+    const { data: regs } = await db.from("event_registrations").select("event_id").in("user_id", teamIds).neq("status", "cancelled");
+    const evIds = Array.from(new Set((regs ?? []).map((r: any) => r.event_id).filter(Boolean)));
+    const { data: evs } = evIds.length ? await db.from("events").select("id, status, event_date, end_date, is_active").in("id", evIds) : { data: [] };
+    const current = pickCurrentEvent(((evs ?? []) as any[]).filter((e) => e.is_active !== false));
+    const eventUsers = current ? (await getEventScope(db, current.id)).userIds : new Set<string>();
+    const talkedTo = new Set<string>();
+    (msgs ?? []).forEach((m: any) => talkedTo.add(m.user_a === userId ? m.user_b : m.user_a));
+
     const people: ChatPerson[] = (ps ?? [])
       .filter((p: any) => p.id !== userId && p.is_active !== false)
+      .filter((p: any) => eventUsers.has(p.id) || talkedTo.has(p.id))
       .map((p: any) => {
         const acc = accs.get(p.account_id);
         const pm = (msgs ?? []).filter((m: any) => m.user_a === p.id || m.user_b === p.id);

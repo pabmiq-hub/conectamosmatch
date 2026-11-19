@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchMyEventScope } from "@/hooks/use-my-event";
 import { PartnerCard } from "@/components/dashboard/PartnerCard";
 import { ActionButton, Eye } from "@/components/dashboard/ActionButtons";
 import { PartnerDetailModal, type PartnerDetail } from "@/components/dashboard/PartnerDetailModal";
@@ -17,7 +18,11 @@ function VerEmpresas() {
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      const { data } = await supabase.from("empresa_profiles").select("user_id, company_name, description, logo_url, sector, company_size, website, location_city, responsables");
+      const scope = await fetchMyEventScope();
+      const ids = scope.empresaAccountIds;
+      const { data } = ids.length
+        ? await supabase.from("empresa_profiles").select("user_id, company_name, description, logo_url, sector, company_size, website, location_city, responsables").in("id", ids)
+        : { data: [] as any[] };
       setItems((data ?? []).filter((e: any) => e.user_id !== user?.id));
     })();
   }, []);

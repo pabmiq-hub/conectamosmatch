@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { assertSuperAdmin } from "./admin-shared.server";
+import { getEventScope } from "./event-scope.server";
 
 export const listMatches = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -26,17 +27,21 @@ export const listMatches = createServerFn({ method: "POST" })
     const spUserIds = Array.from(new Set((matches ?? []).map((m: any) => m.sponsor_user_id).filter(Boolean)));
     const allUserIds = Array.from(new Set([...empUserIds, ...spUserIds]));
 
-    // Fetch ALL empresa & sponsor accounts so admin can see zero-match groups too
-    const [{ data: allEmps }, { data: allSps }, { data: profs }] = await Promise.all([
+    // Fetch the event's accounts (or all, when no event) so admin can see zero-match groups too
+    const scope = data.event_id ? await getEventScope(supabaseAdmin, data.event_id) : null;
+    const [{ data: allEmpsRaw }, { data: allSpsRaw }, { data: profs }] = await Promise.all([
       supabaseAdmin.from("empresa_profiles").select("id, user_id, company_name, logo_url"),
       supabaseAdmin.from("sponsor_profiles").select("id, user_id, company_name, logo_url, sponsorship_level"),
       supabaseAdmin.from("profiles").select("id, full_name, account_role").in("id", allUserIds.length ? allUserIds : ["00000000-0000-0000-0000-000000000000"]),
     ]);
+    const inEvent = (a: any) => !scope || scope.accountIds.has(a.id);
+    const allEmps = (allEmpsRaw ?? []).filter(inEvent);
+    const allSps = (allSpsRaw ?? []).filter(inEvent);
     // Index by both account.id and owner user_id (covers older matches where account_id is null)
-    const eById = new Map((allEmps ?? []).map((e: any) => [e.id, e]));
-    const eByUser = new Map((allEmps ?? []).map((e: any) => [e.user_id, e]));
-    const sById = new Map((allSps ?? []).map((s: any) => [s.id, s]));
-    const sByUser = new Map((allSps ?? []).map((s: any) => [s.user_id, s]));
+    const eById = new Map((allEmpsRaw ?? []).map((e: any) => [e.id, e]));
+    const eByUser = new Map((allEmpsRaw ?? []).map((e: any) => [e.user_id, e]));
+    const sById = new Map((allSpsRaw ?? []).map((s: any) => [s.id, s]));
+    const sByUser = new Map((allSpsRaw ?? []).map((s: any) => [s.user_id, s]));
     const pMap = new Map((profs ?? []).map((p: any) => [p.id, p]));
     const resolveEmp = (m: any) => eById.get(m.empresa_account_id) ?? eByUser.get(m.empresa_user_id) ?? null;
     const resolveSp = (m: any) => sById.get(m.sponsor_account_id) ?? sByUser.get(m.sponsor_user_id) ?? null;

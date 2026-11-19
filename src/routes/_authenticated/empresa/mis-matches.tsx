@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchMyEventScope } from "@/hooks/use-my-event";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { PartnerCard } from "@/components/dashboard/PartnerCard";
 import { ActionButton, Eye } from "@/components/dashboard/ActionButtons";
@@ -21,7 +22,9 @@ function MisMatchesEmpresa() {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { partnerAccountIds } = await getMatches({ data: undefined as any });
+      const ev = (await fetchMyEventScope()).event;
+      if (!ev) { setItems([]); return; }
+      const { partnerAccountIds } = await getMatches({ data: { eventId: ev.id } });
       if (!partnerAccountIds.length) { setItems([]); return; }
       const { data: sps } = await supabase
         .from("sponsor_profiles")

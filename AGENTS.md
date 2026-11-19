@@ -4,3 +4,4 @@
 
 - Open chat is person-to-person in `chat_dm` (user_a < user_b); sending is gated in RLS by `chat_dm_allowed` (both active empresa/solución profiles) — permission lives in the DB, not the UI. Old `chat_messages` is kept unused.
 - Meeting proposals come from the pure engine in `src/lib/meeting-generator.ts` (tested), fed by event rules + availability; nothing is written until the admin approves the draft — keeps scheduling rules testable and reversible.
+- Event membership = an account with at least one non-cancelled `event_registrations` row; every panel (admin and participant) scopes accounts, likes, matches, meetings and notices through `src/lib/event-scope.server.ts` (`getEventScope`, `pickCurrentEvent`) — keeps each event fully independent with one shared definition.
