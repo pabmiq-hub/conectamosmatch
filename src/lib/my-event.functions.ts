@@ -16,6 +16,8 @@ export type MyEventScope = {
   empresaAccountIds: string[];
   sponsorAccountIds: string[];
   userIds: string[];
+  /** account id -> profile id acting as responsable (fallback when the account has no user_id). */
+  accountOwners: Record<string, string>;
 };
 
 /** The event the signed-in participant belongs to, plus who else takes part in it. */
@@ -26,7 +28,7 @@ export const getMyEventScope = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { getEventScope, pickCurrentEvent } = await import("./event-scope.server");
     const db = supabaseAdmin as any;
-    const empty: MyEventScope = { event: null, empresaAccountIds: [], sponsorAccountIds: [], userIds: [] };
+    const empty: MyEventScope = { event: null, empresaAccountIds: [], sponsorAccountIds: [], userIds: [], accountOwners: {} };
 
     const { data: me } = await db.from("profiles").select("account_id").eq("id", userId).maybeSingle();
     let teamIds = [userId];
@@ -41,7 +43,23 @@ export const getMyEventScope = createServerFn({ method: "POST" })
     const ev = pickCurrentEvent((events ?? []) as MyEvent[]);
     if (!ev) return empty;
     const scope = await getEventScope(db, ev.id);
+    const { resolveAccountOwner } = await import("./account-owner");
+    const accIds = Array.from(scope.accountIds);
+    const accountOwners: Record<string, string> = {};
+    for (let i = 0; i < accIds.length; i += 300) {
+      const chunk = accIds.slice(i, i + 300);
+      const [{ data: members }, { data: emps }, { data: sps }] = await Promise.all([
+        db.from("profiles").select("id, account_id, account_role, is_active").in("account_id", chunk),
+        db.from("empresa_profiles").select("id, user_id").in("id", chunk),
+        db.from("sponsor_profiles").select("id, user_id").in("id", chunk),
+      ]);
+      [...(emps ?? []), ...(sps ?? [])].forEach((a: any) => {
+        const o = resolveAccountOwner(a, members ?? []);
+        if (o) accountOwners[a.id] = o;
+      });
+    }
     return {
+      accountOwners,
       event: ev,
       empresaAccountIds: Array.from(scope.empresaAccountIds),
       sponsorAccountIds: Array.from(scope.sponsorAccountIds),

@@ -34,10 +34,11 @@ function EmpresasQueMeHanSeleccionado() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) setMe(user.id);
-      const ev = (await fetchMyEventScope()).event;
+      const scope = await fetchMyEventScope();
+      const ev = scope.event;
       setEventId(ev?.id ?? null);
       const r = await fn({ data: { eventId: ev?.id ?? null } });
-      setItems(r.items);
+      setItems(r.items.map((it: any) => ({ ...it, user_id: scope.accountOwners?.[it.account_id] ?? it.user_id })));
       const liked = await getLikedAccounts({ data: { eventId: ev?.id ?? null } });
       setLikedAccountIds(new Set(liked.accountIds));
     } catch (e: any) {

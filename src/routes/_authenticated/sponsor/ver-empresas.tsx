@@ -39,7 +39,7 @@ function VerEmpresasSponsor() {
     const { data } = ids.length
       ? await supabase.from("empresa_profiles").select("id, user_id, company_name, description, logo_url, sector, company_size, website, location_city, responsables").in("id", ids)
       : { data: [] as any[] };
-    setItems(data ?? []);
+    setItems(((data ?? []) as any[]).map((a: any) => ({ ...a, user_id: scope.accountOwners?.[a.id] ?? a.user_id })));
     const liked = await getLikedAccounts({ data: { eventId: ev?.id ?? null } });
     setLikedAccountIds(new Set(liked.accountIds));
   }

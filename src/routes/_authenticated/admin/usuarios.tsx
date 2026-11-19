@@ -6,6 +6,7 @@ import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { LevelBadge } from "@/components/brand/LevelBadge";
 import { Users, Building2, Sparkles, Plus, Search, Trash2, KeyRound, Power, Upload, UserPlus, Inbox, Check, X, CornerDownRight, Shield, ChevronRight, BarChart3, Pencil, ShieldPlus } from "lucide-react";
 import { toast } from "sonner";
+import { AccountHealthPanel } from "@/components/admin/AccountHealthPanel";
 import { NewUserModal } from "@/components/admin/NewUserModal";
 import { ImportUsersModal } from "@/components/admin/ImportUsersModal";
 import { InviteResponsableModal } from "@/components/admin/InviteResponsableModal";
@@ -182,6 +183,7 @@ function AdminUsuarios() {
           )}
         </div>
       } />
+      <AccountHealthPanel />
 
       {showModal && <NewUserModal onClose={() => setShowModal(false)} onCreated={load} />}
       {showImport && <ImportUsersModal onClose={() => setShowImport(false)} onDone={load} />}

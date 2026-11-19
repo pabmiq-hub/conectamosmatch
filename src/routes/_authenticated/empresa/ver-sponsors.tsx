@@ -44,7 +44,7 @@ function VerSponsors() {
     const { data: sp } = ids.length
       ? await supabase.from("sponsor_profiles").select("id, user_id, company_name, description, logo_url, sector, sponsorship_level, website, location_city, responsables, categories").in("id", ids)
       : { data: [] as any[] };
-    setItems(sp ?? []);
+    setItems(((sp ?? []) as any[]).map((a: any) => ({ ...a, user_id: scope.accountOwners?.[a.id] ?? a.user_id })));
     const liked = await getLikedAccounts({ data: { eventId: ev?.id ?? null } });
     setLikedAccountIds(new Set(liked.accountIds));
   }
