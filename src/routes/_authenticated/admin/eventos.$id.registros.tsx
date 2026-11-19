@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
-import { Users, Download, Trash2, Upload, UserPlus, KeyRound, Mail, CalendarClock, Pencil, Building2, Sparkles, ChevronRight, List, Layers } from "lucide-react";
+import { Users, Download, Trash2, Upload, UserPlus, KeyRound, Mail, CalendarClock, Pencil, Building2, Sparkles, ChevronRight, List, Layers, GripVertical } from "lucide-react";
 import { SortToggle, type SortDir } from "@/components/dashboard/SortToggle";
 import {
   filterAndSortRegistrations, groupRegistrationsByAccount, accountCounts,
@@ -22,7 +22,7 @@ import { AvailabilityEditor } from "@/components/dashboard/AvailabilityEditor";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { listRegistrations, deleteRegistration, deleteRegistrationsBulk } from "@/lib/admin-registrations.functions";
 import { setPasswordAndMaybeSend, sendEventCredentials } from "@/lib/credentials-email.functions";
-import { deleteWholeAccount } from "@/lib/admin-users.functions";
+import { deleteWholeAccount, moveUserToAccountOf } from "@/lib/admin-users.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/eventos/$id/registros")({
   component: AdminRegistros,
@@ -102,6 +102,19 @@ function AdminRegistros() {
     if (!window.confirm(`Vas a eliminar ${tipo} «${g.company}» y sus ${g.people.length} persona(s) vinculada(s) de toda la plataforma. Esta acción no se puede deshacer. ¿Continuar?`)) return;
     try { const r = await delAccount({ data: { userId: first.user_id } }); toast.success(`Cuenta eliminada (${r.deleted} personas)`); load(); }
     catch (e: any) { toast.error(e?.message ?? "Error"); }
+  }
+  const moveFn = useServerFn(moveUserToAccountOf);
+  const [dragged, setDragged] = useState<any | null>(null);
+  const [dropKey, setDropKey] = useState<string | null>(null);
+  async function onDropPerson(g: any) {
+    const p = dragged; setDragged(null); setDropKey(null);
+    if (!p || g.people.includes(p)) return;
+    if (p.role_at_event !== g.role) return toast.error("Solo puedes mover entre cuentas del mismo tipo");
+    const target = g.people.find((x: any) => x.user_id);
+    if (!p.user_id || !target) return toast.error("Falta el usuario de la persona o de la cuenta destino");
+    if (!window.confirm(`¿Mover a ${p.attendee_name ?? p.attendee_email} de «${p.attendee_company ?? ""}» a «${g.company}»?`)) return;
+    try { await moveFn({ data: { userId: p.user_id, targetUserId: target.user_id } }); toast.success(`${p.attendee_name ?? "Persona"} movida a ${g.company}`); load(); }
+    catch (e: any) { toast.error(e?.message ?? "Error al mover"); }
   }
   const del = useServerFn(deleteRegistration);
   const delBulk = useServerFn(deleteRegistrationsBulk);
@@ -276,7 +289,11 @@ function AdminRegistros() {
       {rows.length > 0 && view === "grouped" && (
         <div className="space-y-2">
           {groups.map((g) => (
-            <details key={g.key} className="group rounded-xl border border-border bg-card overflow-hidden">
+            <details key={g.key}
+              onDragOver={(e) => { if (dragged && dragged.role_at_event === g.role) { e.preventDefault(); setDropKey(g.key); } }}
+              onDragLeave={() => setDropKey((k) => (k === g.key ? null : k))}
+              onDrop={(e) => { e.preventDefault(); onDropPerson(g); }}
+              className={`group rounded-xl border bg-card overflow-hidden ${dropKey === g.key ? "border-primary ring-2 ring-primary/40" : "border-border"}`}>
               <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 hover:bg-muted/30">
                 <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-90" />
                 {g.role === "sponsor" ? <Sparkles className="h-4 w-4 text-primary" /> : <Building2 className="h-4 w-4 text-primary" />}
@@ -288,7 +305,8 @@ function AdminRegistros() {
               </summary>
               <ul className="divide-y divide-border border-t border-border bg-muted/10">
                 {g.people.map((r: any) => (
-                  <li key={r.id} className="flex items-center gap-3 px-4 py-2.5 pl-12">
+                  <li key={r.id} className="flex items-center gap-3 px-4 py-2.5 pl-6">
+                    <span draggable title="Arrastra a otra cuenta para moverla" onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; setDragged(r); }} onDragEnd={() => { setDragged(null); setDropKey(null); }} className="cursor-grab p-1 text-muted-foreground hover:text-primary active:cursor-grabbing"><GripVertical className="h-4 w-4" /></span>
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-xs font-medium">{r.attendee_name}{r.attendee_role_title ? <span className="text-muted-foreground"> · {r.attendee_role_title}</span> : null}</div>
                       <div className="truncate text-[11px] text-muted-foreground">{r.attendee_email}</div>

@@ -966,16 +966,7 @@ export const transferAccountAdmin = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-export const moveResponsableToAccount = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
-    z.object({
-      userId: z.string().uuid(),
-      targetAccountId: z.string().uuid(),
-    }).parse(input),
-  )
-  .handler(async ({ data, context }) => {
-    await assertSuperAdmin(context.userId);
+async function moveUserToAccountCore(data: { userId: string; targetAccountId: string }) {
 
     const { data: prof } = await supabaseAdmin
       .from("profiles")
@@ -987,7 +978,7 @@ export const moveResponsableToAccount = createServerFn({ method: "POST" })
     const table = prof.role === "empresa" ? "empresa_profiles" : "sponsor_profiles";
     const { data: target } = await supabaseAdmin
       .from(table)
-      .select("id, user_id")
+      .select("id, user_id, company_name")
       .eq("id", data.targetAccountId)
       .maybeSingle();
     if (!target) throw new Response("Cuenta destino no encontrada", { status: 404 });
@@ -1022,7 +1013,43 @@ export const moveResponsableToAccount = createServerFn({ method: "POST" })
       .update({ account_id: data.targetAccountId, account_role: "manager" })
       .eq("id", data.userId);
 
+    // Mantén coherente el nombre de empresa en sus inscripciones a eventos.
+    await supabaseAdmin
+      .from("event_registrations")
+      .update({ attendee_company: (target as any).company_name })
+      .eq("user_id", data.userId);
+
     return { ok: true };
+}
+
+
+export const moveResponsableToAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({
+      userId: z.string().uuid(),
+      targetAccountId: z.string().uuid(),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+    return moveUserToAccountCore(data);
+  });
+
+/** Mueve una persona a la cuenta a la que pertenece otra persona (arrastrar en Participantes). */
+export const moveUserToAccountOf = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ userId: z.string().uuid(), targetUserId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+    const { data: t } = await supabaseAdmin.from("profiles").select("account_id, role").eq("id", data.targetUserId).maybeSingle();
+    const { data: me } = await supabaseAdmin.from("profiles").select("account_id, role").eq("id", data.userId).maybeSingle();
+    if (!t?.account_id) throw new Response("La cuenta destino no tiene cuenta asociada", { status: 400 });
+    if (me?.role !== t.role) throw new Response("Solo puedes mover entre cuentas del mismo tipo (empresa↔empresa o solución↔solución)", { status: 400 });
+    if (me?.account_id === t.account_id) return { ok: true };
+    return moveUserToAccountCore({ userId: data.userId, targetAccountId: t.account_id });
   });
 
 export const removeResponsableFromAccount = createServerFn({ method: "POST" })
