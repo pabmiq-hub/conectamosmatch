@@ -2,12 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
-import { Users, Check, Download, Trash2, Upload, UserPlus } from "lucide-react";
+import { Users, Download, Trash2, Upload, UserPlus, KeyRound, Mail, Send } from "lucide-react";
 import { ImportUsersModal } from "@/components/admin/ImportUsersModal";
 import { AddExistingAccountsModal } from "@/components/admin/AddExistingAccountsModal";
 import { useAdminEvent } from "@/hooks/use-admin-event";
 import { toast } from "sonner";
-import { listRegistrations, toggleCheckIn, deleteRegistration } from "@/lib/admin-registrations.functions";
+import { listRegistrations, deleteRegistration } from "@/lib/admin-registrations.functions";
+import { setPasswordAndMaybeSend, sendEventCredentials } from "@/lib/credentials-email.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/eventos/$id/registros")({
   component: AdminRegistros,
@@ -16,7 +17,43 @@ export const Route = createFileRoute("/_authenticated/admin/eventos/$id/registro
 function AdminRegistros() {
   const { id } = Route.useParams();
   const list = useServerFn(listRegistrations);
-  const toggle = useServerFn(toggleCheckIn);
+  const setPwd = useServerFn(setPasswordAndMaybeSend);
+  const sendAll = useServerFn(sendEventCredentials);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [sendingAll, setSendingAll] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [newPwd, setNewPwd] = useState("");
+  const [alsoSend, setAlsoSend] = useState(true);
+
+  async function sendOne(r: any) {
+    if (!r.user_id) return toast.error("Esta inscripción no tiene cuenta asociada");
+    if (!window.confirm(`Se generará una nueva contraseña para ${r.attendee_name ?? r.attendee_email} y se le enviará por email. ¿Continuar?`)) return;
+    setBusyId(r.id);
+    const res = await setPwd({ data: { userId: r.user_id, send: true, event_id: id } });
+    setBusyId(null);
+    res.ok ? toast.success(`Claves enviadas a ${res.email}`) : toast.error(res.error);
+  }
+
+  async function saveEdit() {
+    if (newPwd.length < 8) return toast.error("Mínimo 8 caracteres");
+    setBusyId(editing.id);
+    const res = await setPwd({ data: { userId: editing.user_id, password: newPwd, send: alsoSend, event_id: id } });
+    setBusyId(null);
+    if (res.ok) { toast.success(alsoSend ? `Contraseña guardada y enviada a ${res.email}` : "Contraseña guardada"); setEditing(null); }
+    else toast.error(res.error);
+  }
+
+  async function onSendAll() {
+    const n = rows.filter((r) => r.user_id && r.status !== "cancelled").length;
+    if (!window.confirm(`Se generará una nueva contraseña para ${n} participantes y se les enviará por email. Sus contraseñas actuales dejarán de funcionar. ¿Continuar?`)) return;
+    setSendingAll(true);
+    try {
+      const res = await sendAll({ data: { event_id: id } });
+      if (res.failed.length) toast.error(`${res.sent}/${res.total} enviados. Error: ${res.failed[0].error}`, { duration: 10000 });
+      else toast.success(`${res.sent}/${res.total} correos enviados`);
+    } catch (e: any) { toast.error(e?.message ?? "Error"); }
+    finally { setSendingAll(false); }
+  }
   const del = useServerFn(deleteRegistration);
   const [rows, setRows] = useState<any[]>([]);
   const [showImport, setShowImport] = useState(false);
@@ -44,13 +81,30 @@ function AdminRegistros() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Participantes" subtitle={`Total: ${rows.length} · Check-in: ${rows.filter((r) => r.checked_in_at).length}`} right={
+      <PageHeader title="Participantes" subtitle={`Total: ${rows.length}`} right={
         <div className="flex flex-wrap gap-2">
         <button onClick={() => setShowImport(true)} className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-bold text-uppercase-wide text-primary-foreground"><Upload className="h-3 w-3" /> Subir participantes (Excel)</button>
         <button onClick={() => setShowAdd(true)} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide"><UserPlus className="h-3 w-3" /> Añadir cuentas existentes</button>
+        <button onClick={onSendAll} disabled={sendingAll || rows.length === 0} className="inline-flex items-center gap-2 rounded-md border border-primary/50 px-3 py-2 text-xs font-bold text-uppercase-wide text-primary disabled:opacity-50"><Send className="h-3 w-3" /> {sendingAll ? "Enviando…" : "Enviar claves a todos"}</button>
         <button onClick={exportCSV} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide"><Download className="h-3 w-3" /> Exportar CSV</button>
         </div>
       } />
+      {editing && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="w-full max-w-sm rounded-xl border border-border bg-card p-5 space-y-4">
+            <div>
+              <h2 className="font-display text-sm font-bold text-uppercase-wide">Editar contraseña</h2>
+              <p className="text-xs text-muted-foreground mt-1">{editing.attendee_name} · {editing.attendee_email}</p>
+            </div>
+            <input type="text" autoFocus value={newPwd} onChange={(e) => setNewPwd(e.target.value)} placeholder="Nueva contraseña (mín. 8)" className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm" />
+            <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={alsoSend} onChange={(e) => setAlsoSend(e.target.checked)} /> Enviarle la nueva contraseña por email</label>
+            <div className="flex gap-2">
+              <button onClick={() => setEditing(null)} className="flex-1 rounded-md border border-border py-2 text-xs font-bold text-uppercase-wide">Cancelar</button>
+              <button onClick={saveEdit} disabled={busyId === editing.id} className="flex-1 rounded-md bg-primary py-2 text-xs font-bold text-primary-foreground text-uppercase-wide disabled:opacity-50">{busyId === editing.id ? "Guardando…" : "Guardar"}</button>
+            </div>
+          </div>
+        </div>
+      )}
       {showAdd && <AddExistingAccountsModal eventId={id} onClose={() => setShowAdd(false)} onDone={load} />}
       {showImport && <ImportUsersModal defaultEventId={id} onClose={() => setShowImport(false)} onDone={load} />}
       {rows.length === 0 ? <EmptyState icon={Users} title="Sin participantes" hint="Pulsa «Subir participantes (Excel)» o «Añadir cuentas existentes» para inscribirlos en este evento. Solo quienes estén aquí aparecerán en las selecciones, matches y reuniones del evento." /> : (
@@ -66,12 +120,10 @@ function AdminRegistros() {
                   <td className="px-4 py-3 text-xs">{r.attendee_company}</td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">{r.attendee_email}</td>
                   <td className="px-4 py-3"><span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{r.role_at_event}</span></td>
-                  <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold text-uppercase-wide ${r.checked_in_at ? "bg-success/15 text-success" : "bg-muted"}`}>{r.checked_in_at ? "✓ Check-in" : r.status}</span></td>
+                  <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold text-uppercase-wide bg-muted`}>{r.status}</span></td>
                   <td className="px-4 py-3 text-right">
-                    <button onClick={async () => {
-                      try { await toggle({ data: { id: r.id, checkedIn: !r.checked_in_at } }); load(); }
-                      catch (e: any) { toast.error(e?.message ?? "Error"); }
-                    }} className="p-1.5 text-muted-foreground hover:text-success" title="Check-in"><Check className="h-4 w-4" /></button>
+                    <button disabled={!r.user_id || busyId === r.id} onClick={() => { setEditing(r); setNewPwd(""); setAlsoSend(true); }} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Editar contraseña"><KeyRound className="h-4 w-4" /></button>
+                    <button disabled={!r.user_id || busyId === r.id} onClick={() => sendOne(r)} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Enviar claves por email"><Mail className="h-4 w-4" /></button>
                     <button onClick={async () => {
                       if (!window.confirm("¿Eliminar inscripción?")) return;
                       try { await del({ data: { id: r.id } }); toast.success("Eliminada"); load(); }
