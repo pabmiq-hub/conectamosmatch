@@ -966,7 +966,7 @@ export const transferAccountAdmin = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-async function moveUserToAccountCore(data: { userId: string; targetAccountId: string }) {
+async function moveUserToAccountCore(data: { userId: string; targetAccountId: string; targetRole?: "empresa" | "sponsor" }) {
 
     const { data: prof } = await supabaseAdmin
       .from("profiles")
@@ -976,8 +976,10 @@ async function moveUserToAccountCore(data: { userId: string; targetAccountId: st
     if (!prof) throw new Response("Usuario no encontrado", { status: 404 });
 
     const table = prof.role === "empresa" ? "empresa_profiles" : "sponsor_profiles";
+    const newRole = (data.targetRole ?? prof.role) as "empresa" | "sponsor";
+    const targetTable = newRole === "empresa" ? "empresa_profiles" : "sponsor_profiles";
     const { data: target } = await supabaseAdmin
-      .from(table)
+      .from(targetTable)
       .select("id, user_id, company_name")
       .eq("id", data.targetAccountId)
       .maybeSingle();
@@ -1010,13 +1012,13 @@ async function moveUserToAccountCore(data: { userId: string; targetAccountId: st
 
     await supabaseAdmin
       .from("profiles")
-      .update({ account_id: data.targetAccountId, account_role: "manager" })
+      .update({ account_id: data.targetAccountId, account_role: "manager", role: newRole } as any)
       .eq("id", data.userId);
 
     // Mantén coherente el nombre de empresa en sus inscripciones a eventos.
     await supabaseAdmin
       .from("event_registrations")
-      .update({ attendee_company: (target as any).company_name })
+      .update({ attendee_company: (target as any).company_name, role_at_event: newRole } as any)
       .eq("user_id", data.userId);
 
     return { ok: true };
@@ -1047,9 +1049,9 @@ export const moveUserToAccountOf = createServerFn({ method: "POST" })
     const { data: t } = await supabaseAdmin.from("profiles").select("account_id, role").eq("id", data.targetUserId).maybeSingle();
     const { data: me } = await supabaseAdmin.from("profiles").select("account_id, role").eq("id", data.userId).maybeSingle();
     if (!t?.account_id) throw new Response("La cuenta destino no tiene cuenta asociada", { status: 400 });
-    if (me?.role !== t.role) throw new Response("Solo puedes mover entre cuentas del mismo tipo (empresa↔empresa o solución↔solución)", { status: 400 });
+    if (t.role !== "empresa" && t.role !== "sponsor") throw new Response("Cuenta destino no válida", { status: 400 });
     if (me?.account_id === t.account_id) return { ok: true };
-    return moveUserToAccountCore({ userId: data.userId, targetAccountId: t.account_id });
+    return moveUserToAccountCore({ userId: data.userId, targetAccountId: t.account_id, targetRole: t.role });
   });
 
 export const removeResponsableFromAccount = createServerFn({ method: "POST" })

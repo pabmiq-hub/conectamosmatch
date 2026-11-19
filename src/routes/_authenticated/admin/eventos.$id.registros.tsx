@@ -109,10 +109,9 @@ function AdminRegistros() {
   async function onDropPerson(g: any) {
     const p = dragged; setDragged(null); setDropKey(null);
     if (!p || g.people.includes(p)) return;
-    if (p.role_at_event !== g.role) return toast.error("Solo puedes mover entre cuentas del mismo tipo");
     const target = g.people.find((x: any) => x.user_id);
     if (!p.user_id || !target) return toast.error("Falta el usuario de la persona o de la cuenta destino");
-    if (!window.confirm(`¿Mover a ${p.attendee_name ?? p.attendee_email} de «${p.attendee_company ?? ""}» a «${g.company}»?`)) return;
+    if (!window.confirm(`¿Mover a ${p.attendee_name ?? p.attendee_email} de «${p.attendee_company ?? ""}» a «${g.company}»?${p.role_at_event !== g.role ? `\n\nPasará de ${p.role_at_event === "sponsor" ? "solución" : "empresa"} a ${g.role === "sponsor" ? "solución" : "empresa"}.` : ""}`)) return;
     try { await moveFn({ data: { userId: p.user_id, targetUserId: target.user_id } }); toast.success(`${p.attendee_name ?? "Persona"} movida a ${g.company}`); load(); }
     catch (e: any) { toast.error(e?.message ?? "Error al mover"); }
   }
@@ -290,7 +289,7 @@ function AdminRegistros() {
         <div className="space-y-2">
           {groups.map((g) => (
             <details key={g.key}
-              onDragOver={(e) => { if (dragged && dragged.role_at_event === g.role) { e.preventDefault(); setDropKey(g.key); } }}
+              onDragOver={(e) => { if (dragged) { e.preventDefault(); setDropKey(g.key); } }}
               onDragLeave={() => setDropKey((k) => (k === g.key ? null : k))}
               onDrop={(e) => { e.preventDefault(); onDropPerson(g); }}
               className={`group rounded-xl border bg-card overflow-hidden ${dropKey === g.key ? "border-primary ring-2 ring-primary/40" : "border-border"}`}>
