@@ -163,9 +163,14 @@ export async function adminSummary(eventId: string): Promise<RetoSummary> {
 }
 
 export async function adminAddParticipants(eventId: string, userIds: string[]): Promise<number> {
-  const { data, error } = await retoDb.rpc("reto_admin_add_participants", { _event: eventId, _users: userIds });
-  if (error) throw dbError(error);
-  return Number(data) || 0;
+  // Lotes de 15 para no superar el tiempo máximo por consulta de la base de datos.
+  let total = 0;
+  for (let i = 0; i < userIds.length; i += 15) {
+    const { data, error } = await retoDb.rpc("reto_admin_add_participants", { _event: eventId, _users: userIds.slice(i, i + 15) });
+    if (error) throw dbError(error);
+    total += Number(data) || 0;
+  }
+  return total;
 }
 
 export async function adminRemoveParticipants(eventId: string, userIds: string[]): Promise<number> {
