@@ -61,10 +61,30 @@ export const sendEventCredentials = createServerFn({ method: "POST" })
     if (data.userIds) { const only = new Set(data.userIds); ids = ids.filter((i) => only.has(i)); }
     const sent: string[] = [];
     const failed: { email: string; error: string }[] = [];
+    // One row per participant with the exact password stored in Auth, so the admin's Excel always matches the emails.
+    const results: { user_id: string; email: string; name: string; password: string | null; status: string; sent_at: string }[] = [];
     for (const id of ids) {
-      try { const r = await processOne(id, title, undefined, true); sent.push(r.email); }
-      catch (e: any) { failed.push({ email: id, error: e?.message ?? "Error" }); }
+      const pwd = generatePassword(12);
+      let email = id; let name = ""; let pwdSaved = false;
+      try {
+        const { data: prof } = await supabaseAdmin.from("profiles").select("id, email, full_name, role").eq("id", id).maybeSingle();
+        if (!prof?.email) throw new Error("Usuario sin email");
+        email = prof.email; name = prof.full_name ?? "";
+        if (prof.role === "super_admin") throw new Error("No se modifican super administradores");
+        const { error } = await supabaseAdmin.auth.admin.updateUserById(id, { password: pwd });
+        if (error) throw new Error(error.message);
+        pwdSaved = true;
+        await sendEmail(prof.email, title ? `Tus claves de acceso · ${title}` : "Tus claves de acceso a Conectamos",
+          credentialsEmailHtml({ name, email: prof.email, password: pwd, eventTitle: title, loginUrl: LOGIN_URL }));
+        sent.push(email);
+        results.push({ user_id: id, email, name, password: pwd, status: "Enviado", sent_at: new Date().toISOString() });
+      } catch (e: any) {
+        const msg = e?.message ?? "Error";
+        failed.push({ email, error: msg });
+        // If the password was already changed, keep it in the Excel so the admin can hand it over manually.
+        results.push({ user_id: id, email, name, password: pwdSaved ? pwd : null, status: `Error: ${msg}`, sent_at: new Date().toISOString() });
+      }
       await new Promise((r) => setTimeout(r, 250)); // stay under Resend rate limits
     }
-    return { total: ids.length, sent: sent.length, failed };
+    return { total: ids.length, sent: sent.length, failed, results };
   });

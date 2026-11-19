@@ -17,6 +17,7 @@ import { EditUserModal } from "@/components/admin/EditUserModal";
 import { AddExistingAccountsModal } from "@/components/admin/AddExistingAccountsModal";
 import { useAdminEvent } from "@/hooks/use-admin-event";
 import { toast } from "sonner";
+import * as XLSX from "xlsx";
 import { AvailabilityEditor } from "@/components/dashboard/AvailabilityEditor";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { listRegistrations, deleteRegistration } from "@/lib/admin-registrations.functions";
@@ -55,14 +56,38 @@ function AdminRegistros() {
     else toast.error(res.error);
   }
 
+  function downloadCredentialsExcel(results: any[]) {
+    if (!results?.length) return;
+    const fmt = (iso: string) => new Date(iso).toLocaleString("es-ES", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+    const data = results.map((x) => {
+      const r = rows.find((row) => row.user_id === x.user_id) ?? {};
+      return {
+        "Empresa / Solución": r.attendee_company ?? "",
+        "Nombre": x.name || r.attendee_name || "",
+        "Email": x.email,
+        "Tipo": r.role_at_event ? roleLabel(r) : "",
+        "Cargo": r.attendee_role_title ?? "",
+        "Contraseña": x.password ?? "(sin cambios)",
+        "Estado envío": x.status,
+        "Fecha de envío": fmt(x.sent_at),
+      };
+    });
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Claves");
+    const slug = "evento".toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    XLSX.writeFile(wb, `claves-${slug}-${id.slice(0, 8)}-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
+
   async function onSendAll() {
     const n = rows.filter((r) => r.user_id && r.status !== "cancelled").length;
-    if (!window.confirm(`Se generará una nueva contraseña para ${n} participantes y se les enviará por email. Sus contraseñas actuales dejarán de funcionar. ¿Continuar?`)) return;
+    if (!window.confirm(`Se generará una nueva contraseña para ${n} participantes y se les enviará por email. Sus contraseñas actuales dejarán de funcionar. Al terminar se descargará un Excel con las mismas claves enviadas. ¿Continuar?`)) return;
     setSendingAll(true);
     try {
       const res = await sendAll({ data: { event_id: id } });
       if (res.failed.length) toast.error(`${res.sent}/${res.total} enviados. Error: ${res.failed[0].error}`, { duration: 10000 });
       else toast.success(`${res.sent}/${res.total} correos enviados`);
+      downloadCredentialsExcel(res.results);
     } catch (e: any) { toast.error(e?.message ?? "Error"); }
     finally { setSendingAll(false); }
   }
