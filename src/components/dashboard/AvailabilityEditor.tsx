@@ -15,21 +15,26 @@ const fmtDay = (d: string) =>
   new Date(d + "T12:00:00").toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
 
 /** Lets the signed-in attendee mark, per event day, whether they attend and which 1to1 blocks they can't make. */
-export function AvailabilityEditor() {
+export function AvailabilityEditor({ eventId, targetUserId, onSaved }: { eventId?: string; targetUserId?: string; onSaved?: () => void } = {}) {
+  const adminMode = !!(eventId && targetUserId);
   const [event, setEvent] = useState<any>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [blocks, setBlocks] = useState<Record<string, Range[]>>({});
   const [days, setDays] = useState<Record<string, DayState>>({});
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [editorId, setEditorId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      const ev = (await fetchMyEventScope()).event;
+      const { data: { user: me } } = await supabase.auth.getUser();
+      const ev = adminMode
+        ? (await supabase.from("events").select("*").eq("id", eventId!).maybeSingle()).data
+        : (await fetchMyEventScope()).event;
+      const uid = adminMode ? targetUserId! : me?.id;
       setLoaded(true);
-      if (!user || !ev) return;
-      setUserId(user.id); setEvent(ev);
+      if (!me || !uid || !ev) return;
+      setUserId(uid); setEditorId(me.id); setEvent(ev);
       const { data: ag } = await supabase.from("event_agenda").select("event_date, time_start, time_end, agenda_type").eq("event_id", ev.id).order("time_start");
       const b: Record<string, Range[]> = {};
       for (const a of ag ?? []) {
@@ -40,7 +45,7 @@ export function AvailabilityEditor() {
       }
       if (!Object.keys(b).length && ev.event_date) b[ev.event_date.slice(0, 10)] = [];
       setBlocks(b);
-      const { data: av } = await supabase.from("attendee_availability").select("*").eq("event_id", ev.id).eq("user_id", user.id);
+      const { data: av } = await supabase.from("attendee_availability").select("*").eq("event_id", ev.id).eq("user_id", uid);
       const d: Record<string, DayState> = {};
       for (const k of Object.keys(b)) {
         const r: any = (av ?? []).find((x: any) => x.event_date === k);
@@ -48,7 +53,7 @@ export function AvailabilityEditor() {
       }
       setDays(d);
     })();
-  }, []);
+  }, [eventId, targetUserId]);
 
   const upd = (k: string, p: Partial<DayState>) => setDays((s) => ({ ...s, [k]: { ...s[k], ...p } }));
   const isBlocked = (k: string, r: Range) => days[k]?.blocked.some((x) => x.from === r.from && x.to === r.to);
@@ -61,18 +66,18 @@ export function AvailabilityEditor() {
     const rows = Object.entries(days).map(([k, s]) => ({
       event_id: event.id, user_id: userId, event_date: k, attends: s.attends,
       blocked_ranges: s.attends ? s.blocked : [], max_meetings: s.max ? Math.max(0, parseInt(s.max, 10)) : null,
-      notes: s.notes.trim() || null, updated_by: userId,
+      notes: s.notes.trim() || null, updated_by: editorId ?? userId,
     }));
     const { error } = await supabase.from("attendee_availability").upsert(rows as any, { onConflict: "event_id,user_id,event_date" });
     setSaving(false);
-    error ? toast.error("No se pudo guardar: " + error.message) : toast.success("Disponibilidad guardada");
+    error ? toast.error("No se pudo guardar: " + error.message) : (toast.success("Disponibilidad guardada"), onSaved?.());
   };
 
-  if (loaded && !event) return <p className="text-sm text-muted-foreground">No hay ningún evento publicado ahora mismo.</p>;
+  if (loaded && !event) return <p className="text-sm text-muted-foreground">{adminMode ? "No se encontró el evento." : "No hay ningún evento publicado ahora mismo."}</p>;
 
   return (
     <div className="space-y-4">
-      {event && <p className="text-sm text-muted-foreground">{event.title} · La organización usará esto para proponer tus reuniones 1to1.</p>}
+      {event && <p className="text-sm text-muted-foreground">{event.title} · {adminMode ? "Restricciones que se respetarán al proponer sus reuniones 1to1." : "La organización usará esto para proponer tus reuniones 1to1."}</p>}
       {Object.keys(days).sort().map((k) => {
         const s = days[k];
         return (

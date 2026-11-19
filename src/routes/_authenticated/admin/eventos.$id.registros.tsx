@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
-import { Users, Download, Trash2, Upload, UserPlus, KeyRound, Mail, Send } from "lucide-react";
+import { Users, Download, Trash2, Upload, UserPlus, KeyRound, Mail, Send, CalendarClock } from "lucide-react";
 import { SortToggle, type SortDir } from "@/components/dashboard/SortToggle";
 import {
   filterAndSortRegistrations,
@@ -16,6 +16,8 @@ import { NewUserModal } from "@/components/admin/NewUserModal";
 import { AddExistingAccountsModal } from "@/components/admin/AddExistingAccountsModal";
 import { useAdminEvent } from "@/hooks/use-admin-event";
 import { toast } from "sonner";
+import { AvailabilityEditor } from "@/components/dashboard/AvailabilityEditor";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { listRegistrations, deleteRegistration } from "@/lib/admin-registrations.functions";
 import { setPasswordAndMaybeSend, sendEventCredentials } from "@/lib/credentials-email.functions";
 
@@ -64,6 +66,7 @@ function AdminRegistros() {
     finally { setSendingAll(false); }
   }
   const del = useServerFn(deleteRegistration);
+  const [availFor, setAvailFor] = useState<any>(null);
   const [rows, setRows] = useState<any[]>([]);
   const [role, setRole] = useState<RoleFilter>("all");
   const [sortField, setSortField] = useState<SortField>("company");
@@ -179,6 +182,7 @@ function AdminRegistros() {
                   <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold text-uppercase-wide bg-muted`}>{r.status}</span></td>
                   <td className="px-4 py-3 text-right">
                     <button disabled={!r.user_id || busyId === r.id} onClick={() => { setEditing(r); setNewPwd(""); setAlsoSend(true); }} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Editar contraseña"><KeyRound className="h-4 w-4" /></button>
+                    <button disabled={!r.user_id} onClick={() => setAvailFor(r)} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Disponibilidad y restricciones de agenda"><CalendarClock className="h-4 w-4" /></button>
                     <button disabled={!r.user_id || busyId === r.id} onClick={() => sendOne(r)} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Enviar claves por email"><Mail className="h-4 w-4" /></button>
                     <button onClick={async () => {
                       if (!window.confirm("¿Eliminar inscripción?")) return;
@@ -198,6 +202,17 @@ function AdminRegistros() {
             </tbody>
           </table>
         </div>
+      )}
+      {availFor && (
+        <Dialog open onOpenChange={(o) => { if (!o) setAvailFor(null); }}>
+          <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Disponibilidad · {availFor.attendee_name}</DialogTitle>
+              <DialogDescription>{availFor.attendee_company} — marca los días que asiste, las franjas en las que no puede y su máximo de reuniones.</DialogDescription>
+            </DialogHeader>
+            <AvailabilityEditor eventId={id} targetUserId={availFor.user_id} onSaved={() => setAvailFor(null)} />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
