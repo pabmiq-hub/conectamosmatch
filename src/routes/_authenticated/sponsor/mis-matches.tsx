@@ -39,8 +39,8 @@ function MisMatchesSponsor() {
       {items.length === 0 ? <EmptyState icon={Heart} title="Aún no tenéis matches" hint="Da like a empresas desde 'Ver Empresas' para empezar" /> : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {items.map((e) => (
-            <PartnerCard key={e.user_id} name={e.company_name} description={e.description} logoUrl={e.logo_url} sector={e.sector} size={e.company_size}
-              actions={<ActionButton icon={Eye} label="Ver" onClick={() => setSelected(e)} />} />
+            <PartnerCard key={e.user_id} name={e.company_name} logoUrl={e.logo_url} sector={e.sector} size={e.company_size}
+              actions={<ActionButton icon={Eye} label="Ver" onClick={() => setSelected({ ...e, description: null })} />} />
           ))}
         </div>
       )}
