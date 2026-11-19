@@ -72,3 +72,21 @@ describe("etiqueta del rol", () => {
     expect(roleLabel({ role_at_event: "empresa" })).toBe("Empresa");
   });
 });
+
+import { groupRegistrationsByAccount, accountCounts } from "./registration-list";
+describe("agrupación por empresa/solución", () => {
+  const rows = [
+    { attendee_company: "Hastee", attendee_name: "Ana", role_at_event: "sponsor" },
+    { attendee_company: "hastee ", attendee_name: "Bea", role_at_event: "sponsor" },
+    { attendee_company: "Hastee", attendee_name: "Carl", role_at_event: "sponsor" },
+    { attendee_company: "Leroy", attendee_name: "Dani", role_at_event: "empresa" },
+    { attendee_company: "Leroy", attendee_name: "Eva", role_at_event: "empresa", status: "cancelled" },
+  ];
+  it("3 personas de Hastee cuentan como 1 solución", () => {
+    expect(accountCounts(rows)).toEqual({ empresa: 1, sponsor: 1, people: 4 });
+  });
+  it("las personas cuelgan de su empresa", () => {
+    const g = groupRegistrationsByAccount(rows);
+    expect(g.find((x) => x.role === "sponsor")!.people.map((p) => p.attendee_name)).toEqual(["Ana", "Bea", "Carl"]);
+  });
+});

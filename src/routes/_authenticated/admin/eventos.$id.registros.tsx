@@ -2,10 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
-import { Users, Download, Trash2, Upload, UserPlus, KeyRound, Mail, CalendarClock, Pencil } from "lucide-react";
+import { Users, Download, Trash2, Upload, UserPlus, KeyRound, Mail, CalendarClock, Pencil, Building2, Sparkles, ChevronRight, List, Layers } from "lucide-react";
 import { SortToggle, type SortDir } from "@/components/dashboard/SortToggle";
 import {
-  filterAndSortRegistrations,
+  filterAndSortRegistrations, groupRegistrationsByAccount, accountCounts,
   roleCounts,
   roleLabel,
   type RoleFilter,
@@ -126,11 +126,31 @@ function AdminRegistros() {
   useEffect(() => { load(); }, [id]);
 
   const counts = useMemo(() => roleCounts(rows), [rows]);
+  const accCounts = useMemo(() => accountCounts(rows), [rows]);
+  const [view, setView] = useState<"grouped" | "list">("grouped");
+  const groups = useMemo(
+    () => groupRegistrationsByAccount(role === "all" ? rows : rows.filter((r) => r.role_at_event === role), dir),
+    [rows, role, dir],
+  );
 
   const visible = useMemo(
     () => filterAndSortRegistrations(rows, { role, field: sortField, dir }),
     [rows, role, sortField, dir],
   );
+
+  function rowActions(r: any) {
+    return (<>
+                    <button disabled={!r.user_id} onClick={() => setEditUserId(r.user_id)} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Editar participante"><Pencil className="h-4 w-4" /></button>
+                    <button disabled={!r.user_id || busyId === r.id} onClick={() => { setEditing(r); setNewPwd(""); setAlsoSend(true); }} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Editar contraseña"><KeyRound className="h-4 w-4" /></button>
+                    <button disabled={!r.user_id} onClick={() => setAvailFor(r)} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Disponibilidad y restricciones de agenda"><CalendarClock className="h-4 w-4" /></button>
+                    <button disabled={!r.user_id || busyId === r.id} onClick={() => sendOne(r)} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Enviar claves por email"><Mail className="h-4 w-4" /></button>
+                    <button onClick={async () => {
+                      if (!window.confirm("¿Eliminar inscripción?")) return;
+                      try { await del({ data: { id: r.id } }); toast.success("Eliminada"); load(); }
+                      catch (e: any) { toast.error(e?.message ?? "Error"); }
+                    }} className="p-1.5 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
+                  </>);
+  }
 
   function exportCSV() {
     const header = ["Nombre", "Empresa", "Email", "Rol", "Cargo", "Estado", "Check-in", "Registrado"];
@@ -232,7 +252,46 @@ function AdminRegistros() {
       {showNew && <NewUserModal eventId={id} onClose={() => setShowNew(false)} onCreated={load} />}
       {showAdd && <AddExistingAccountsModal eventId={id} onClose={() => setShowAdd(false)} onDone={load} />}
       {showImport && <ImportUsersModal defaultEventId={id} onClose={() => setShowImport(false)} onDone={load} />}
-      {rows.length === 0 ? <EmptyState icon={Users} title="Sin participantes" hint="Pulsa «Subir participantes (Excel)» o «Añadir cuentas existentes» para inscribirlos en este evento. Solo quienes estén aquí aparecerán en las selecciones, matches y reuniones del evento." /> : (
+      {rows.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-3"><Building2 className="h-4 w-4 text-primary" /><span className="text-2xl font-bold">{accCounts.empresa}</span><span className="text-[11px] font-bold text-uppercase-wide text-muted-foreground">Empresas</span></div>
+          <div className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-3"><Sparkles className="h-4 w-4 text-primary" /><span className="text-2xl font-bold">{accCounts.sponsor}</span><span className="text-[11px] font-bold text-uppercase-wide text-muted-foreground">Soluciones</span></div>
+          <div className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-3"><Users className="h-4 w-4 text-muted-foreground" /><span className="text-2xl font-bold">{accCounts.people}</span><span className="text-[11px] font-bold text-uppercase-wide text-muted-foreground">Personas</span></div>
+          <div className="ml-auto inline-flex overflow-hidden rounded-md border border-border">
+            <button type="button" onClick={() => setView("grouped")} className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-uppercase-wide ${view === "grouped" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}><Layers className="h-3.5 w-3.5" /> Por empresa</button>
+            <button type="button" onClick={() => setView("list")} className={`inline-flex items-center gap-1.5 border-l border-border px-3 py-1.5 text-[11px] font-bold text-uppercase-wide ${view === "list" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"}`}><List className="h-3.5 w-3.5" /> Personas</button>
+          </div>
+        </div>
+      )}
+      {rows.length > 0 && view === "grouped" && (
+        <div className="space-y-2">
+          {groups.map((g) => (
+            <details key={g.key} className="group rounded-xl border border-border bg-card overflow-hidden">
+              <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 hover:bg-muted/30">
+                <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-90" />
+                {g.role === "sponsor" ? <Sparkles className="h-4 w-4 text-primary" /> : <Building2 className="h-4 w-4 text-primary" />}
+                <span className="flex-1 truncate text-sm font-semibold">{g.company}</span>
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{g.role === "sponsor" ? "Solución" : "Empresa"}</span>
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">{g.people.length} {g.people.length === 1 ? "persona" : "personas"}</span>
+              </summary>
+              <ul className="divide-y divide-border border-t border-border bg-muted/10">
+                {g.people.map((r: any) => (
+                  <li key={r.id} className="flex items-center gap-3 px-4 py-2.5 pl-12">
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-xs font-medium">{r.attendee_name}{r.attendee_role_title ? <span className="text-muted-foreground"> · {r.attendee_role_title}</span> : null}</div>
+                      <div className="truncate text-[11px] text-muted-foreground">{r.attendee_email}</div>
+                    </div>
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{r.status}</span>
+                    <div className="whitespace-nowrap">{rowActions(r)}</div>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ))}
+          {groups.length === 0 && <div className="rounded-xl border border-border bg-card px-4 py-6 text-center text-xs text-muted-foreground">No hay participantes de este tipo en el evento.</div>}
+        </div>
+      )}
+      {rows.length === 0 ? <EmptyState icon={Users} title="Sin participantes" hint="Pulsa «Subir participantes (Excel)» o «Añadir cuentas existentes» para inscribirlos en este evento. Solo quienes estén aquí aparecerán en las selecciones, matches y reuniones del evento." /> : view === "grouped" ? null : (
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-[10px] text-uppercase-wide text-muted-foreground"><tr>
@@ -246,17 +305,7 @@ function AdminRegistros() {
                   <td className="px-4 py-3 text-xs text-muted-foreground">{r.attendee_email}</td>
                   <td className="px-4 py-3"><span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{roleLabel(r)}</span></td>
                   <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold text-uppercase-wide bg-muted`}>{r.status}</span></td>
-                  <td className="px-4 py-3 text-right whitespace-nowrap">
-                    <button disabled={!r.user_id} onClick={() => setEditUserId(r.user_id)} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Editar participante"><Pencil className="h-4 w-4" /></button>
-                    <button disabled={!r.user_id || busyId === r.id} onClick={() => { setEditing(r); setNewPwd(""); setAlsoSend(true); }} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Editar contraseña"><KeyRound className="h-4 w-4" /></button>
-                    <button disabled={!r.user_id} onClick={() => setAvailFor(r)} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Disponibilidad y restricciones de agenda"><CalendarClock className="h-4 w-4" /></button>
-                    <button disabled={!r.user_id || busyId === r.id} onClick={() => sendOne(r)} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Enviar claves por email"><Mail className="h-4 w-4" /></button>
-                    <button onClick={async () => {
-                      if (!window.confirm("¿Eliminar inscripción?")) return;
-                      try { await del({ data: { id: r.id } }); toast.success("Eliminada"); load(); }
-                      catch (e: any) { toast.error(e?.message ?? "Error"); }
-                    }} className="p-1.5 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
-                  </td>
+                  <td className="px-4 py-3 text-right whitespace-nowrap">{rowActions(r)}</td>
                 </tr>
               ))}
               {visible.length === 0 && (
