@@ -63,6 +63,19 @@ export const deleteRegistration = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Removes every registration of the event, or only those of one type. Accounts are kept. */
+export const deleteRegistrationsBulk = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ event_id: z.string().uuid(), role: z.enum(["all", "empresa", "sponsor"]) }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+    let q = supabaseAdmin.from("event_registrations").delete({ count: "exact" }).eq("event_id", data.event_id);
+    if (data.role !== "all") q = q.eq("role_at_event", data.role);
+    const { error, count } = await q;
+    if (error) throw new Response(error.message, { status: 400 });
+    return { deleted: count ?? 0 };
+  });
+
 /** Counts for the event summary: participating accounts, matches and scheduled meetings of that event only. */
 export const getEventSummary = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

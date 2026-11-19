@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { AvailabilityEditor } from "@/components/dashboard/AvailabilityEditor";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { listRegistrations, deleteRegistration } from "@/lib/admin-registrations.functions";
+import { listRegistrations, deleteRegistration, deleteRegistrationsBulk } from "@/lib/admin-registrations.functions";
 import { setPasswordAndMaybeSend, sendEventCredentials } from "@/lib/credentials-email.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/eventos/$id/registros")({
@@ -92,6 +92,19 @@ function AdminRegistros() {
     finally { setSendingAll(false); }
   }
   const del = useServerFn(deleteRegistration);
+  const delBulk = useServerFn(deleteRegistrationsBulk);
+  const [bulkRole, setBulkRole] = useState<RoleFilter | null>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  async function confirmBulkDelete() {
+    if (!bulkRole) return;
+    setBulkBusy(true);
+    try {
+      const r = await delBulk({ data: { event_id: id, role: bulkRole } });
+      toast.success(`${r.deleted} participantes quitados del evento`);
+      setBulkRole(null); load();
+    } catch (e: any) { toast.error(e?.message ?? "Error"); }
+    finally { setBulkBusy(false); }
+  }
   const [availFor, setAvailFor] = useState<any>(null);
   const [editUserId, setEditUserId] = useState<string | null>(null);
   const [rows, setRows] = useState<any[]>([]);
@@ -131,12 +144,30 @@ function AdminRegistros() {
 
   return (
     <div className="space-y-6">
+      <Dialog open={!!bulkRole} onOpenChange={(o) => !o && !bulkBusy && setBulkRole(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{bulkRole === "empresa" ? `Borrar las ${counts.empresa} empresas` : bulkRole === "sponsor" ? `Borrar las ${counts.sponsor} soluciones` : `Borrar los ${counts.all} participantes`}</DialogTitle>
+            <DialogDescription>Se quitarán de este evento. Sus cuentas no se eliminan y podrás volver a añadirlas con «Añadir cuentas existentes». Las selecciones, matches y reuniones ya creadas no se borran.</DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <button disabled={bulkBusy} onClick={() => setBulkRole(null)} className="rounded-md border border-border px-3 py-2 text-xs font-bold">Cancelar</button>
+            <button disabled={bulkBusy} onClick={confirmBulkDelete} className="rounded-md bg-destructive px-3 py-2 text-xs font-bold text-destructive-foreground disabled:opacity-50">{bulkBusy ? "Borrando…" : "Sí, borrar"}</button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <PageHeader title="Participantes" subtitle={`Total: ${rows.length}`} right={
         <div className="flex flex-wrap gap-2">
         <button onClick={() => setShowImport(true)} className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-bold text-uppercase-wide text-primary-foreground"><Upload className="h-3 w-3" /> Subir participantes (Excel)</button>
         <button onClick={() => setShowNew(true)} className="inline-flex items-center gap-2 rounded-md border border-primary/50 px-3 py-2 text-xs font-bold text-uppercase-wide text-primary"><UserPlus className="h-3 w-3" /> Nuevo participante</button>
         <button onClick={() => setShowAdd(true)} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide"><UserPlus className="h-3 w-3" /> Añadir cuentas existentes</button>
         <button onClick={onSendAll} disabled={sendingAll || rows.length === 0} className="inline-flex items-center gap-2 rounded-md border border-primary/50 px-3 py-2 text-xs font-bold text-uppercase-wide text-primary disabled:opacity-50"><Send className="h-3 w-3" /> {sendingAll ? "Enviando…" : "Enviar claves a todos"}</button>
+        <select value="" disabled={rows.length === 0} onChange={(e) => e.target.value && setBulkRole(e.target.value as RoleFilter)} className="rounded-md border border-destructive/50 bg-card px-3 py-2 text-xs font-bold text-uppercase-wide text-destructive disabled:opacity-50">
+          <option value="">Borrar…</option>
+          <option value="all">Todos los participantes ({counts.all})</option>
+          <option value="empresa">Todas las empresas ({counts.empresa})</option>
+          <option value="sponsor">Todas las soluciones ({counts.sponsor})</option>
+        </select>
         <button onClick={exportCSV} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide"><Download className="h-3 w-3" /> Exportar CSV</button>
         </div>
       } />
