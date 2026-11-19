@@ -37,7 +37,7 @@ export async function sendEmail(to: string, subject: string, html: string) {
   const resendKey = process.env.RESEND_API_KEY;
   if (!lovableKey) throw new Error("LOVABLE_API_KEY no configurada");
   if (!resendKey) throw new Error("Resend no está conectado");
-  const from = process.env.CREDENTIALS_FROM_EMAIL || "Conectamos <acceso@conectamos.club>";
+  const from = process.env.CREDENTIALS_FROM_EMAIL || "Conectamos <miquel@conectamos.club>";
   const res = await fetch(`${GATEWAY_URL}/emails`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${lovableKey}`, "X-Connection-Api-Key": resendKey },
