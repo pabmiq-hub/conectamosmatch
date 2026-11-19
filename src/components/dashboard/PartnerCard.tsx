@@ -39,7 +39,7 @@ export function PartnerCard({ name, description, logoUrl, sector, level, size, r
       </div>
       <div className="mt-2 flex flex-wrap gap-2">
         {sector && <span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-uppercase-wide text-muted-foreground">{sector}</span>}
-        {size && <span className="text-[10px] text-muted-foreground">{size} empleados</span>}
+        {size && <span className="text-[10px] text-muted-foreground">{/emplead/i.test(size) ? size : `${size} empleados`}</span>}
       </div>
       {description && <p className="mt-3 text-xs text-muted-foreground line-clamp-3 flex-1">{description}</p>}
       {actions && <div className="mt-4 flex items-center gap-2">{actions}</div>}

@@ -96,7 +96,7 @@ export function PartnerDetailModal({ open, onClose, partner, hideLevel, recommen
           {partner.company_size && (
             <div>
               <h3 className="text-[10px] text-uppercase-wide font-bold text-muted-foreground mb-1.5">Datos</h3>
-              <p className="text-sm text-foreground/90">{partner.company_size} empleados</p>
+              <p className="text-sm text-foreground/90">{/emplead/i.test(partner.company_size) ? partner.company_size : `${partner.company_size} empleados`}</p>
             </div>
           )}
 

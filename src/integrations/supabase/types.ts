@@ -209,7 +209,7 @@ export type Database = {
       empresa_profiles: {
         Row: {
           company_name: string
-          company_size: Database["public"]["Enums"]["company_size_t"] | null
+          company_size: string | null
           cover_image_url: string | null
           created_at: string | null
           description: string | null
@@ -233,7 +233,7 @@ export type Database = {
         }
         Insert: {
           company_name: string
-          company_size?: Database["public"]["Enums"]["company_size_t"] | null
+          company_size?: string | null
           cover_image_url?: string | null
           created_at?: string | null
           description?: string | null
@@ -257,7 +257,7 @@ export type Database = {
         }
         Update: {
           company_name?: string
-          company_size?: Database["public"]["Enums"]["company_size_t"] | null
+          company_size?: string | null
           cover_image_url?: string | null
           created_at?: string | null
           description?: string | null

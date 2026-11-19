@@ -1,0 +1,1 @@
+ALTER TABLE public.empresa_profiles ALTER COLUMN company_size TYPE text USING company_size::text;

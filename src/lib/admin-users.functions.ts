@@ -9,7 +9,7 @@ import { enrichAccountFromDomain } from "./firecrawl.server";
 const empresaSchema = z.object({
   company_name: z.string().min(1).max(200),
   sector: z.string().max(120).optional().default(""),
-  company_size: z.enum(["1-10", "11-50", "51-200", "201-500", "500+"]).optional(),
+  company_size: z.preprocess((v) => (v == null || String(v).trim() === "" ? undefined : String(v).trim()), z.string().max(80).optional()),
   website: z.string().max(300).optional().default(""),
   location_city: z.string().max(120).optional().default(""),
   linkedin_url: z.string().max(300).optional().default(""),
@@ -388,7 +388,7 @@ const bulkRowSchema = z.object({
   tagline: optStr,
   description: optStr,
   // empresa
-  company_size: z.enum(["1-10", "11-50", "51-200", "201-500", "500+"]).optional(),
+  company_size: z.preprocess((v) => (v == null || String(v).trim() === "" ? undefined : String(v).trim()), z.string().max(80).optional()),
   location_city: optStr,
   looking_for: optStr, // retos que la empresa quiere resolver
   // sponsor
@@ -706,7 +706,7 @@ const confirmedGroupSchema = z.object({
     linkedin_url: z.string().optional().default(""),
     tagline: z.string().optional().default(""),
     description: z.string().optional().default(""),
-    company_size: z.enum(["1-10", "11-50", "51-200", "201-500", "500+"]).optional(),
+    company_size: z.preprocess((v) => (v == null || String(v).trim() === "" ? undefined : String(v).trim()), z.string().max(80).optional()),
     location_city: z.string().optional().default(""),
     looking_for: z.string().optional().default(""),
     sponsorship_category: z.string().optional().default(""),
@@ -1238,7 +1238,7 @@ const editUserSchema = z.object({
       tagline: z.string().max(300).optional(),
       description: z.string().max(2000).optional(),
       location_city: z.string().max(120).optional(),
-      company_size: z.enum(["1-10", "11-50", "51-200", "201-500", "500+"]).optional(),
+      company_size: z.preprocess((v) => (v == null || String(v).trim() === "" ? undefined : String(v).trim()), z.string().max(80).optional()),
       sponsorship_category: z.string().max(120).optional(),
       sponsorship_level: sponsorLevelSchema.optional(),
       categories: z.array(z.string().max(200)).max(40).optional(),
