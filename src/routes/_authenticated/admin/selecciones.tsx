@@ -6,7 +6,9 @@ import { BookmarkCheck, ChevronDown, ChevronRight, Building2, Sparkles, Search, 
 import { toast } from "sonner";
 import { listAccountSelections } from "@/lib/admin-selections.functions";
 import { useAdminEvent } from "@/hooks/use-admin-event";
-import { SortToggle, sortByName, type SortDir } from "@/components/dashboard/SortToggle";
+import { sortByName, type SortDir } from "@/components/dashboard/SortToggle";
+import { SelectionSortToggle } from "@/components/dashboard/SelectionSortToggle";
+import { sortSelectionAccounts, targetSortDir, type SelectionSortKey } from "@/lib/selection-sort";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -60,7 +62,7 @@ function AdminSelecciones() {
   const [side, setSide] = useState<Side>("empresa");
   const [q, setQ] = useState("");
   const [showZero, setShowZero] = useState(true);
-  const [dir, setDir] = useState<SortDir>("asc");
+  const [sortKey, setSortKey] = useState<SelectionSortKey>("name_asc");
 
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [pendingFormat, setPendingFormat] = useState<"excel" | "pdf" | null>(null);
@@ -90,8 +92,8 @@ function AdminSelecciones() {
       if ((a.company_name ?? "").toLowerCase().includes(term)) return true;
       return (a.targets ?? []).some((t: any) => (t.company_name ?? "").toLowerCase().includes(term));
     });
-    return sortByName(base, (a: any) => a.company_name, dir);
-  }, [accounts, q, showZero, dir]);
+    return sortSelectionAccounts(base, sortKey);
+  }, [accounts, q, showZero, sortKey]);
 
   const totalSel = filtered.reduce((s, a) => s + a.total, 0);
 
@@ -117,14 +119,14 @@ function AdminSelecciones() {
     const date = new Date().toISOString().slice(0, 10);
 
     if (choice === "empresa" || choice === "both") {
-      const rows = buildRows(empresas, "empresa");
+      const rows = buildRows(sortSelectionAccounts(empresas, sortKey), "empresa");
       if (rows.length) {
         const ws = XLSX.utils.json_to_sheet(rows);
         XLSX.utils.book_append_sheet(wb, ws, "Empresas");
       }
     }
     if (choice === "sponsor" || choice === "both") {
-      const rows = buildRows(sponsors, "sponsor");
+      const rows = buildRows(sortSelectionAccounts(sponsors, sortKey), "sponsor");
       if (rows.length) {
         const ws = XLSX.utils.json_to_sheet(rows);
         XLSX.utils.book_append_sheet(wb, ws, "Soluciones");
@@ -164,10 +166,10 @@ function AdminSelecciones() {
     };
 
     if (choice === "empresa" || choice === "both") {
-      startY = addSection("Selecciones · Empresas", empresas, "empresa");
+      startY = addSection("Selecciones · Empresas", sortSelectionAccounts(empresas, sortKey), "empresa");
     }
     if (choice === "sponsor" || choice === "both") {
-      startY = addSection("Selecciones · Soluciones", sponsors, "sponsor");
+      startY = addSection("Selecciones · Soluciones", sortSelectionAccounts(sponsors, sortKey), "sponsor");
     }
 
     if (startY === 14) {
@@ -221,7 +223,7 @@ function AdminSelecciones() {
             className="rounded-md border border-border bg-card pl-7 pr-3 py-1.5 text-xs min-w-[220px]"
           />
         </div>
-        <SortToggle value={dir} onChange={setDir} />
+        <SelectionSortToggle value={sortKey} onChange={setSortKey} />
         <label className="flex items-center gap-1 text-[11px] text-muted-foreground">
           <input type="checkbox" checked={showZero} onChange={(e) => setShowZero(e.target.checked)} />
           Mostrar cuentas con 0 selecciones
@@ -235,7 +237,7 @@ function AdminSelecciones() {
         <EmptyState icon={BookmarkCheck} title="Sin cuentas" />
       ) : (
         <div className="space-y-2">
-          {filtered.map((a) => <AccountCard key={a.account_id} account={a} side={side} dir={dir} />)}
+          {filtered.map((a) => <AccountCard key={a.account_id} account={a} side={side} dir={targetSortDir(sortKey)} />)}
         </div>
       )}
 
