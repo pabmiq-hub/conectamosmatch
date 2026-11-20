@@ -941,28 +941,11 @@ export const transferAccountAdmin = createServerFn({ method: "POST" })
     z.object({ newAdminUserId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertSuperAdmin(context.userId);
-    const { data: target } = await supabaseAdmin
-      .from("profiles")
-      .select("id, role, account_id")
-      .eq("id", data.newAdminUserId)
-      .maybeSingle();
-    if (!target?.account_id) throw new Response("El usuario no pertenece a una cuenta", { status: 400 });
-
-    await supabaseAdmin
-      .from("profiles")
-      .update({ account_role: "manager" })
-      .eq("account_id", target.account_id)
-      .eq("account_role", "owner");
-
-    await supabaseAdmin
-      .from("profiles")
-      .update({ account_role: "owner" })
-      .eq("id", data.newAdminUserId);
-
-    const table = target.role === "empresa" ? "empresa_profiles" : "sponsor_profiles";
-    await supabaseAdmin.from(table).update({ user_id: data.newAdminUserId }).eq("id", target.account_id);
-
+    const { data: allowed, error: roleError } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "super_admin" });
+    if (roleError || !allowed) throw new Error("Solo el superadministrador puede cambiar el administrador de una cuenta");
+    const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
+    const { error } = await admin.rpc("transfer_account_owner_atomic", { _target: data.newAdminUserId });
+    if (error) throw new Error(error.message);
     return { ok: true };
   });
 

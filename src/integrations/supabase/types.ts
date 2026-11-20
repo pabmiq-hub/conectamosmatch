@@ -1813,6 +1813,10 @@ export type Database = {
       }
       reto_seed_icebreakers: { Args: { _event: string }; Returns: undefined }
       same_account: { Args: { _a: string; _b: string }; Returns: boolean }
+      transfer_account_owner_atomic: {
+        Args: { _target: string }
+        Returns: undefined
+      }
     }
     Enums: {
       agenda_type_t:

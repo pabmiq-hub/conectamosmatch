@@ -15,7 +15,15 @@ export const listRegistrations = createServerFn({ method: "POST" })
       .eq("event_id", data.event_id)
       .order("registered_at", { ascending: false });
     if (error) throw new Response(error.message, { status: 400 });
-    return { registrations: regs ?? [] };
+    const ids = [...new Set((regs ?? []).map((r) => r.user_id).filter((id): id is string => Boolean(id)))];
+    const members: { id: string; account_id: string | null; account_role: string }[] = [];
+    for (let i = 0; i < ids.length; i += 300) {
+      const { data: profiles, error: profileError } = await supabaseAdmin.from("profiles").select("id, account_id, account_role").in("id", ids.slice(i, i + 300));
+      if (profileError) throw new Error(profileError.message);
+      members.push(...(profiles ?? []));
+    }
+    const byId = new Map(members.map((p) => [p.id, p]));
+    return { registrations: (regs ?? []).map((r) => ({ ...r, account_id: r.user_id ? byId.get(r.user_id)?.account_id ?? null : null, account_role: r.user_id ? byId.get(r.user_id)?.account_role ?? null : null })) };
   });
 
 export const toggleCheckIn = createServerFn({ method: "POST" })

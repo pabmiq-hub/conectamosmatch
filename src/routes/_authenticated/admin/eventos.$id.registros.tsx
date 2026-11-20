@@ -14,6 +14,7 @@ import {
 import { ImportUsersModal } from "@/components/admin/ImportUsersModal";
 import { NewUserModal } from "@/components/admin/NewUserModal";
 import { EditUserModal } from "@/components/admin/EditUserModal";
+import { AccountAdminCrown } from "@/components/admin/AccountAdminCrown";
 import { AddExistingAccountsModal } from "@/components/admin/AddExistingAccountsModal";
 import { useAdminEvent } from "@/hooks/use-admin-event";
 import { toast } from "sonner";
@@ -25,6 +26,7 @@ import { setPasswordAndMaybeSend, sendEventCredentials } from "@/lib/credentials
 import { deleteWholeAccount, moveUserToAccountOf } from "@/lib/admin-users.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/eventos/$id/registros")({
+  head: () => ({ meta: [{ title: "Participantes del evento | Conectamos Match" }, { name: "description", content: "Gestiona empresas, soluciones, participantes y administradores del evento." }, { property: "og:title", content: "Participantes del evento | Conectamos Match" }, { property: "og:description", content: "Cuentas y personas inscritas en el evento." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: AdminRegistros,
 });
 
@@ -306,6 +308,7 @@ function AdminRegistros() {
                 {g.people.map((r: any) => (
                   <li key={r.id} className="flex items-center gap-3 px-4 py-2.5 pl-6">
                     <span draggable title="Arrastra a otra cuenta para moverla" onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; setDragged(r); }} onDragEnd={() => { setDragged(null); setDropKey(null); }} className="cursor-grab p-1 text-muted-foreground hover:text-primary active:cursor-grabbing"><GripVertical className="h-4 w-4" /></span>
+                    {r.user_id && r.account_id && <AccountAdminCrown userId={r.user_id} name={r.attendee_name ?? r.attendee_email ?? "Esta persona"} accountName={g.company} isAdmin={r.account_role === "owner"} onChanged={load} />}
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-xs font-medium">{r.attendee_name}{r.attendee_role_title ? <span className="text-muted-foreground"> · {r.attendee_role_title}</span> : null}</div>
                       <div className="truncate text-[11px] text-muted-foreground">{r.attendee_email}</div>

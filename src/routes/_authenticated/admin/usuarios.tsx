@@ -7,6 +7,7 @@ import { LevelBadge } from "@/components/brand/LevelBadge";
 import { Users, Building2, Sparkles, Plus, Search, Trash2, KeyRound, Power, Upload, UserPlus, Inbox, Check, X, CornerDownRight, Shield, ChevronRight, BarChart3, Pencil, ShieldPlus } from "lucide-react";
 import { toast } from "sonner";
 import { AccountHealthPanel } from "@/components/admin/AccountHealthPanel";
+import { AccountAdminCrown } from "@/components/admin/AccountAdminCrown";
 import { NewUserModal } from "@/components/admin/NewUserModal";
 import { ImportUsersModal } from "@/components/admin/ImportUsersModal";
 import { InviteResponsableModal } from "@/components/admin/InviteResponsableModal";
@@ -21,6 +22,7 @@ import { listAllRequests, rejectRequest, type ResponsableRequest } from "@/lib/r
 const BOOTSTRAP_ADMIN_EMAIL = "miquel@conectamos.club";
 
 export const Route = createFileRoute("/_authenticated/admin/usuarios")({
+  head: () => ({ meta: [{ title: "Usuarios y cuentas | Conectamos Match" }, { name: "description", content: "Gestiona las cuentas y sus administradores en Conectamos Match." }, { property: "og:title", content: "Usuarios y cuentas | Conectamos Match" }, { property: "og:description", content: "Empresas, soluciones y responsables de cada cuenta." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: AdminUsuarios,
 });
 
@@ -270,13 +272,13 @@ function AdminUsuarios() {
             return (
               <div key={key} className="rounded-xl border border-border bg-card overflow-hidden">
                 {/* Account header (owner) */}
-                <AccountHeader owner={g.owner} role={role} accountName={accountName} managersCount={g.managers.length} isOpen={isOpen} onToggle={toggle} canExpand={canExpand} onReset={onReset} onToggleActive={onToggle} onDelete={onDelete} onView={(p) => setViewing({ id: p.id, label: p.company?.company_name ?? p.full_name ?? p.email ?? "Usuario" })} onEdit={(p) => setEditing(p.id)} onAddResponsable={head?.account_id && (role === "empresa" || role === "sponsor") ? () => setInvitePreset({ accountId: head.account_id!, accountType: role as "empresa" | "sponsor", accountName }) : undefined} />
+                <AccountHeader onChanged={load} owner={g.owner} role={role} accountName={accountName} managersCount={g.managers.length} isOpen={isOpen} onToggle={toggle} canExpand={canExpand} onReset={onReset} onToggleActive={onToggle} onDelete={onDelete} onView={(p) => setViewing({ id: p.id, label: p.company?.company_name ?? p.full_name ?? p.email ?? "Usuario" })} onEdit={(p) => setEditing(p.id)} onAddResponsable={head?.account_id && (role === "empresa" || role === "sponsor") ? () => setInvitePreset({ accountId: head.account_id!, accountType: role as "empresa" | "sponsor", accountName }) : undefined} />
                 {/* Managers */}
                 {isOpen && g.managers.length > 0 && (
                   <ul className="divide-y divide-border border-t border-border bg-muted/10">
                     {g.managers.map((m) => (
                       <li key={m.id} onClick={() => setViewing({ id: m.id, label: m.full_name ?? m.email ?? "Responsable" })} className="font-sans flex items-center gap-4 px-4 py-3 pl-12 cursor-pointer hover:bg-muted/30 transition-colors">
-                        <CornerDownRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <AccountAdminCrown userId={m.id} name={m.full_name ?? m.email ?? "Esta persona"} accountName={accountName} isAdmin={false} onChanged={load} />
                         <div className="min-w-0 flex-1 space-y-1">
                           <div className="text-[14px] font-semibold leading-tight truncate" style={{ color: "#111827" }}>{m.full_name ?? m.email}</div>
                           <div className="text-[13px] font-normal truncate" style={{ color: "#6B7280" }}>
@@ -337,7 +339,7 @@ function AdminUsuarios() {
   );
 }
 
-function AccountHeader({ owner, role, accountName, managersCount, isOpen, onToggle, canExpand, onReset, onToggleActive, onDelete, onAddResponsable, onView, onEdit }: { owner: Profile | null; role: string | undefined; accountName: string; managersCount: number; isOpen: boolean; onToggle: () => void; canExpand: boolean; onReset: (id: string) => void; onToggleActive: (p: Profile) => void; onDelete: (p: Profile) => void; onAddResponsable?: () => void; onView: (p: Profile) => void; onEdit: (p: Profile) => void }) {
+function AccountHeader({ onChanged, owner, role, accountName, managersCount, isOpen, onToggle, canExpand, onReset, onToggleActive, onDelete, onAddResponsable, onView, onEdit }: { onChanged: () => Promise<void>; owner: Profile | null; role: string | undefined; accountName: string; managersCount: number; isOpen: boolean; onToggle: () => void; canExpand: boolean; onReset: (id: string) => void; onToggleActive: (p: Profile) => void; onDelete: (p: Profile) => void; onAddResponsable?: () => void; onView: (p: Profile) => void; onEdit: (p: Profile) => void }) {
   const Icon = role === "sponsor" ? Sparkles : Building2;
   const company = owner?.company;
   return (
@@ -393,6 +395,7 @@ function AccountHeader({ owner, role, accountName, managersCount, isOpen, onTogg
       )}
       {owner && (
         <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
+          <AccountAdminCrown userId={owner.id} name={owner.full_name ?? owner.email ?? "Esta persona"} accountName={accountName} isAdmin onChanged={onChanged} />
           <span className={`text-[11px] font-medium ${owner.is_active ? "text-success" : "text-muted-foreground"}`}>{owner.is_active ? "Activo" : "Inactivo"}</span>
           <RowActions p={owner} onReset={onReset} onToggle={onToggleActive} onDelete={onDelete} onView={() => onView(owner)} onEdit={() => onEdit(owner)} />
         </div>
