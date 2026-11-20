@@ -1163,10 +1163,12 @@ export const listEmpresaResponsables = createServerFn({ method: "POST" })
       ...m,
       cargo: m.cargo ?? cargoMap.get(String(m.email ?? "").trim().toLowerCase()) ?? null,
     }));
+    const { data: me } = await supabaseAdmin.from("profiles").select("account_id").eq("id", userId).single();
+    const { data: team } = me?.account_id ? await supabaseAdmin.from("profiles").select("id").eq("account_id", me.account_id) : { data: [{ id: userId }] };
     let myLikesQuery = supabaseAdmin
       .from("likes")
       .select("to_user_id")
-      .eq("from_user_id", userId)
+      .in("from_user_id", (team ?? []).map((m) => m.id))
       .in("to_user_id", ids);
     myLikesQuery = data.eventId ? myLikesQuery.eq("event_id", data.eventId) : myLikesQuery.is("event_id", null);
     const { data: myLikes } = await myLikesQuery;
@@ -1198,10 +1200,11 @@ export const listMyLikedAccountIds = createServerFn({ method: "POST" })
       teammateIds = Array.from(new Set([...(team ?? []).map((m: any) => m.id), userId]));
     }
 
-    let likesQuery = supabaseAdmin.from("likes").select("to_user_id").in("from_user_id", teammateIds);
-    likesQuery = data.eventId ? likesQuery.eq("event_id", data.eventId) : likesQuery.is("event_id", null);
-    const { data: likes, error } = await likesQuery;
-    if (error) throw new Error(error.message);
+    const { fetchAll } = await import("./event-scope.server");
+    const likes = await fetchAll<any>((a, b) => {
+      let query = supabaseAdmin.from("likes").select("to_user_id").in("from_user_id", teammateIds).order("id").range(a, b);
+      return data.eventId ? query.eq("event_id", data.eventId) : query.is("event_id", null);
+    });
     const targetIds = Array.from(new Set((likes ?? []).map((l: any) => l.to_user_id).filter(Boolean)));
     if (!targetIds.length) return { accountIds: [] as string[], userIds: [] as string[] };
 
@@ -1233,21 +1236,22 @@ export const likeEmpresaAccount = createServerFn({ method: "POST" })
     const scope = await getEventScope(supabaseAdmin, data.eventId);
     if (!scope.userIds.has(userId)) throw new Error("Tu cuenta no está inscrita en este evento");
     if (data.responsableIds.some((id) => !scope.userIds.has(id))) throw new Error("Esa cuenta no participa en este evento");
-    const rows = data.responsableIds.map((toId) => ({
-      from_user_id: userId,
-      to_user_id: toId,
-      event_id: data.eventId,
-    }));
-    let inserted = 0;
-    for (const row of rows) {
-      const { error } = await supabase.from("likes").insert(row);
-      if (!error) { inserted++; continue; }
-      const code = (error as any).code;
-      const msg = error.message || "";
-      const isDuplicate = code === "23505" || /duplicate key/i.test(msg);
-      if (!isDuplicate) throw new Error(msg || "No se pudo registrar el like");
-    }
-    return { ok: true, count: inserted };
+    const { data: me, error: meError } = await supabase.from("profiles").select("account_id, role, is_active").eq("id", userId).single();
+    if (meError || !me?.account_id || me.is_active === false) throw new Error("Tu cuenta no está activa");
+    const { data: targets, error: targetError } = await supabaseAdmin.from("profiles").select("id, account_id, role, is_active").in("id", data.responsableIds);
+    if (targetError) throw new Error(targetError.message);
+    const targetRole = me.role === "empresa" ? "sponsor" : "empresa";
+    if (!targets?.length || targets.length !== new Set(data.responsableIds).size || targets.some((p) => !p.account_id || p.account_id === me.account_id || p.role !== targetRole || p.is_active === false) || new Set(targets.map((p) => p.account_id)).size !== 1) throw new Error("Selecciona una cuenta activa del tipo contrario");
+    const { data: team, error: teamError } = await supabaseAdmin.from("profiles").select("id").eq("account_id", me.account_id);
+    if (teamError) throw new Error(teamError.message);
+    const { data: existing, error: existingError } = await supabaseAdmin.from("likes").select("to_user_id").in("from_user_id", (team ?? []).map((m) => m.id)).in("to_user_id", data.responsableIds).eq("event_id", data.eventId);
+    if (existingError) throw new Error(existingError.message);
+    const already = new Set((existing ?? []).map((l) => l.to_user_id));
+    const rows = targets.filter((p) => !already.has(p.id)).map((p) => ({ from_user_id: userId, to_user_id: p.id, event_id: data.eventId }));
+    if (!rows.length) return { ok: true, count: 0 };
+    const { error } = await supabase.from("likes").upsert(rows, { onConflict: "from_user_id,to_user_id,event_id", ignoreDuplicates: true });
+    if (error) throw new Error(error.message || "No se pudo registrar el interés");
+    return { ok: true, count: rows.length };
   });
 
 export const unlikeEmpresaAccount = createServerFn({ method: "POST" })

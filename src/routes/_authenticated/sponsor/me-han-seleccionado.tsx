@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { listEmpresasWhoLikedMe } from "@/lib/sponsor-incoming.functions";
 
 export const Route = createFileRoute("/_authenticated/sponsor/me-han-seleccionado")({
+  head: () => ({ meta: [{ title: "Empresas que me han seleccionado | Conectamos Match" }, { name: "description", content: "Empresas interesadas en tu solución y sus matches." }, { property: "og:title", content: "Empresas que me han seleccionado | Conectamos Match" }, { property: "og:description", content: "Interés recibido por tu cuenta." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: EmpresasQueMeHanSeleccionado,
 });
 
@@ -60,7 +61,7 @@ function EmpresasQueMeHanSeleccionado() {
     <div className="space-y-6">
       <PageHeader
         title="Empresas que me han seleccionado"
-        subtitle="Empresas cuyos responsables han mostrado interés en tu solución o en alguno de tus responsables."
+        subtitle="Empresas que han mostrado interés en tu solución."
         right={
           <span className="rounded-full border border-border px-3 py-1 text-xs font-bold text-uppercase-wide">
             {items.length} empresa{items.length === 1 ? "" : "s"}
@@ -118,9 +119,6 @@ function EmpresasQueMeHanSeleccionado() {
                   <div className="space-y-1 rounded-md border border-border bg-card px-3 py-2 text-[11px] text-muted-foreground">
                     {e.via_responsables?.length > 0 && (
                       <div><span className="font-bold text-foreground/80">Vía:</span> {e.via_responsables.join(", ")}</div>
-                    )}
-                    {e.liked_responsables?.length > 0 && (
-                      <div><span className="font-bold text-foreground/80">Interés en:</span> {e.liked_responsables.join(", ")}</div>
                     )}
                     {e.created_at && (
                       <div>{new Date(e.created_at).toLocaleDateString("es-ES")}</div>

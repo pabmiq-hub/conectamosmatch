@@ -9,7 +9,8 @@ export const listMyAccountMatches = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ eventId: z.string().uuid().nullable().optional() }).parse(input ?? {}))
   .handler(async ({ context, data: input }) => {
     const { userId } = context;
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = context.supabase;
+    const { fetchAll } = await import("./event-scope.server");
 
     const { data: meProfile } = await supabaseAdmin
       .from("profiles")
@@ -24,15 +25,11 @@ export const listMyAccountMatches = createServerFn({ method: "POST" })
     const partnerUserField = myRole === "empresa" ? "sponsor_user_id" : "empresa_user_id";
     const partnerAccountField = myRole === "empresa" ? "sponsor_account_id" : "empresa_account_id";
 
-    let mq = supabaseAdmin
-      .from("matches")
-      .select(`${partnerUserField}, ${partnerAccountField}`)
-      .eq(filterField, myAccountId)
-      .eq("status", "mutual");
-    // Only the matches of the participant's current event
-    if (input.eventId !== undefined) mq = input.eventId ? mq.eq("event_id", input.eventId) : mq.is("event_id", null);
-    const { data: matches, error } = await mq;
-    if (error) throw new Error(error.message);
+    const matches = await fetchAll<any>((a, b) => {
+      let mq = supabaseAdmin.from("matches").select(`${partnerUserField}, ${partnerAccountField}`).eq(filterField, myAccountId).eq("status", "mutual").order("id").range(a, b);
+      if (input.eventId !== undefined) mq = input.eventId ? mq.eq("event_id", input.eventId) : mq.is("event_id", null);
+      return mq;
+    });
 
     const partnerUserIds = Array.from(new Set((matches ?? []).map((m: any) => m[partnerUserField]).filter(Boolean)));
     const partnerAccountIds = Array.from(new Set((matches ?? []).map((m: any) => m[partnerAccountField]).filter(Boolean)));

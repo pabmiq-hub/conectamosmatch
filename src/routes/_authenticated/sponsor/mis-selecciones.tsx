@@ -13,6 +13,7 @@ import { Heart, Search } from "lucide-react";
 import { SortToggle, sortByName, type SortDir } from "@/components/dashboard/SortToggle";
 
 export const Route = createFileRoute("/_authenticated/sponsor/mis-selecciones")({
+  head: () => ({ meta: [{ title: "Mis selecciones de empresas | Conectamos Match" }, { name: "description", content: "Consulta las cuentas seleccionadas por tu equipo en el evento." }, { property: "og:title", content: "Mis selecciones de empresas | Conectamos Match" }, { property: "og:description", content: "Selecciones y matches de tu cuenta." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: MisSeleccionesSponsor,
 });
 
@@ -32,7 +33,8 @@ function MisSeleccionesSponsor() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setMe(user.id);
-      const ev = (await fetchMyEventScope()).event;
+      const scope = await fetchMyEventScope();
+      const ev = scope.event;
       setEventId(ev?.id ?? null);
 
       const likedAccounts = await getLikedAccounts({ data: { eventId: ev?.id ?? null } });
@@ -43,7 +45,7 @@ function MisSeleccionesSponsor() {
         .from("empresa_profiles")
         .select("id, user_id, company_name, description, logo_url, sector, company_size, website, location_city, responsables")
         .in("id", ids);
-      setItems(emp ?? []);
+      setItems((emp ?? []).map((a) => ({ ...a, user_id: scope.accountOwners[a.id] ?? a.user_id })));
 
       const { partnerAccountIds } = await getMatches({ data: { eventId: ev?.id ?? null } });
       setMatchedAccountSet(new Set(partnerAccountIds));
@@ -85,7 +87,7 @@ function MisSeleccionesSponsor() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filtered.map((e) => (
               <PartnerCard
-                key={e.user_id}
+                key={e.id}
                 name={e.company_name}
                 description={e.description}
                 logoUrl={e.logo_url}
@@ -95,7 +97,7 @@ function MisSeleccionesSponsor() {
                 actions={
                   <>
                     <ActionButton icon={Eye} label={matchedAccountSet.has(e.id) ? "MATCH ✓" : "Ver"} onClick={() => setSelected(e)} />
-                    {me && <AccountInterestButton targetUserId={e.user_id} eventId={eventId} partnerName={e.company_name} liked onLike={() => {}} onUnliked={() => setItems((prev) => prev.filter((item) => item.user_id !== e.user_id))} />}
+                    {me && e.user_id && <AccountInterestButton targetUserId={e.user_id} eventId={eventId} partnerName={e.company_name} liked onLike={() => {}} onUnliked={() => setItems((prev) => prev.filter((item) => item.id !== e.id))} />}
                   </>
                 }
               />

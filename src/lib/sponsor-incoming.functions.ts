@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 type IncomingEmpresa = {
   account_id: string;
@@ -25,6 +24,9 @@ export const listEmpresasWhoLikedMe = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ eventId: z.string().uuid().nullable() }).parse(input ?? { eventId: null }))
   .handler(async ({ context, data: input }): Promise<{ items: IncomingEmpresa[] }> => {
     const { userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { fetchAll } = await import("./event-scope.server");
+    const { resolveAccountOwner } = await import("./account-owner");
 
     // Find the sponsor account of the current user
     const { data: meProfile } = await supabaseAdmin
@@ -57,12 +59,13 @@ export const listEmpresasWhoLikedMe = createServerFn({ method: "POST" })
     // Likes received by any of my responsables
     // Only likes made inside the current event
     if (!input.eventId) return { items: [] };
-    const { data: likes } = await supabaseAdmin
+    const eventId = input.eventId;
+    const likes = await fetchAll<any>((a, b) => supabaseAdmin
       .from("likes")
       .select("from_user_id, to_user_id, created_at")
       .in("to_user_id", myMemberIds)
-      .eq("event_id", input.eventId)
-      .order("created_at", { ascending: false });
+      .eq("event_id", eventId)
+      .order("created_at", { ascending: false }).order("id").range(a, b));
     const senderIds = Array.from(new Set((likes ?? []).map((l: any) => l.from_user_id).filter(Boolean)));
     if (!senderIds.length) return { items: [] };
 
@@ -106,11 +109,14 @@ export const listEmpresasWhoLikedMe = createServerFn({ method: "POST" })
       .eq("status", "mutual");
     const matchedAccounts = new Set((matches ?? []).map((m: any) => m.empresa_account_id));
 
-    const items: IncomingEmpresa[] = (empresas ?? []).map((e: any) => {
-      const a = agg.get(e.id)!;
+    const { data: members, error: memberError } = await supabaseAdmin.from("profiles").select("id, account_id, account_role, is_active").in("account_id", accountIds);
+    if (memberError) throw new Error(memberError.message);
+    const items: IncomingEmpresa[] = (empresas ?? []).flatMap((e: any) => {
+      const a = agg.get(e.id);
+      if (!a) return [];
       return {
         account_id: e.id,
-        user_id: e.user_id,
+        user_id: resolveAccountOwner(e, members ?? []),
         company_name: e.company_name,
         description: e.description,
         logo_url: e.logo_url,

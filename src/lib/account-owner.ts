@@ -5,7 +5,7 @@ export type MemberLite = { id: string; account_id: string | null; account_role?:
 
 export function resolveAccountOwner(account: { id: string; user_id: string | null }, members: MemberLite[]): string | null {
   const mine = members.filter((m) => m.account_id === account.id);
-  if (account.user_id && members.some((m) => m.id === account.user_id)) return account.user_id;
+  if (account.user_id && mine.some((m) => m.id === account.user_id && m.is_active !== false)) return account.user_id;
   const active = mine.filter((m) => m.is_active !== false);
   return (
     active.find((m) => m.account_role === "owner")?.id ??
@@ -22,7 +22,7 @@ export function accountLinkIssues(account: { id: string; user_id: string | null 
   const mine = members.filter((m) => m.account_id === account.id);
   const out: LinkIssue[] = [];
   if (!account.user_id) out.push("sin_responsable");
-  else if (!members.some((m) => m.id === account.user_id)) out.push("responsable_roto");
+  else if (!mine.some((m) => m.id === account.user_id && m.is_active !== false)) out.push("responsable_roto");
   if (mine.length === 0) out.push("sin_miembros");
   return out;
 }

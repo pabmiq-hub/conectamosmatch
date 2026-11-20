@@ -1,6 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getAccountDashboard } from "@/lib/account-dashboard.functions";
+import { toast } from "sonner";
 import { fetchMyEventScope } from "@/hooks/use-my-event";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { AgendaTable } from "@/components/dashboard/AgendaTable";
@@ -8,6 +11,7 @@ import { LevelBadge } from "@/components/brand/LevelBadge";
 import { Heart, Calendar, Search, Lock } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/sponsor/dashboard")({
+  head: () => ({ meta: [{ title: "Mi panel de solución | Conectamos Match" }, { name: "description", content: "Selecciones, matches y reuniones de tu cuenta en Conectamos Match." }, { property: "og:title", content: "Mi panel de solución | Conectamos Match" }, { property: "og:description", content: "Actividad de tu cuenta y agenda del evento." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: SponsorDashboard,
 });
 
@@ -18,27 +22,24 @@ function SponsorDashboard() {
   const [eventTitle, setEventTitle] = useState("");
   const [stats, setStats] = useState({ matches: 0, meetings: 0 });
 
+  const getDashboard = useServerFn(getAccountDashboard);
+
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data: sp } = await supabase.from("sponsor_profiles").select("company_name, sponsorship_level").eq("user_id", user.id).maybeSingle();
-      setName(sp?.company_name ?? "");
-      setLevel(sp?.sponsorship_level ?? "BASIC");
       const scope = await fetchMyEventScope();
       const ev = scope.event;
+      const activity = await getDashboard({ data: { eventId: ev?.id ?? null } });
+      setName(activity.name); setLevel(activity.level);
       if (ev) {
         setEventTitle(ev.title);
         const { data: ag } = await supabase.from("event_agenda").select("*").eq("event_id", ev.id).order("order_index");
         setAgenda(ag ?? []);
       }
       if (!ev) { setStats({ matches: 0, meetings: 0 }); return; }
-      const [m, mt] = await Promise.all([
-        supabase.from("matches").select("*", { count: "exact", head: true }).eq("sponsor_user_id", user.id).eq("event_id", ev.id).eq("status","mutual"),
-        supabase.from("meetings_1to1").select("*", { count: "exact", head: true }).eq("sponsor_user_id", user.id).eq("event_id", ev.id).not("scheduled_time", "is", null).neq("status", "cancelled"),
-      ]);
-      setStats({ matches: m.count ?? 0, meetings: mt.count ?? 0 });
-    })();
+      setStats({ matches: activity.matches, meetings: activity.meetings });
+    })().catch((e) => toast.error(e?.message ?? "No se pudo cargar la actividad"));
   }, []);
 
   const isStartup = level === "STARTUP";

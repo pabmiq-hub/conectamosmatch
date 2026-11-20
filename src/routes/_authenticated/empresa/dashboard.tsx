@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { getAccountDashboard } from "@/lib/account-dashboard.functions";
+import { toast } from "sonner";
 import { fetchMyEventScope } from "@/hooks/use-my-event";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { AgendaTable } from "@/components/dashboard/AgendaTable";
@@ -10,6 +12,7 @@ import { Link } from "@tanstack/react-router";
 import { listMyLikedAccountIds } from "@/lib/admin-users.functions";
 
 export const Route = createFileRoute("/_authenticated/empresa/dashboard")({
+  head: () => ({ meta: [{ title: "Mi panel de empresa | Conectamos Match" }, { name: "description", content: "Selecciones, matches y reuniones de tu cuenta en Conectamos Match." }, { property: "og:title", content: "Mi panel de empresa | Conectamos Match" }, { property: "og:description", content: "Actividad de tu cuenta y agenda del evento." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: EmpresaDashboard,
 });
 
@@ -21,15 +24,16 @@ function EmpresaDashboard() {
   const [agenda, setAgenda] = useState<any[]>([]);
   const getLikedAccounts = useServerFn(listMyLikedAccountIds);
 
+  const getDashboard = useServerFn(getAccountDashboard);
+
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data: ep } = await supabase.from("empresa_profiles").select("company_name").eq("user_id", user.id).maybeSingle();
-      setCompanyName(ep?.company_name ?? "");
-
       const scope = await fetchMyEventScope();
       const ev = scope.event;
+      const activity = await getDashboard({ data: { eventId: ev?.id ?? null } });
+      setCompanyName(activity.name);
       if (ev) {
         setEventTitle(ev.title); setMinLikes((ev as any).empresa_min_likes ?? 12);
         const { data: ag } = await supabase.from("event_agenda").select("*").eq("event_id", ev.id).order("order_index");
@@ -39,10 +43,8 @@ function EmpresaDashboard() {
       const liked = await getLikedAccounts({ data: { eventId: ev?.id ?? null } });
       const likes = liked.accountIds.length;
       if (!ev) { setStats({ likes: 0, matches: 0, meetings: 0 }); return; }
-      const { count: matches } = await supabase.from("matches").select("*", { count: "exact", head: true }).eq("empresa_user_id", user.id).eq("event_id", ev.id).eq("status","mutual");
-      const { count: meetings } = await supabase.from("meetings_1to1").select("*", { count: "exact", head: true }).eq("empresa_user_id", user.id).eq("event_id", ev.id).not("scheduled_time", "is", null).neq("status", "cancelled");
-      setStats({ likes, matches: matches ?? 0, meetings: meetings ?? 0 });
-    })();
+      setStats({ likes, matches: activity.matches, meetings: activity.meetings });
+    })().catch((e) => toast.error(e?.message ?? "No se pudo cargar la actividad"));
   }, []);
 
 

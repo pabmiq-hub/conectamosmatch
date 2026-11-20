@@ -4,6 +4,12 @@ import { resolveAccountOwner, accountLinkIssues } from "./account-owner";
 const m = (id: string, acc: string | null, role = "manager", active = true) => ({ id, account_id: acc, account_role: role, is_active: active });
 
 describe("resolveAccountOwner", () => {
+  it("ignores an owner moved to a different account", () => {
+    expect(resolveAccountOwner({ id: "A", user_id: "u1" }, [m("u1", "B"), m("u2", "A", "owner")])).toBe("u2");
+  });
+  it("ignores an inactive linked owner", () => {
+    expect(resolveAccountOwner({ id: "A", user_id: "u1" }, [m("u1", "A", "owner", false), m("u2", "A")])).toBe("u2");
+  });
   it("keeps a valid user_id", () => {
     expect(resolveAccountOwner({ id: "A", user_id: "u1" }, [m("u1", "A"), m("u2", "A", "owner")])).toBe("u1");
   });

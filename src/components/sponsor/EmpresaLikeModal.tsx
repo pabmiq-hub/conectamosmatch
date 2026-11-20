@@ -131,7 +131,7 @@ export function EmpresaLikeModal({
                       type="checkbox"
                       checked={already || checked}
                       disabled={already}
-                      onChange={() => {}}
+                      onChange={() => toggle(r.id)}
                       onClick={(e) => e.stopPropagation()}
                       className="h-4 w-4 accent-primary cursor-pointer"
                     />

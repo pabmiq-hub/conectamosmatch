@@ -150,7 +150,7 @@ export function AccountInterestButton({
           <AlertDialogHeader>
             <AlertDialogTitle>¿Retirar tu like a {partnerName}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Se retirará tu interés por esta cuenta y se desharán los matches y reuniones asociados a esta interacción.
+              Se retirará el interés de tu cuenta y desaparecerá el match si deja de ser recíproco. Las reuniones ya programadas o creadas por el administrador se conservarán.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

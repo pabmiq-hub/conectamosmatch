@@ -13,6 +13,7 @@ import { Heart, Search } from "lucide-react";
 import { SortToggle, sortByName, type SortDir } from "@/components/dashboard/SortToggle";
 
 export const Route = createFileRoute("/_authenticated/empresa/mis-selecciones")({
+  head: () => ({ meta: [{ title: "Mis selecciones de soluciones | Conectamos Match" }, { name: "description", content: "Consulta las cuentas seleccionadas por tu equipo en el evento." }, { property: "og:title", content: "Mis selecciones de soluciones | Conectamos Match" }, { property: "og:description", content: "Selecciones y matches de tu cuenta." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: MisSeleccionesEmpresa,
 });
 
@@ -34,7 +35,8 @@ function MisSeleccionesEmpresa() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setMe(user.id);
-      const ev = (await fetchMyEventScope()).event;
+      const scope = await fetchMyEventScope();
+      const ev = scope.event;
       setEventId(ev?.id ?? null);
     setMinRequired((ev as any)?.empresa_min_likes ?? 12);
 
@@ -46,7 +48,7 @@ function MisSeleccionesEmpresa() {
         .from("sponsor_profiles")
         .select("id, user_id, company_name, description, logo_url, sector, sponsorship_level, website, location_city, responsables")
         .in("id", ids);
-      setItems(sp ?? []);
+      setItems((sp ?? []).map((a) => ({ ...a, user_id: scope.accountOwners[a.id] ?? a.user_id })));
 
       const { partnerAccountIds } = await getMatches({ data: { eventId: ev?.id ?? null } });
       setMatchedAccountSet(new Set(partnerAccountIds));
@@ -102,7 +104,7 @@ function MisSeleccionesEmpresa() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filtered.map((s) => (
               <PartnerCard
-                key={s.user_id}
+                key={s.id}
                 name={s.company_name}
                 description={s.description}
                 logoUrl={s.logo_url}
@@ -112,7 +114,7 @@ function MisSeleccionesEmpresa() {
                 actions={
                   <>
                     <ActionButton icon={Eye} label={matchedAccountSet.has(s.id) ? "MATCH ✓" : "Ver"} onClick={() => setSelected(s)} />
-                    {me && <AccountInterestButton targetUserId={s.user_id} eventId={eventId} partnerName={s.company_name} liked onLike={() => {}} onUnliked={() => setItems((prev) => prev.filter((item) => item.user_id !== s.user_id))} />}
+                    {me && s.user_id && <AccountInterestButton targetUserId={s.user_id} eventId={eventId} partnerName={s.company_name} liked onLike={() => {}} onUnliked={() => setItems((prev) => prev.filter((item) => item.id !== s.id))} />}
                   </>
                 }
               />

@@ -5,7 +5,7 @@
 
 type Db = any;
 
-async function fetchAll<T>(build: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: any }>): Promise<T[]> {
+export async function fetchAll<T>(build: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: any }>): Promise<T[]> {
   const out: T[] = [];
   const PAGE = 1000;
   for (let from = 0; ; from += PAGE) {
