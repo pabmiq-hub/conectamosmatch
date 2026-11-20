@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { LogoUploader } from "@/components/dashboard/LogoUploader";
 import { Building2, Sparkles, X, Copy, Check, UserCog } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { createUserAccount } from "@/lib/admin-users.functions";
+import { createUserAccount, findExistingAccount } from "@/lib/admin-users.functions";
 import { PRESET_SPONSOR_CATEGORIES } from "@/lib/sponsor-categories";
 import { toast } from "sonner";
 
@@ -37,6 +37,15 @@ export function NewUserModal({ onClose, onCreated, eventId }: { onClose: () => v
   const setC1 = (k: keyof typeof c, v: string) => setC((p) => ({ ...p, [k]: v }));
 
   // Responsable / owner data (step 3) — all required
+  const findAccount = useServerFn(findExistingAccount);
+  const [existing, setExisting] = useState<{ company_name: string; hasOwner: boolean } | null>(null);
+  useEffect(() => {
+    if (!role || c.company_name.trim().length < 2) { setExisting(null); return; }
+    const t = setTimeout(() => {
+      findAccount({ data: { role, name: c.company_name } }).then(setExisting).catch(() => setExisting(null));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [role, c.company_name]);
   const [o, setO] = useState({ full_name: "", cargo: "", email: "", phone: "", password: "" });
   const setO1 = (k: keyof typeof o, v: string) => setO((p) => ({ ...p, [k]: v }));
 
@@ -137,6 +146,7 @@ export function NewUserModal({ onClose, onCreated, eventId }: { onClose: () => v
             {adminId && <LogoUploader userId={adminId} value={logoUrl} onChange={setLogoUrl} />}
             <div className="grid md:grid-cols-2 gap-4">
               <Field label="Nombre de la empresa *" value={c.company_name} onChange={(v) => setC1("company_name", v)} />
+              {existing && <p className="rounded-md border border-gold bg-muted p-2 text-xs">{role === "empresa" ? "Empresa" : "Solución"} existente detectada («{existing.company_name}»): el participante se añadirá {existing.hasOwner ? "como responsable a su equipo" : "a su equipo como administrador (no tiene)"}.</p>}
               <Field label="Sector" value={c.sector} onChange={(v) => setC1("sector", v)} placeholder="Tech, Health, Retail…" />
               {role === "empresa" ? (
                 <>

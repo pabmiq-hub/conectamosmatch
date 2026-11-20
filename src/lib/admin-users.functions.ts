@@ -71,6 +71,24 @@ async function saveAccountProfile(table: "empresa_profiles" | "sponsor_profiles"
   return data.id as string;
 }
 
+export function normalizeAccountName(name: string) {
+  return name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+async function findAccountByName(table: "empresa_profiles" | "sponsor_profiles", name: string) {
+  const key = normalizeAccountName(name);
+  if (!key) return null;
+  const { data } = await supabaseAdmin.from(table).select("id, company_name, created_at").order("created_at", { ascending: true }).limit(5000);
+  const match = (data ?? []).find((r: any) => normalizeAccountName(r.company_name ?? "") === key);
+  return match ? { id: match.id as string, company_name: match.company_name as string } : null;
+}
+
+async function accountHasOwner(accountId: string) {
+  const { count } = await supabaseAdmin.from("profiles").select("id", { count: "exact", head: true })
+    .eq("account_id", accountId).eq("account_role", "owner").eq("is_active", true);
+  return (count ?? 0) > 0;
+}
+
 async function createOne(d: z.infer<typeof createSchema>) {
   const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
     email: d.email,
@@ -84,7 +102,17 @@ async function createOne(d: z.infer<typeof createSchema>) {
 
   try {
     let accountId: string | null = null;
-    if (d.role === "empresa" && d.empresa) accountId = await saveAccountProfile("empresa_profiles", userId, d.empresa as any);
+    let accountRole: "owner" | "manager" = "owner";
+    const table = d.role === "empresa" ? "empresa_profiles" : "sponsor_profiles";
+    const wantedName = (d.role === "empresa" ? d.empresa?.company_name : d.sponsor?.company_name) ?? "";
+    const existingAccount = wantedName ? await findAccountByName(table, wantedName) : null;
+    if (existingAccount) {
+      // Join the existing account instead of creating a duplicate one.
+      await supabaseAdmin.from(table).delete().eq("user_id", userId).neq("id", existingAccount.id);
+      accountId = existingAccount.id;
+      if (await accountHasOwner(accountId)) accountRole = "manager";
+      else await supabaseAdmin.from(table).update({ user_id: userId }).eq("id", accountId);
+    } else if (d.role === "empresa" && d.empresa) accountId = await saveAccountProfile("empresa_profiles", userId, d.empresa as any);
     else if (d.role === "sponsor" && d.sponsor) accountId = await saveAccountProfile("sponsor_profiles", userId, d.sponsor as any);
 
     const { error: pErr } = await supabaseAdmin.from("profiles").upsert({
@@ -95,7 +123,7 @@ async function createOne(d: z.infer<typeof createSchema>) {
       cargo: d.cargo || null,
       role: d.role,
       account_id: accountId,
-      account_role: "owner",
+      account_role: accountRole,
     });
     if (pErr) throw new Error(pErr.message);
 
@@ -947,6 +975,34 @@ export const transferAccountAdmin = createServerFn({ method: "POST" })
     const { error } = await admin.rpc("transfer_account_owner_atomic", { _target: data.newAdminUserId });
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+export const findExistingAccount = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ role: z.enum(["empresa", "sponsor"]), name: z.string().max(200) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: allowed } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "super_admin" });
+    if (!allowed) throw new Error("No autorizado");
+    const acc = await findAccountByName(data.role === "empresa" ? "empresa_profiles" : "sponsor_profiles", data.name);
+    return acc ? { id: acc.id, company_name: acc.company_name, hasOwner: await accountHasOwner(acc.id) } : null;
+  });
+
+export const demoteAccountAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ userId: z.string().uuid(), dryRun: z.boolean().optional() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: allowed } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "super_admin" });
+    if (!allowed) throw new Error("Solo el superadministrador puede quitar administradores");
+    const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
+    const { data: prof } = await admin.from("profiles").select("id, account_id, account_role").eq("id", data.userId).maybeSingle();
+    if (!prof?.account_id) throw new Error("Esta persona no pertenece a ninguna cuenta");
+    const { count } = await admin.from("profiles").select("id", { count: "exact", head: true })
+      .eq("account_id", prof.account_id).eq("account_role", "owner").eq("is_active", true).neq("id", data.userId);
+    const otherAdmins = count ?? 0;
+    if (data.dryRun) return { otherAdmins };
+    const { error } = await admin.from("profiles").update({ account_role: "manager" }).eq("id", data.userId);
+    if (error) throw new Error(error.message);
+    return { otherAdmins };
   });
 
 async function moveUserToAccountCore(data: { userId: string; targetAccountId: string; targetRole?: "empresa" | "sponsor" }) {
