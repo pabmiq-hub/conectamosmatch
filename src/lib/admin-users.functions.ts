@@ -89,7 +89,7 @@ async function accountHasOwner(accountId: string) {
   return (count ?? 0) > 0;
 }
 
-async function createOne(d: z.infer<typeof createSchema>, created?: string[]) {
+async function createOne(d: z.infer<typeof createSchema>, createdOut?: string[]) {
   const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
     email: d.email,
     password: d.password,
@@ -157,7 +157,7 @@ async function createOne(d: z.infer<typeof createSchema>, created?: string[]) {
     throw e;
   }
 
-  if (created) created.push(...createdIds);
+  if (createdOut) createdOut.push(...createdIds);
   return userId;
 }
 
