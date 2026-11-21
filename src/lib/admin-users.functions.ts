@@ -89,7 +89,7 @@ async function accountHasOwner(accountId: string) {
   return (count ?? 0) > 0;
 }
 
-async function createOne(d: z.infer<typeof createSchema>) {
+async function createOne(d: z.infer<typeof createSchema>, created?: string[]) {
   const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
     email: d.email,
     password: d.password,
@@ -157,6 +157,7 @@ async function createOne(d: z.infer<typeof createSchema>) {
     throw e;
   }
 
+  if (created) created.push(...createdIds);
   return userId;
 }
 
@@ -191,7 +192,8 @@ export const createUserAccount = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => createSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertBootstrapAdmin(context.userId);
-    const userId = await createOne(data);
+    const createdNow: string[] = [];
+    const userId = await createOne(data, createdNow);
     if (data.event_id) {
       const { data: owner } = await supabaseAdmin.from("profiles").select("account_id").eq("id", userId).maybeSingle();
       const accountId = owner?.account_id;
@@ -199,14 +201,21 @@ export const createUserAccount = createServerFn({ method: "POST" })
       const { data: members } = accountId
         ? await supabaseAdmin.from("profiles").select("id, full_name, email, cargo").eq("account_id", accountId)
         : { data: [] as any[] };
-      const rows = (members ?? []).map((m: any) => ({
+      const memberIds = (members ?? []).map((m: any) => m.id);
+      const { data: existing } = memberIds.length
+        ? await supabaseAdmin.from("event_registrations").select("user_id").eq("event_id", data.event_id).in("user_id", memberIds)
+        : { data: [] as any[] };
+      const already = new Set((existing ?? []).map((r: any) => r.user_id));
+      // Only register people not yet in the event; never touch existing registrations.
+      const rows = (members ?? []).filter((m: any) => !already.has(m.id)).map((m: any) => ({
         event_id: data.event_id, user_id: m.id, role_at_event: data.role, status: "confirmed" as const,
         attendee_name: m.full_name, attendee_email: m.email, attendee_company: company, attendee_role_title: m.cargo ?? null,
       }));
       if (rows.length) {
         const { error } = await supabaseAdmin.from("event_registrations").insert(rows as any);
         if (error) {
-          await rollbackUsers(rows.map((r: any) => r.user_id));
+          // Roll back ONLY the people created in this call — never pre-existing teammates.
+          await rollbackUsers(createdNow);
           throw new Error(`No se pudo inscribir en el evento: ${error.message}`);
         }
       }
