@@ -32,7 +32,7 @@ ${ev}
 </div></body></html>`;
 }
 
-export async function sendEmail(to: string, subject: string, html: string) {
+export async function sendEmail(to: string, subject: string, html: string, idempotencyKey?: string) {
   const lovableKey = process.env.LOVABLE_API_KEY;
   const resendKey = process.env.RESEND_API_KEY;
   if (!lovableKey) throw new Error("LOVABLE_API_KEY no configurada");
@@ -40,7 +40,7 @@ export async function sendEmail(to: string, subject: string, html: string) {
   const from = process.env.CREDENTIALS_FROM_EMAIL || "Conectamos <miquel@conectamos.club>";
   const res = await fetch(`${GATEWAY_URL}/emails`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${lovableKey}`, "X-Connection-Api-Key": resendKey },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${lovableKey}`, "X-Connection-Api-Key": resendKey, ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}) },
     body: JSON.stringify({ from, to: [to], subject, html }),
   });
   if (!res.ok) {

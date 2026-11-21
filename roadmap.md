@@ -1,3 +1,9 @@
+# Recordatorio de selecciones
+- [x] Añadir comunicado editable con destinatarios, fecha y vista previa personalizada.
+- [x] Implementar correos y avisos internos con resultados por destinatario y protección ante reintentos.
+- [x] Validar 11 pruebas y vista previa/envío simulado en ordenador y móvil.
+- [ ] Comprobar envío real: requiere sesión de administrador del Supabase externo, no disponible aquí.
+
 # Selecciones en Participantes
 - [x] Añadir recuentos por cuenta y detalle en dos columnas con nombres, logos, responsables y reciprocidad.
 - [x] Validar 27 pruebas, vista aislada en ordenador y móvil y aplicación sin errores.

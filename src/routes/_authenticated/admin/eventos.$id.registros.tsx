@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
-import { Users, Download, Trash2, Upload, UserPlus, KeyRound, Mail, CalendarClock, Pencil, Building2, Sparkles, ChevronRight, List, Layers, GripVertical } from "lucide-react";
+import { Users, Download, Trash2, Upload, UserPlus, KeyRound, Mail, CalendarClock, Pencil, Building2, Sparkles, ChevronRight, List, Layers, GripVertical, Bell } from "lucide-react";
 import { SortToggle, type SortDir } from "@/components/dashboard/SortToggle";
 import {
   filterAndSortRegistrations, groupRegistrationsByAccount, accountCounts,
@@ -31,6 +31,7 @@ import { listAccountSelections } from "@/lib/admin-selections.functions";
 import { getParticipantSelections, type SelectionAccount } from "@/lib/participant-selections";
 import { ParticipantSelectionCounts, ParticipantSelectionsPanel } from "@/components/admin/ParticipantSelectionsPanel";
 import { Button } from "@/components/ui/button";
+import { SelectionReminderModal } from "@/components/admin/SelectionReminderModal";
 
 export const Route = createFileRoute("/_authenticated/admin/eventos/$id/registros")({
   head: () => ({ meta: [{ title: "Participantes del evento | Conectamos Match" }, { name: "description", content: "Gestiona empresas, soluciones, participantes y administradores del evento." }, { property: "og:title", content: "Participantes del evento | Conectamos Match" }, { property: "og:description", content: "Cuentas y personas inscritas en el evento." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
@@ -183,6 +184,7 @@ function AdminRegistros() {
   const [showImport, setShowImport] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [showNew, setShowNew] = useState(false);
+  const [showReminder, setShowReminder] = useState(false);
   const { eventId, setEventId, ready } = useAdminEvent();
   useEffect(() => { if (ready && eventId !== id) setEventId(id); }, [ready, id]);
 
@@ -258,6 +260,7 @@ function AdminRegistros() {
         <button onClick={() => setShowImport(true)} className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-bold text-uppercase-wide text-primary-foreground"><Upload className="h-3 w-3" /> Subir participantes (Excel)</button>
         <button onClick={() => setShowNew(true)} className="inline-flex items-center gap-2 rounded-md border border-primary/50 px-3 py-2 text-xs font-bold text-uppercase-wide text-primary"><UserPlus className="h-3 w-3" /> Nuevo participante</button>
         <button onClick={() => setShowAdd(true)} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide"><UserPlus className="h-3 w-3" /> Añadir cuentas existentes</button>
+        <Button variant="outline" size="sm" onClick={() => setShowReminder(true)}><Bell className="h-4 w-4" />Enviar recordatorio</Button>
         <select value="" disabled={sendingAll || rows.length === 0} onChange={(e) => e.target.value && onSendAll(e.target.value as RoleFilter)} className="rounded-md border border-primary/50 bg-card px-3 py-2 text-xs font-bold text-uppercase-wide text-primary disabled:opacity-50">
           <option value="">{sendingAll ? "Enviando…" : "Enviar claves…"}</option>
           <option value="all">A todos ({counts.all})</option>
@@ -325,6 +328,7 @@ function AdminRegistros() {
       )}
       {editUserId && <EditUserModal userId={editUserId} onClose={() => setEditUserId(null)} onSaved={load} />}
       {showNew && <NewUserModal eventId={id} onClose={() => setShowNew(false)} onCreated={load} />}
+      {showReminder && <SelectionReminderModal key={id} eventId={id} onClose={() => setShowReminder(false)} />}
       {showAdd && <AddExistingAccountsModal eventId={id} onClose={() => setShowAdd(false)} onDone={load} />}
       {showImport && <ImportUsersModal defaultEventId={id} onClose={() => setShowImport(false)} onDone={load} />}
       {rows.length > 0 && (
