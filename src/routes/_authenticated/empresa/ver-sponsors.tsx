@@ -10,15 +10,20 @@ import { EmpresaLikeModal } from "@/components/sponsor/EmpresaLikeModal";
 import { listMyLikedAccountIds } from "@/lib/admin-users.functions";
 import { PRESET_SPONSOR_CATEGORIES } from "@/lib/sponsor-categories";
 import { Search, Filter, X } from "lucide-react";
-import { SortToggle, sortByName, type SortDir } from "@/components/dashboard/SortToggle";
+import { SortToggle, type SortDir } from "@/components/dashboard/SortToggle";
+import { listFeaturedSolutions } from "@/lib/featured-solutions.functions";
+import { featuredSolutionIds, sortSolutions } from "@/lib/featured-solutions";
 
 export const Route = createFileRoute("/_authenticated/empresa/ver-sponsors")({
+  head: () => ({ meta: [{ title: "Ver soluciones | Conectamos Match" }, { name: "description", content: "Soluciones inscritas y destacadas en tu evento de Conectamos Match." }, { property: "og:title", content: "Ver soluciones | Conectamos Match" }, { property: "og:description", content: "Encuentra las soluciones de tu evento." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: VerSponsors,
 });
 
 
 function VerSponsors() {
   const getLikedAccounts = useServerFn(listMyLikedAccountIds);
+  const getFeatured = useServerFn(listFeaturedSolutions);
+  const [featuredIds, setFeaturedIds] = useState<Set<string>>(new Set());
   const [me, setMe] = useState<string | null>(null);
   const [eventId, setEventId] = useState<string | null>(null);
   const [MIN_REQUIRED, setMinRequired] = useState(12);
@@ -38,6 +43,7 @@ function VerSponsors() {
     const scope = await fetchMyEventScope();
     const ev = scope.event;
     setEventId(ev?.id ?? null);
+    setFeaturedIds(featuredSolutionIds(ev ? await getFeatured({ data: { eventId: ev.id } }) : [], ev?.id ?? null));
     setMinRequired((ev as any)?.empresa_min_likes ?? 12);
     // Only the soluciones registered for this same event
     const ids = scope.sponsorAccountIds;
@@ -66,9 +72,8 @@ function VerSponsors() {
     let base = items;
     if (term) base = base.filter((s) => String(s.company_name ?? "").toLowerCase().includes(term));
     if (activeCats.length) base = base.filter((s) => Array.isArray(s.categories) && activeCats.every((c) => s.categories.includes(c)));
-    if (dir) return sortByName(base, (s: any) => s.company_name, dir);
-    return [...base].sort((a, b) => (a.company_name ?? "").localeCompare(b.company_name ?? "", "es", { sensitivity: "base" }));
-  }, [items, q, activeCats, dir]);
+    return sortSolutions(base, featuredIds, dir ?? "asc");
+  }, [items, q, activeCats, dir, featuredIds]);
 
 
   const reachedMin = likedAccountIds.size >= MIN_REQUIRED;
@@ -119,12 +124,13 @@ function VerSponsors() {
           const liked = s.id ? likedAccountIds.has(s.id) : false;
           return (
             <PartnerCard
-              key={s.user_id}
+              key={s.id}
               name={s.company_name}
               description={s.description}
               logoUrl={s.logo_url}
               sector={s.sector}
               liked={liked}
+              recommended={featuredIds.has(s.id)}
               actions={
                 <>
                   <ActionButton icon={Eye} label="Ver" onClick={() => setSelected(s)} />

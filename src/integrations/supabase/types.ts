@@ -345,6 +345,42 @@ export type Database = {
           },
         ]
       }
+      event_featured_solutions: {
+        Row: {
+          created_at: string
+          event_id: string
+          sponsor_account_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          sponsor_account_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          sponsor_account_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_featured_solutions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_featured_solutions_sponsor_account_id_fkey"
+            columns: ["sponsor_account_id"]
+            isOneToOne: false
+            referencedRelation: "sponsor_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_registrations: {
         Row: {
           attendee_company: string | null

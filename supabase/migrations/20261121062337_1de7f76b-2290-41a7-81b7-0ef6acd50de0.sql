@@ -1,0 +1,1 @@
+CREATE INDEX event_featured_solutions_sponsor_idx ON public.event_featured_solutions(sponsor_account_id);

@@ -1,4 +1,10 @@
-# Corrección de selecciones y matches
+# Soluciones destacadas por evento
+- [x] Guardar estrellas sólo para soluciones inscritas, con cambios exclusivos del superadministrador.
+- [x] Añadir estrellas en Participantes y prioridad alfabética con marco amarillo sólo en Ver soluciones.
+- [x] Validar 25 pruebas y aplicación sin errores; acceso protegido comprobado.
+- [ ] Verificar la estrella con sesión de administrador y empresa: Supabase externo sin sesión disponible.
+
+# Corrección de selecciones y matches (anteriores)
 - [x] Corregir reciprocidad y avisos en Supabase; limpiar matches falsos conservando reuniones programadas.
 - [x] Sincronizar contadores y nombres por cuenta en los dos dashboards.
 - [x] Corregir responsables y acciones en selecciones y empresas que han seleccionado.

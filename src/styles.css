@@ -55,6 +55,8 @@
   --color-sidebar-ring: var(--sidebar-ring);
 
   --color-gold: var(--gold);
+  --color-featured: var(--featured);
+  --color-featured-foreground: var(--featured-foreground);
   --color-platinum: var(--platinum);
   --color-silver: var(--silver);
   --color-bronze: var(--bronze);
@@ -110,6 +112,8 @@
 
   /* Sponsor level palette */
   --gold: oklch(0.83 0.16 87);
+  --featured: oklch(0.86 0.18 94);
+  --featured-foreground: oklch(0.20 0.02 87);
   --platinum: oklch(0.85 0.04 280);
   --silver: oklch(0.75 0.01 270);
   --bronze: oklch(0.60 0.10 55);
@@ -148,6 +152,7 @@
   .shadow-soft { box-shadow: var(--shadow-soft); }
   .card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
   .card-hover:hover { transform: translateY(-3px); box-shadow: var(--shadow-soft); border-color: color-mix(in oklab, var(--primary) 35%, var(--border)); }
+  .card-hover.featured-solution, .card-hover.featured-solution:hover { border-color: var(--featured); }
   .badge-platinum {
     background: linear-gradient(135deg, oklch(0.92 0.04 295), oklch(0.78 0.06 280));
     color: oklch(0.15 0.02 280);

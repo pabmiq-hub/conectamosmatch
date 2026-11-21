@@ -24,6 +24,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { listRegistrations, deleteRegistration, deleteRegistrationsBulk } from "@/lib/admin-registrations.functions";
 import { setPasswordAndMaybeSend, sendEventCredentials } from "@/lib/credentials-email.functions";
 import { deleteWholeAccount, moveUserToAccountOf } from "@/lib/admin-users.functions";
+import { listFeaturedSolutions, setFeaturedSolution } from "@/lib/featured-solutions.functions";
+import { featuredSolutionIds } from "@/lib/featured-solutions";
+import { FeaturedSolutionStar } from "@/components/admin/FeaturedSolutionStar";
 
 export const Route = createFileRoute("/_authenticated/admin/eventos/$id/registros")({
   head: () => ({ meta: [{ title: "Participantes del evento | Conectamos Match" }, { name: "description", content: "Gestiona empresas, soluciones, participantes y administradores del evento." }, { property: "og:title", content: "Participantes del evento | Conectamos Match" }, { property: "og:description", content: "Cuentas y personas inscritas en el evento." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
@@ -33,6 +36,21 @@ export const Route = createFileRoute("/_authenticated/admin/eventos/$id/registro
 function AdminRegistros() {
   const { id } = Route.useParams();
   const list = useServerFn(listRegistrations);
+  const getFeatured = useServerFn(listFeaturedSolutions);
+  const saveFeatured = useServerFn(setFeaturedSolution);
+  const [featuredIds, setFeaturedIds] = useState<Set<string>>(new Set());
+  const [featuredBusy, setFeaturedBusy] = useState(false);
+  async function toggleFeatured(accountId: string) {
+    if (featuredBusy) return;
+    setFeaturedBusy(true);
+    const next = !featuredIds.has(accountId);
+    try {
+      await saveFeatured({ data: { eventId: id, accountId, featured: next } });
+      setFeaturedIds((prev) => { const updated = new Set(prev); next ? updated.add(accountId) : updated.delete(accountId); return updated; });
+      toast.success(next ? "Solución destacada en este evento" : "Solución sin destacar");
+    } catch (error) { toast.error(error instanceof Error ? error.message : "No se pudo guardar la estrella"); }
+    finally { setFeaturedBusy(false); }
+  }
   const setPwd = useServerFn(setPasswordAndMaybeSend);
   const sendAll = useServerFn(sendEventCredentials);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -144,7 +162,11 @@ function AdminRegistros() {
   useEffect(() => { if (ready && eventId !== id) setEventId(id); }, [ready, id]);
 
   async function load() {
-    try { const r = await list({ data: { event_id: id } }); setRows(r.registrations); }
+    try {
+      const [r, highlights] = await Promise.all([list({ data: { event_id: id } }), getFeatured({ data: { eventId: id } })]);
+      setRows(r.registrations);
+      setFeaturedIds(featuredSolutionIds(highlights, id));
+    }
     catch (e: any) { toast.error(e?.message ?? "Error"); }
   }
   useEffect(() => { load(); }, [id]);
@@ -164,6 +186,7 @@ function AdminRegistros() {
 
   function rowActions(r: any) {
     return (<>
+                    {r.role_at_event === "sponsor" && r.account_id && r.status !== "cancelled" && <FeaturedSolutionStar name={r.attendee_company ?? "Solución"} featured={featuredIds.has(r.account_id)} busy={featuredBusy} onToggle={() => toggleFeatured(r.account_id)} />}
                     <button disabled={!r.user_id} onClick={() => setEditUserId(r.user_id)} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Editar participante"><Pencil className="h-4 w-4" /></button>
                     <button disabled={!r.user_id || busyId === r.id} onClick={() => { setEditing(r); setNewPwd(""); setAlsoSend(true); }} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Editar contraseña"><KeyRound className="h-4 w-4" /></button>
                     <button disabled={!r.user_id} onClick={() => setAvailFor(r)} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Disponibilidad y restricciones de agenda"><CalendarClock className="h-4 w-4" /></button>
@@ -299,6 +322,7 @@ function AdminRegistros() {
                 <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-90" />
                 {g.role === "sponsor" ? <Sparkles className="h-4 w-4 text-primary" /> : <Building2 className="h-4 w-4 text-primary" />}
                 <span className="flex-1 truncate text-sm font-semibold">{g.company}</span>
+                {g.role === "sponsor" && [...new Set<string>(g.people.map((r: any) => r.account_id).filter(Boolean))].map((accountId) => <FeaturedSolutionStar key={accountId} name={g.company} featured={featuredIds.has(accountId)} busy={featuredBusy} onToggle={() => toggleFeatured(accountId)} />)}
                 <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{g.role === "sponsor" ? "Solución" : "Empresa"}</span>
                 <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">{g.people.length} {g.people.length === 1 ? "persona" : "personas"}</span>
                 <button type="button" title="Editar cuenta" disabled={!g.people[0]?.user_id} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditUserId(g.people[0].user_id); }} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40"><Pencil className="h-4 w-4" /></button>
