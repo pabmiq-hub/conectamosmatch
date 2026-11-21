@@ -1,4 +1,4 @@
-import { ArrowDownLeft, ArrowUpRight, Building2, Sparkles } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Building2, Eye, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import type { ParticipantSelections, SelectionDetail } from "@/lib/participant-selections";
@@ -12,6 +12,9 @@ export function ParticipantSelectionCounts({ detail, loading, failed, onOpen, na
 }) {
   return (
     <div className="flex flex-wrap items-center gap-1" onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}>
+      <Button type="button" variant="ghost" size="icon" disabled={loading || failed} onClick={onOpen} title={`Ver selecciones de ${name}`} aria-label={`Ver selecciones de ${name}`} className="h-8 w-8 text-primary">
+        <Eye className="h-4 w-4" />
+      </Button>
       <Button type="button" variant="ghost" size="sm" disabled={loading || failed} onClick={onOpen} title={`Ver qué cuentas ha seleccionado ${name}`} aria-label={`Ver selecciones enviadas de ${name}`} className={detail.outgoing.length ? "text-primary" : "text-muted-foreground"}>
         <ArrowUpRight /> {loading ? "…" : failed ? "—" : detail.outgoing.length} enviadas
       </Button>
