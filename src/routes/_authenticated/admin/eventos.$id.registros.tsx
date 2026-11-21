@@ -27,6 +27,10 @@ import { deleteWholeAccount, moveUserToAccountOf } from "@/lib/admin-users.funct
 import { listFeaturedSolutions, setFeaturedSolution } from "@/lib/featured-solutions.functions";
 import { featuredSolutionIds } from "@/lib/featured-solutions";
 import { FeaturedSolutionStar } from "@/components/admin/FeaturedSolutionStar";
+import { listAccountSelections } from "@/lib/admin-selections.functions";
+import { getParticipantSelections, type SelectionAccount } from "@/lib/participant-selections";
+import { ParticipantSelectionCounts, ParticipantSelectionsPanel } from "@/components/admin/ParticipantSelectionsPanel";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/admin/eventos/$id/registros")({
   head: () => ({ meta: [{ title: "Participantes del evento | Conectamos Match" }, { name: "description", content: "Gestiona empresas, soluciones, participantes y administradores del evento." }, { property: "og:title", content: "Participantes del evento | Conectamos Match" }, { property: "og:description", content: "Cuentas y personas inscritas en el evento." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
@@ -36,6 +40,28 @@ export const Route = createFileRoute("/_authenticated/admin/eventos/$id/registro
 function AdminRegistros() {
   const { id } = Route.useParams();
   const list = useServerFn(listRegistrations);
+  const fetchSelections = useServerFn(listAccountSelections);
+  const [selectionAccounts, setSelectionAccounts] = useState<SelectionAccount[]>([]);
+  const [selectionsLoading, setSelectionsLoading] = useState(true);
+  const [selectionsFailed, setSelectionsFailed] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState<{ name: string; ids: string[] } | null>(null);
+  useEffect(() => { setSelectedAccount(null); }, [id]);
+  async function loadSelections() {
+    setSelectionsLoading(true);
+    setSelectionsFailed(false);
+    try {
+      const result = await fetchSelections({ data: { event_id: id } });
+      setSelectionAccounts([...result.empresas, ...result.sponsors]);
+    } catch {
+      setSelectionsFailed(true);
+    } finally { setSelectionsLoading(false); }
+  }
+  const selectionsById = useMemo(() => new Map(selectionAccounts.map((account) => [account.account_id, getParticipantSelections(selectionAccounts, [account.account_id])])), [selectionAccounts]);
+  function selectionCounts(name: string, ids: string[]) {
+    if (!ids.length) return null;
+    const detail = ids.length === 1 ? selectionsById.get(ids[0] ?? "") : getParticipantSelections(selectionAccounts, ids);
+    return <ParticipantSelectionCounts name={name} detail={detail ?? { outgoing: [], incoming: [], matches: 0 }} loading={selectionsLoading} failed={selectionsFailed} onOpen={() => setSelectedAccount({ name, ids })} />;
+  }
   const getFeatured = useServerFn(listFeaturedSolutions);
   const saveFeatured = useServerFn(setFeaturedSolution);
   const [featuredIds, setFeaturedIds] = useState<Set<string>>(new Set());
@@ -162,6 +188,7 @@ function AdminRegistros() {
   useEffect(() => { if (ready && eventId !== id) setEventId(id); }, [ready, id]);
 
   async function load() {
+    void loadSelections();
     try {
       const [r, highlights] = await Promise.all([list({ data: { event_id: id } }), getFeatured({ data: { eventId: id } })]);
       setRows(r.registrations);
@@ -213,6 +240,8 @@ function AdminRegistros() {
 
   return (
     <div className="space-y-6">
+      {selectedAccount && <ParticipantSelectionsPanel name={selectedAccount.name} detail={getParticipantSelections(selectionAccounts, selectedAccount.ids)} onClose={() => setSelectedAccount(null)} />}
+      {selectionsFailed && <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-destructive">No se pudieron cargar las selecciones.<Button variant="outline" size="sm" onClick={() => void loadSelections()}>Reintentar</Button></div>}
       <Dialog open={!!bulkRole} onOpenChange={(o) => !o && !bulkBusy && setBulkRole(null)}>
         <DialogContent>
           <DialogHeader>
@@ -318,10 +347,11 @@ function AdminRegistros() {
               onDragLeave={() => setDropKey((k) => (k === g.key ? null : k))}
               onDrop={(e) => { e.preventDefault(); onDropPerson(g); }}
               className={`group rounded-xl border bg-card overflow-hidden ${dropKey === g.key ? "border-primary ring-2 ring-primary/40" : "border-border"}`}>
-              <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 hover:bg-muted/30">
+              <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 px-4 py-3 hover:bg-muted/30">
                 <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-90" />
                 {g.role === "sponsor" ? <Sparkles className="h-4 w-4 text-primary" /> : <Building2 className="h-4 w-4 text-primary" />}
                 <span className="flex-1 truncate text-sm font-semibold">{g.company}</span>
+                {selectionCounts(g.company, [...new Set<string>(g.people.map((r: any) => r.account_id).filter(Boolean))])}
                 {g.role === "sponsor" && [...new Set<string>(g.people.map((r: any) => r.account_id).filter(Boolean))].map((accountId) => <FeaturedSolutionStar key={accountId} name={g.company} featured={featuredIds.has(accountId)} busy={featuredBusy} onToggle={() => toggleFeatured(accountId)} />)}
                 <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{g.role === "sponsor" ? "Solución" : "Empresa"}</span>
                 <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">{g.people.length} {g.people.length === 1 ? "persona" : "personas"}</span>
@@ -348,16 +378,17 @@ function AdminRegistros() {
         </div>
       )}
       {rows.length === 0 ? <EmptyState icon={Users} title="Sin participantes" hint="Pulsa «Subir participantes (Excel)» o «Añadir cuentas existentes» para inscribirlos en este evento. Solo quienes estén aquí aparecerán en las selecciones, matches y reuniones del evento." /> : view === "grouped" ? null : (
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="rounded-xl border border-border bg-card overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-[10px] text-uppercase-wide text-muted-foreground"><tr>
-              <th className="px-4 py-3 text-left">Nombre</th><th className="px-4 py-3 text-left">Empresa</th><th className="px-4 py-3 text-left">Email</th><th className="px-4 py-3 text-left">Rol</th><th className="px-4 py-3 text-left">Estado</th><th />
+              <th className="px-4 py-3 text-left">Nombre</th><th className="px-4 py-3 text-left">Empresa</th><th className="px-4 py-3 text-left">Selecciones de la cuenta</th><th className="px-4 py-3 text-left">Email</th><th className="px-4 py-3 text-left">Rol</th><th className="px-4 py-3 text-left">Estado</th><th />
             </tr></thead>
             <tbody>
               {visible.map((r) => (
                 <tr key={r.id} className="border-t border-border">
                   <td className="px-4 py-3 font-medium text-xs">{r.attendee_name}</td>
                   <td className="px-4 py-3 text-xs">{r.attendee_company}</td>
+                  <td className="px-4 py-3">{selectionCounts(r.attendee_company ?? "Cuenta", r.account_id ? [r.account_id] : [])}</td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">{r.attendee_email}</td>
                   <td className="px-4 py-3"><span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{roleLabel(r)}</span></td>
                   <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold text-uppercase-wide bg-muted`}>{r.status}</span></td>
@@ -366,7 +397,7 @@ function AdminRegistros() {
               ))}
               {visible.length === 0 && (
                 <tr className="border-t border-border">
-                  <td colSpan={6} className="px-4 py-6 text-center text-xs text-muted-foreground">
+                  <td colSpan={7} className="px-4 py-6 text-center text-xs text-muted-foreground">
                     No hay participantes de este tipo en el evento.
                   </td>
                 </tr>

@@ -1,3 +1,8 @@
+# Selecciones en Participantes
+- [x] Añadir recuentos por cuenta y detalle en dos columnas con nombres, logos, responsables y reciprocidad.
+- [x] Validar 27 pruebas, vista aislada en ordenador y móvil y aplicación sin errores.
+- [ ] Verificar datos reales desde Participantes: Supabase externo sin sesión de administrador disponible.
+
 # Soluciones destacadas por evento
 - [x] Guardar estrellas sólo para soluciones inscritas, con cambios exclusivos del superadministrador.
 - [x] Añadir estrellas en Participantes y prioridad alfabética con marco amarillo sólo en Ver soluciones.
