@@ -160,6 +160,22 @@ async function createOne(d: z.infer<typeof createSchema>) {
   return userId;
 }
 
+/** Never delete people who have selections, matches or meetings: interactions must never be lost. */
+async function assertNoActivity(ids: string[]) {
+  if (!ids.length) return;
+  const list = ids.join(",");
+  const checks = await Promise.all([
+    supabaseAdmin.from("likes").select("id", { count: "exact", head: true }).or(`from_user_id.in.(${list}),to_user_id.in.(${list})`),
+    supabaseAdmin.from("matches").select("id", { count: "exact", head: true }).or(`empresa_user_id.in.(${list}),sponsor_user_id.in.(${list})`),
+    supabaseAdmin.from("meetings_1to1").select("id", { count: "exact", head: true }).or(`empresa_user_id.in.(${list}),sponsor_user_id.in.(${list})`),
+  ]);
+  for (const c of checks) if (c.error) throw new Response(c.error.message, { status: 500 });
+  const [l, m, r] = checks.map((c) => c.count ?? 0);
+  if (l + m + r > 0) {
+    throw new Response(`Bloqueado para proteger sus interacciones: tiene ${l} selecciones, ${m} matches y ${r} reuniones. Quítalo del evento o muévelo de cuenta en lugar de borrarlo.`, { status: 409 });
+  }
+}
+
 async function rollbackUsers(ids: string[]) {
   for (const id of ids) {
     await supabaseAdmin.from("event_registrations").delete().eq("user_id", id);
@@ -322,6 +338,7 @@ export const deleteUserAccount = createServerFn({ method: "POST" })
     if (data.userId === context.userId) {
       throw new Response("No puedes eliminar tu propia cuenta", { status: 400 });
     }
+    await assertNoActivity([data.userId]);
     // Only owners delete the account profile rows. Managers just lose their auth user.
     const { data: prof } = await supabaseAdmin
       .from("profiles")
@@ -559,6 +576,7 @@ export const bulkDeleteUsers = createServerFn({ method: "POST" })
     const failed: { userId: string; error: string }[] = [];
     for (const p of targets as any[]) {
       try {
+        await assertNoActivity([p.id]);
         if (p.account_role === "owner") {
           await supabaseAdmin.from("empresa_profiles").delete().eq("user_id", p.id);
           await supabaseAdmin.from("sponsor_profiles").delete().eq("user_id", p.id);
@@ -1005,6 +1023,50 @@ export const demoteAccountAdmin = createServerFn({ method: "POST" })
     return { otherAdmins };
   });
 
+/**
+ * Before a person leaves an account, hand their selections, matches and meetings to a teammate
+ * that stays, so the account never loses its interactions. Blocks the move if nobody stays.
+ */
+async function keepInteractionsWithAccount(userId: string, accountId: string) {
+  const { data: mates, error } = await supabaseAdmin
+    .from("profiles").select("id, account_role, created_at")
+    .eq("account_id", accountId).neq("id", userId)
+    .order("created_at", { ascending: true });
+  if (error) throw new Response(error.message, { status: 500 });
+  const heir = (mates ?? []).find((m: any) => m.account_role === "owner") ?? mates?.[0];
+  const [{ count: lc }, { count: mc }, { count: rc }] = await Promise.all([
+    supabaseAdmin.from("likes").select("id", { count: "exact", head: true }).or(`from_user_id.eq.${userId},to_user_id.eq.${userId}`),
+    supabaseAdmin.from("matches").select("id", { count: "exact", head: true }).or(`empresa_user_id.eq.${userId},sponsor_user_id.eq.${userId}`),
+    supabaseAdmin.from("meetings_1to1").select("id", { count: "exact", head: true }).or(`empresa_user_id.eq.${userId},sponsor_user_id.eq.${userId}`),
+  ]);
+  if (!(lc || mc || rc)) return;
+  if (!heir) throw new Response("No se puede mover: es la única persona de la cuenta y tiene interacciones que se perderían.", { status: 409 });
+
+  for (const col of ["from_user_id", "to_user_id"] as const) {
+    const other = col === "from_user_id" ? "to_user_id" : "from_user_id";
+    const { data: rows, error: e1 } = await supabaseAdmin.from("likes").select(`id, ${other}, event_id`).eq(col, userId);
+    if (e1) throw new Response(e1.message, { status: 500 });
+    for (const r of (rows ?? []) as any[]) {
+      let q = supabaseAdmin.from("likes").select("id").eq(col, heir.id).eq(other, r[other]);
+      q = r.event_id ? q.eq("event_id", r.event_id) : q.is("event_id", null);
+      const { data: dup } = await q.maybeSingle();
+      if (dup) {
+        // The account already keeps this selection through the teammate.
+        await supabaseAdmin.from("likes").delete().eq("id", r.id);
+      } else {
+        const { error: e2 } = await supabaseAdmin.from("likes").update({ [col]: heir.id } as any).eq("id", r.id);
+        if (e2) throw new Response(e2.message, { status: 500 });
+      }
+    }
+  }
+  for (const tbl of ["matches", "meetings_1to1"] as const) {
+    for (const col of ["empresa_user_id", "sponsor_user_id"] as const) {
+      const { error: e3 } = await (supabaseAdmin.from(tbl) as any).update({ [col]: heir.id }).eq(col, userId);
+      if (e3) throw new Response(e3.message, { status: 500 });
+    }
+  }
+}
+
 async function moveUserToAccountCore(data: { userId: string; targetAccountId: string; targetRole?: "empresa" | "sponsor" }) {
 
     const { data: prof } = await supabaseAdmin
@@ -1023,6 +1085,10 @@ async function moveUserToAccountCore(data: { userId: string; targetAccountId: st
       .eq("id", data.targetAccountId)
       .maybeSingle();
     if (!target) throw new Response("Cuenta destino no encontrada", { status: 404 });
+
+    if (prof.account_id && prof.account_id !== data.targetAccountId) {
+      await keepInteractionsWithAccount(data.userId, prof.account_id);
+    }
 
     if (prof.account_role === "owner" && prof.account_id) {
       const { count } = await supabaseAdmin
@@ -1109,6 +1175,7 @@ export const removeResponsableFromAccount = createServerFn({ method: "POST" })
       .eq("id", data.userId)
       .maybeSingle();
     if (!prof) throw new Response("Usuario no encontrado", { status: 404 });
+    if (data.deleteUser) await assertNoActivity([data.userId]);
 
     if (prof.account_role === "owner" && prof.account_id) {
       const { data: replacement } = await supabaseAdmin
@@ -1507,6 +1574,7 @@ export const deleteWholeAccount = createServerFn({ method: "POST" })
     }
     if (ids.has(context.userId)) throw new Response("No puedes eliminar tu propia cuenta", { status: 400 });
     const list = Array.from(ids);
+    await assertNoActivity(list);
     await supabaseAdmin.from("event_registrations").delete().in("user_id", list);
     if (accountId) {
       await supabaseAdmin.from("empresa_profiles").delete().eq("id", accountId);

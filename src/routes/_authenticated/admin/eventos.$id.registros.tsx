@@ -23,7 +23,7 @@ import { AvailabilityEditor } from "@/components/dashboard/AvailabilityEditor";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { listRegistrations, deleteRegistration, deleteRegistrationsBulk } from "@/lib/admin-registrations.functions";
 import { setPasswordAndMaybeSend, sendEventCredentials } from "@/lib/credentials-email.functions";
-import { deleteWholeAccount, moveUserToAccountOf } from "@/lib/admin-users.functions";
+import { moveUserToAccountOf } from "@/lib/admin-users.functions";
 import { listFeaturedSolutions, setFeaturedSolution } from "@/lib/featured-solutions.functions";
 import { featuredSolutionIds } from "@/lib/featured-solutions";
 import { FeaturedSolutionStar } from "@/components/admin/FeaturedSolutionStar";
@@ -140,14 +140,13 @@ function AdminRegistros() {
     } catch (e: any) { toast.error(e?.message ?? "Error"); }
     finally { setSendingAll(false); }
   }
-  const delAccount = useServerFn(deleteWholeAccount);
   async function onDeleteAccount(g: any) {
-    const first = g.people.find((p: any) => p.user_id);
-    if (!first) return toast.error("Esta cuenta no tiene personas con usuario");
     const tipo = g.role === "sponsor" ? "la solución" : "la empresa";
-    if (!window.confirm(`Vas a eliminar ${tipo} «${g.company}» y sus ${g.people.length} persona(s) vinculada(s) de toda la plataforma. Esta acción no se puede deshacer. ¿Continuar?`)) return;
-    try { const r = await delAccount({ data: { userId: first.user_id } }); toast.success(`Cuenta eliminada (${r.deleted} personas)`); load(); }
-    catch (e: any) { toast.error(e?.message ?? "Error"); }
+    if (!window.confirm(`¿Quitar ${tipo} «${g.company}» y sus ${g.people.length} persona(s) de este evento?\n\nLa cuenta, sus selecciones, matches y reuniones se conservan intactos.`)) return;
+    try {
+      for (const p of g.people) await del({ data: { id: p.id } });
+      toast.success(`«${g.company}» quitada del evento`); load();
+    } catch (e: any) { toast.error(e?.message ?? "Error"); }
   }
   const moveFn = useServerFn(moveUserToAccountOf);
   const [dragged, setDragged] = useState<any | null>(null);
@@ -219,10 +218,10 @@ function AdminRegistros() {
                     <button disabled={!r.user_id} onClick={() => setAvailFor(r)} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Disponibilidad y restricciones de agenda"><CalendarClock className="h-4 w-4" /></button>
                     <button disabled={!r.user_id || busyId === r.id} onClick={() => sendOne(r)} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40" title="Enviar claves por email"><Mail className="h-4 w-4" /></button>
                     <button onClick={async () => {
-                      if (!window.confirm("¿Eliminar inscripción?")) return;
-                      try { await del({ data: { id: r.id } }); toast.success("Eliminada"); load(); }
+                      if (!window.confirm("¿Quitar a esta persona del evento? Su cuenta y sus interacciones se conservan.")) return;
+                      try { await del({ data: { id: r.id } }); toast.success("Quitada del evento"); load(); }
                       catch (e: any) { toast.error(e?.message ?? "Error"); }
-                    }} className="p-1.5 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
+                    }} title="Quitar del evento" className="p-1.5 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
                   </>);
   }
 
@@ -356,7 +355,7 @@ function AdminRegistros() {
                 <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{g.role === "sponsor" ? "Solución" : "Empresa"}</span>
                 <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">{g.people.length} {g.people.length === 1 ? "persona" : "personas"}</span>
                 <button type="button" title="Editar cuenta" disabled={!g.people[0]?.user_id} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditUserId(g.people[0].user_id); }} className="p-1.5 text-muted-foreground hover:text-primary disabled:opacity-40"><Pencil className="h-4 w-4" /></button>
-                <button type="button" title="Eliminar cuenta y sus personas" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDeleteAccount(g); }} className="p-1.5 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
+                <button type="button" title="Quitar del evento (conserva la cuenta y su historial)" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDeleteAccount(g); }} className="p-1.5 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
               </summary>
               <ul className="divide-y divide-border border-t border-border bg-muted/10">
                 {g.people.map((r: any) => (
