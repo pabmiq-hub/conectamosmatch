@@ -89,23 +89,32 @@ function AdminRegistros() {
 
   async function sendOne(r: any) {
     if (!r.user_id) return toast.error("Esta inscripción no tiene cuenta asociada");
-    if (!window.confirm(`Se generará una nueva contraseña para ${r.attendee_name ?? r.attendee_email} y se le enviará por email. ¿Continuar?`)) return;
+    if (!window.confirm(`Se generará una nueva contraseña para ${r.attendee_name ?? r.attendee_email} y se le enviará por email. Después se descargará un Excel con esas mismas claves. ¿Continuar?`)) return;
     setBusyId(r.id);
-    const res = await setPwd({ data: { userId: r.user_id, send: true, event_id: id } });
-    setBusyId(null);
-    res.ok ? toast.success(`Claves enviadas a ${res.email}`) : toast.error(res.error);
+    try {
+      const res = await setPwd({ data: { userId: r.user_id, send: true, event_id: id } });
+      if (!res.ok) { toast.error(res.error); return; }
+      toast.success(`Claves enviadas a ${res.email}`);
+      downloadCredentialsExcel([res.credentials], "all", res.credentials.name || res.email);
+    } catch (error) { toast.error(error instanceof Error ? error.message : "No se pudo completar el envío o la descarga"); }
+    finally { setBusyId(null); }
   }
 
   async function saveEdit() {
     if (newPwd.length < 8) return toast.error("Mínimo 8 caracteres");
     setBusyId(editing.id);
-    const res = await setPwd({ data: { userId: editing.user_id, password: newPwd, send: alsoSend, event_id: id } });
-    setBusyId(null);
-    if (res.ok) { toast.success(alsoSend ? `Contraseña guardada y enviada a ${res.email}` : "Contraseña guardada"); setEditing(null); }
-    else toast.error(res.error);
+    try {
+      const res = await setPwd({ data: { userId: editing.user_id, password: newPwd, send: alsoSend, event_id: id } });
+      if (!res.ok) { toast.error(res.error); return; }
+      toast.success(alsoSend ? `Contraseña guardada y enviada a ${res.email}` : "Contraseña guardada");
+      setEditing(null);
+      setNewPwd("");
+      if (alsoSend) downloadCredentialsExcel([res.credentials], "all", res.credentials.name || res.email);
+    } catch (error) { toast.error(error instanceof Error ? error.message : "No se pudo guardar la contraseña o descargar el Excel"); }
+    finally { setBusyId(null); }
   }
 
-  function downloadCredentialsExcel(results: any[], group: RoleFilter = "all") {
+  function downloadCredentialsExcel(results: any[], group: RoleFilter = "all", participantName?: string) {
     if (!results?.length) return;
     const fmt = (iso: string) => new Date(iso).toLocaleString("es-ES", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
     const data = results.map((x) => {
@@ -124,7 +133,7 @@ function AdminRegistros() {
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Claves");
-    const slug = (group === "empresa" ? "empresas" : group === "sponsor" ? "soluciones" : "todos").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const slug = (participantName ?? (group === "empresa" ? "empresas" : group === "sponsor" ? "soluciones" : "todos")).toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     XLSX.writeFile(wb, `claves-${slug}-${id.slice(0, 8)}-${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
 

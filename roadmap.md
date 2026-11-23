@@ -1,3 +1,8 @@
+# Excel de credenciales individuales
+- [x] Descargar una sola fila con las mismas claves al enviar a un participante, también desde editar contraseña.
+- [x] Validar 4 pruebas de credenciales y descarga aislada de Excel con una fila y contraseña exacta; aplicación sin errores.
+- [ ] Verificar envío individual real: requiere sesión de administrador del Supabase externo, no disponible aquí.
+
 # Orden independiente de directorios
 - [x] Añadir controles por evento en Participantes para empresas y soluciones.
 - [x] Aplicar orden alfabético, interés único recibido o aleatorio, siempre con destacadas primero.

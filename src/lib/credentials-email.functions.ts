@@ -1,13 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { assertSuperAdmin } from "./admin-shared.server";
 import { credentialsEmailHtml, generatePassword, sendEmail } from "./credentials-email.server";
 
 const LOGIN_URL = "https://conectamosmatch.com/login";
 
 async function processOne(userId: string, eventTitle: string | null, password: string | undefined, send: boolean) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: prof } = await supabaseAdmin.from("profiles").select("id, email, full_name, role").eq("id", userId).maybeSingle();
   if (!prof?.email) throw new Error("Usuario sin email");
   if (prof.role === "super_admin") throw new Error("No se modifican super administradores");
@@ -18,11 +18,12 @@ async function processOne(userId: string, eventTitle: string | null, password: s
     await sendEmail(prof.email, eventTitle ? `Tus claves de acceso · ${eventTitle}` : "Tus claves de acceso a Conectamos",
       credentialsEmailHtml({ name: prof.full_name ?? "", email: prof.email, password: pwd, eventTitle, loginUrl: LOGIN_URL }));
   }
-  return { email: prof.email as string, name: (prof.full_name ?? "") as string };
+  return { user_id: userId, email: prof.email as string, name: (prof.full_name ?? "") as string, password: pwd, status: send ? "Enviado" : "No enviado", sent_at: new Date().toISOString() };
 }
 
 async function eventTitle(eventId?: string | null) {
   if (!eventId) return null;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data } = await supabaseAdmin.from("events").select("title").eq("id", eventId).maybeSingle();
   return data?.title ?? null;
 }
@@ -40,7 +41,7 @@ export const setPasswordAndMaybeSend = createServerFn({ method: "POST" })
     await assertSuperAdmin(context.userId);
     try {
       const r = await processOne(data.userId, await eventTitle(data.event_id), data.password, data.send);
-      return { ok: true as const, email: r.email };
+      return { ok: true as const, email: r.email, credentials: r };
     } catch (e: any) {
       return { ok: false as const, error: e?.message ?? "Error" };
     }
@@ -56,6 +57,7 @@ export const sendEventCredentials = createServerFn({ method: "POST" })
   }).parse(input))
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const title = await eventTitle(data.event_id);
     const { data: regs } = await supabaseAdmin.from("event_registrations").select("user_id, status, role_at_event").eq("event_id", data.event_id);
     const role = data.role ?? "all";
