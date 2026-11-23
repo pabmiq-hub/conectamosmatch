@@ -345,6 +345,38 @@ export type Database = {
           },
         ]
       }
+      event_directory_order: {
+        Row: {
+          created_at: string
+          event_id: string
+          sort_mode: string
+          target_kind: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          sort_mode?: string
+          target_kind: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          sort_mode?: string
+          target_kind?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_directory_order_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_featured_solutions: {
         Row: {
           created_at: string

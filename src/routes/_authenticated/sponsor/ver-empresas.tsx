@@ -10,14 +10,20 @@ import { PartnerDetailModal, type PartnerDetail } from "@/components/dashboard/P
 import { EmpresaLikeModal } from "@/components/sponsor/EmpresaLikeModal";
 import { listMyLikedAccountIds } from "@/lib/admin-users.functions";
 import { Search } from "lucide-react";
-import { SortToggle, sortByName, type SortDir } from "@/components/dashboard/SortToggle";
+import { getDirectoryOrder } from "@/lib/directory-order.functions";
+import { sortDirectory, randomRanks, type DirectoryConfig } from "@/lib/directory-order";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/sponsor/ver-empresas")({
+  head: () => ({ meta: [{ title: "Ver empresas | Conectamos Match" }, { name: "description", content: "Empresas inscritas en tu evento para conectar y seleccionar tus intereses." }, { property: "og:title", content: "Ver empresas | Conectamos Match" }, { property: "og:description", content: "Encuentra las empresas de tu evento de Conectamos Match." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: VerEmpresasSponsor,
 });
 
 function VerEmpresasSponsor() {
   const getLikedAccounts = useServerFn(listMyLikedAccountIds);
+  const getOrder = useServerFn(getDirectoryOrder);
+  const [order, setOrder] = useState<DirectoryConfig>({ mode: "alphabetical", counts: {} });
+  const [ranks, setRanks] = useState<Record<string, number>>({});
   const [me, setMe] = useState<string | null>(null);
   const [eventId, setEventId] = useState<string | null>(null);
   const [items, setItems] = useState<any[]>([]);
@@ -25,7 +31,6 @@ function VerEmpresasSponsor() {
   const [selected, setSelected] = useState<PartnerDetail | null>(null);
   const [likeTarget, setLikeTarget] = useState<{ userId: string; name: string } | null>(null);
   const [q, setQ] = useState("");
-  const [dir, setDir] = useState<SortDir>("asc");
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -34,8 +39,10 @@ function VerEmpresasSponsor() {
     const scope = await fetchMyEventScope();
     const ev = scope.event;
     setEventId(ev?.id ?? null);
+    if (ev) setOrder(await getOrder({ data: { eventId: ev.id, kind: "empresa" } }));
     // Only the empresas registered for this same event
     const ids = scope.empresaAccountIds;
+    setRanks((previous) => Object.keys(previous).length ? previous : randomRanks(ids));
     const { data } = ids.length
       ? await supabase.from("empresa_profiles").select("id, user_id, company_name, description, logo_url, sector, company_size, website, location_city, responsables").in("id", ids)
       : { data: [] as any[] };
@@ -43,13 +50,13 @@ function VerEmpresasSponsor() {
     const liked = await getLikedAccounts({ data: { eventId: ev?.id ?? null } });
     setLikedAccountIds(new Set(liked.accountIds));
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => { void load().catch(() => toast.error("No se pudieron cargar las empresas. Recarga la página para reintentar.")); }, []);
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     const base = !term ? items : items.filter((e) => String(e.company_name ?? "").toLowerCase().includes(term));
-    return sortByName(base, (e: any) => e.company_name, dir);
-  }, [items, q, dir]);
+    return sortDirectory(base, order, new Set(), ranks);
+  }, [items, q, order, ranks]);
 
 
   return (
@@ -64,7 +71,6 @@ function VerEmpresasSponsor() {
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar empresa por nombre…" className="w-full rounded-md border border-border bg-card pl-9 pr-3 py-2 text-sm" />
         </div>
-        <SortToggle value={dir} onChange={setDir} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

@@ -10,9 +10,11 @@ import { EmpresaLikeModal } from "@/components/sponsor/EmpresaLikeModal";
 import { listMyLikedAccountIds } from "@/lib/admin-users.functions";
 import { PRESET_SPONSOR_CATEGORIES } from "@/lib/sponsor-categories";
 import { Search, Filter, X } from "lucide-react";
-import { SortToggle, type SortDir } from "@/components/dashboard/SortToggle";
 import { listFeaturedSolutions } from "@/lib/featured-solutions.functions";
-import { featuredSolutionIds, sortSolutions } from "@/lib/featured-solutions";
+import { featuredSolutionIds } from "@/lib/featured-solutions";
+import { getDirectoryOrder } from "@/lib/directory-order.functions";
+import { sortDirectory, randomRanks, type DirectoryConfig } from "@/lib/directory-order";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/empresa/ver-sponsors")({
   head: () => ({ meta: [{ title: "Ver soluciones | Conectamos Match" }, { name: "description", content: "Soluciones inscritas y destacadas en tu evento de Conectamos Match." }, { property: "og:title", content: "Ver soluciones | Conectamos Match" }, { property: "og:description", content: "Encuentra las soluciones de tu evento." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
@@ -23,6 +25,9 @@ export const Route = createFileRoute("/_authenticated/empresa/ver-sponsors")({
 function VerSponsors() {
   const getLikedAccounts = useServerFn(listMyLikedAccountIds);
   const getFeatured = useServerFn(listFeaturedSolutions);
+  const getOrder = useServerFn(getDirectoryOrder);
+  const [order, setOrder] = useState<DirectoryConfig>({ mode: "alphabetical", counts: {} });
+  const [ranks, setRanks] = useState<Record<string, number>>({});
   const [featuredIds, setFeaturedIds] = useState<Set<string>>(new Set());
   const [me, setMe] = useState<string | null>(null);
   const [eventId, setEventId] = useState<string | null>(null);
@@ -34,7 +39,6 @@ function VerSponsors() {
   const [q, setQ] = useState("");
   const [activeCats, setActiveCats] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
-  const [dir, setDir] = useState<SortDir | null>(null);
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -43,10 +47,12 @@ function VerSponsors() {
     const scope = await fetchMyEventScope();
     const ev = scope.event;
     setEventId(ev?.id ?? null);
+    if (ev) setOrder(await getOrder({ data: { eventId: ev.id, kind: "sponsor" } }));
     setFeaturedIds(featuredSolutionIds(ev ? await getFeatured({ data: { eventId: ev.id } }) : [], ev?.id ?? null));
     setMinRequired((ev as any)?.empresa_min_likes ?? 12);
     // Only the soluciones registered for this same event
     const ids = scope.sponsorAccountIds;
+    setRanks((previous) => Object.keys(previous).length ? previous : randomRanks(ids));
     const { data: sp } = ids.length
       ? await supabase.from("sponsor_profiles").select("id, user_id, company_name, description, logo_url, sector, sponsorship_level, website, location_city, responsables, categories").in("id", ids)
       : { data: [] as any[] };
@@ -54,7 +60,7 @@ function VerSponsors() {
     const liked = await getLikedAccounts({ data: { eventId: ev?.id ?? null } });
     setLikedAccountIds(new Set(liked.accountIds));
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => { void load().catch(() => toast.error("No se pudieron cargar las soluciones. Recarga la página para reintentar.")); }, []);
 
   // Categories present in the actual sponsor list (preset + custom)
   const availableCats = useMemo(() => {
@@ -72,8 +78,8 @@ function VerSponsors() {
     let base = items;
     if (term) base = base.filter((s) => String(s.company_name ?? "").toLowerCase().includes(term));
     if (activeCats.length) base = base.filter((s) => Array.isArray(s.categories) && activeCats.every((c) => s.categories.includes(c)));
-    return sortSolutions(base, featuredIds, dir ?? "asc");
-  }, [items, q, activeCats, dir, featuredIds]);
+    return sortDirectory(base, order, featuredIds, ranks);
+  }, [items, q, activeCats, order, featuredIds, ranks]);
 
 
   const reachedMin = likedAccountIds.size >= MIN_REQUIRED;
@@ -98,7 +104,6 @@ function VerSponsors() {
         {activeCats.length > 0 && (
           <button onClick={() => setActiveCats([])} className="text-[11px] text-muted-foreground underline">Limpiar</button>
         )}
-        <SortToggle value={dir ?? "asc"} onChange={setDir} />
       </div>
 
 

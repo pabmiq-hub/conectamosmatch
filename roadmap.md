@@ -1,3 +1,9 @@
+# Orden independiente de directorios
+- [x] Añadir controles por evento en Participantes para empresas y soluciones.
+- [x] Aplicar orden alfabético, interés único recibido o aleatorio, siempre con destacadas primero.
+- [x] Validar 22 pruebas de orden y selecciones; migraciones aplicadas sin nuevos avisos de seguridad.
+- [ ] Verificar cambios desde una sesión real de administrador y participantes: Supabase externo sin sesión disponible.
+
 # Recordatorio de selecciones
 - [x] Añadir comunicado editable con destinatarios, fecha y vista previa personalizada.
 - [x] Implementar correos y avisos internos con resultados por destinatario y protección ante reintentos.

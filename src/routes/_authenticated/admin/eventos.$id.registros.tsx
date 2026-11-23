@@ -32,6 +32,7 @@ import { getParticipantSelections, type SelectionAccount } from "@/lib/participa
 import { ParticipantSelectionCounts, ParticipantSelectionsPanel } from "@/components/admin/ParticipantSelectionsPanel";
 import { Button } from "@/components/ui/button";
 import { SelectionReminderModal } from "@/components/admin/SelectionReminderModal";
+import { DirectoryOrderControls } from "@/components/admin/DirectoryOrderControls";
 
 export const Route = createFileRoute("/_authenticated/admin/eventos/$id/registros")({
   head: () => ({ meta: [{ title: "Participantes del evento | Conectamos Match" }, { name: "description", content: "Gestiona empresas, soluciones, participantes y administradores del evento." }, { property: "og:title", content: "Participantes del evento | Conectamos Match" }, { property: "og:description", content: "Cuentas y personas inscritas en el evento." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
@@ -276,6 +277,7 @@ function AdminRegistros() {
         <button onClick={exportCSV} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-bold text-uppercase-wide"><Download className="h-3 w-3" /> Exportar CSV</button>
         </div>
       } />
+      <DirectoryOrderControls key={id} eventId={id} />
       {rows.length > 0 && (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5">
           <div className="inline-flex overflow-hidden rounded-md border border-border">
