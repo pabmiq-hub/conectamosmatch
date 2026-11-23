@@ -299,7 +299,38 @@ export const inviteResponsable = createServerFn({ method: "POST" })
       account_role: "manager",
     });
 
-    return { userId, email: data.email };
+    // Auto-register the new person in every event where this account already participates.
+    const { data: teammates } = await supabaseAdmin
+      .from("profiles").select("id").eq("account_id", data.accountId).neq("id", userId);
+    const mateIds = (teammates ?? []).map((t: any) => t.id);
+    let registeredEvents = 0;
+    if (mateIds.length) {
+      const { data: regs } = await supabaseAdmin
+        .from("event_registrations").select("event_id, status, attendee_company")
+        .in("user_id", mateIds);
+      const events = new Map<string, string | null>();
+      for (const r of regs ?? []) {
+        if (r.event_id && r.status !== "cancelled" && !events.has(r.event_id)) events.set(r.event_id, r.attendee_company ?? null);
+      }
+      const { data: acc } = await supabaseAdmin.from(table).select("company_name").eq("id", data.accountId).maybeSingle();
+      const rows = [...events.entries()].map(([eventId, company]) => ({
+        event_id: eventId,
+        user_id: userId,
+        role_at_event: data.accountType,
+        status: "registered" as const,
+        attendee_name: data.full_name,
+        attendee_email: data.email,
+        attendee_company: (acc as any)?.company_name ?? company,
+        attendee_role_title: data.cargo || null,
+      }));
+      if (rows.length) {
+        const { error: regErr } = await supabaseAdmin.from("event_registrations").insert(rows);
+        if (regErr) console.error("[inviteResponsable] auto-register failed", regErr.message);
+        else registeredEvents = rows.length;
+      }
+    }
+
+    return { userId, email: data.email, registeredEvents };
   });
 
 export const listAccounts = createServerFn({ method: "GET" })
