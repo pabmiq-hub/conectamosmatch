@@ -1,3 +1,4 @@
+import { getSlotInfo } from "@/lib/meeting-slot";
 import { Fragment, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
@@ -12,6 +13,7 @@ export type AgendaMeeting = {
   responsable: string | null;
   responsable_role: string | null;
   room: string | null;
+  duration_minutes?: number | null;
 };
 
 const typeMeta: Record<string, { label: string; emoji: string; color: string }> = {
@@ -147,6 +149,7 @@ export function AgendaTable({ items, meetings = [] }: { items: AgendaRow[]; meet
                               {dayMeetings.map((m) => (
                                 <div key={m.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-border bg-card px-3 py-2 text-xs">
                                   <span className="font-mono font-bold text-primary">{meetingTimeLabel(m.scheduled_time)}</span>
+                                  {(() => { const si = getSlotInfo(m.scheduled_time, m.duration_minutes, items); return si?.number ? <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold">{si.label}</span> : null; })()}
                                   <span className="font-medium">{m.partner_name ?? "—"}</span>
                                   {m.responsable && <span className="text-muted-foreground">· {m.responsable}</span>}
                                   {m.my_attendee && <span className="text-muted-foreground">· Asiste: {m.my_attendee}</span>}

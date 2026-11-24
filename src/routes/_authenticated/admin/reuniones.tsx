@@ -6,6 +6,7 @@ import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { ClipboardList, Wand2, Trash2, Plus, FileSpreadsheet, FileText, Heart, Sparkles, Building2, CalendarCheck, Upload, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { listEvents } from "@/lib/admin-events.functions";
+import { getSlotInfo } from "@/lib/meeting-slot";
 import { listMeetings, autoAssignSlots, updateMeeting, deleteMeeting, clearMeetings, setMeetingsPublished } from "@/lib/admin-meetings.functions";
 import { listMatches } from "@/lib/admin-matches.functions";
 import { listAllParticipants } from "@/lib/admin-meetings.functions";
@@ -396,9 +397,9 @@ function AdminReuniones() {
       {filtered.length === 0 ? (
         <EmptyState icon={ClipboardList} title="Sin reuniones" hint="Ajusta filtros o crea una reunión manual" />
       ) : grouped ? (
-        <GroupedMeetingsView rows={filtered} onUpdate={upd} onDelete={del} reload={load} />
+        <GroupedMeetingsView rows={filtered} windows={agendaItems} onUpdate={upd} onDelete={del} reload={load} />
       ) : (
-        <FlatMeetingsTable rows={filtered} onUpdate={upd} onDelete={del} reload={load} />
+        <FlatMeetingsTable rows={filtered} windows={agendaItems} onUpdate={upd} onDelete={del} reload={load} />
       )}
     </div>
   );
@@ -421,7 +422,7 @@ function FilterTab({ active, onClick, icon: Icon, label, count, tone }: { active
 }
 
 
-function GroupedMeetingsView({ rows, onUpdate, onDelete, reload }: { rows: any[]; onUpdate: any; onDelete: any; reload: () => void }) {
+function GroupedMeetingsView({ rows, windows, onUpdate, onDelete, reload }: { rows: any[]; windows: any[]; onUpdate: any; onDelete: any; reload: () => void }) {
   const groups = useMemo(() => {
     const map = new Map<string, { key: string; empresa: string; sponsor: string; items: any[] }>();
     rows.forEach((r) => {
@@ -444,21 +445,21 @@ function GroupedMeetingsView({ rows, onUpdate, onDelete, reload }: { rows: any[]
             <span className="text-sm font-bold">{g.sponsor}</span>
             <span className="ml-auto rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">{g.items.length} reunión{g.items.length === 1 ? "" : "es"}</span>
           </div>
-          <FlatMeetingsTable rows={g.items} onUpdate={onUpdate} onDelete={onDelete} reload={reload} compact />
+          <FlatMeetingsTable rows={g.items} windows={windows} onUpdate={onUpdate} onDelete={onDelete} reload={reload} compact />
         </div>
       ))}
     </div>
   );
 }
 
-function FlatMeetingsTable({ rows, onUpdate, onDelete, reload, compact }: { rows: any[]; onUpdate: any; onDelete: any; reload: () => void; compact?: boolean }) {
+function FlatMeetingsTable({ rows, windows = [], onUpdate, onDelete, reload, compact }: { rows: any[]; windows?: any[]; onUpdate: any; onDelete: any; reload: () => void; compact?: boolean }) {
   return (
     <div className={compact ? "" : "rounded-xl border border-border bg-card overflow-hidden"}>
       <table className="w-full text-sm">
         <thead className="bg-muted/40 text-[10px] text-uppercase-wide text-muted-foreground"><tr>
           {!compact && <><th className="px-4 py-3 text-left">Empresa</th><th className="px-4 py-3 text-left">Solución</th></>}
           <th className="px-4 py-3 text-left">Origen</th>
-          <th className="px-4 py-3 text-left">Hora</th><th className="px-4 py-3 text-left">Mesa</th><th className="px-4 py-3 text-left">Estado</th><th />
+          <th className="px-4 py-3 text-left">Slot</th><th className="px-4 py-3 text-left">Hora</th><th className="px-4 py-3 text-left">Mesa</th><th className="px-4 py-3 text-left">Estado</th><th />
         </tr></thead>
         <tbody>
           {rows.map((r) => (
@@ -472,6 +473,11 @@ function FlatMeetingsTable({ rows, onUpdate, onDelete, reload, compact }: { rows
                   {r.match_id ? "Match" : "Manual"}
                 </span>
                 {r.virtual && <span className="ml-1 rounded-full bg-warning/15 text-warning px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">Sin asignar</span>}
+              </td>
+              <td className="px-4 py-3 whitespace-nowrap">
+                {(() => { const si = r.virtual ? null : getSlotInfo(r.scheduled_time, r.duration_minutes, windows); return si ? (
+                  <div><span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold">{si.short}</span><div className="text-[10px] text-muted-foreground mt-0.5">{si.start} – {si.end}</div></div>
+                ) : <span className="text-[11px] text-muted-foreground">—</span>; })()}
               </td>
               <td className="px-4 py-3">
                 {r.virtual ? (

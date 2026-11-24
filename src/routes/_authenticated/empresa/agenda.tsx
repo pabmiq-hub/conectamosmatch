@@ -45,6 +45,7 @@ function AgendaEmpresa() {
         return {
           id: m.id,
           scheduled_time: m.scheduled_time,
+          duration_minutes: m.duration_minutes ?? null,
           partner_name: company ?? "Solución",
           my_attendee: myProf?.full_name ?? null,
           responsable: resp?.full_name ?? null,

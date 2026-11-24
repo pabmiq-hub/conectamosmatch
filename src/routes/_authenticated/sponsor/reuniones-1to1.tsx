@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getSlotInfo } from "@/lib/meeting-slot";
 import { fetchMyEventScope } from "@/hooks/use-my-event";
 import { MeetingsList } from "@/routes/_authenticated/empresa/reuniones-1to1";
 
@@ -29,6 +30,9 @@ function ReunionesSponsor() {
       const { data: meetings } = teamIds.length && ev
         ? await supabase.from("meetings_1to1").select("*").in("sponsor_user_id", teamIds).eq("event_id", ev.id).order("scheduled_time")
         : { data: [] as any[] };
+      const { data: slotWindows } = ev
+        ? await supabase.from("event_agenda").select("event_date, time_start, time_end, agenda_type").eq("event_id", ev.id).eq("agenda_type", "reuniones_1to1")
+        : { data: [] as any[] };
 
       const empAccIds = Array.from(new Set((meetings ?? []).map((m: any) => m.empresa_account_id).filter(Boolean)));
       const { data: emps } = empAccIds.length
@@ -42,6 +46,7 @@ function ReunionesSponsor() {
         const myProf = teamMap.get(m.sponsor_user_id) as any;
         return {
           ...m,
+          slot_label: getSlotInfo(m.scheduled_time, m.duration_minutes, (slotWindows ?? []) as any[])?.label ?? null,
           partner_name: ep?.company_name ?? "Empresa",
           partner_logo: ep?.logo_url ?? null,
           responsable: resp?.full_name ?? null,

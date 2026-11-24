@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getSlotInfo } from "@/lib/meeting-slot";
 import { fetchMyEventScope } from "@/hooks/use-my-event";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
 import { ClipboardList, MapPin, User, Building2 } from "lucide-react";
@@ -30,6 +31,9 @@ function ReunionesEmpresa() {
       const { data: meetings } = teamIds.length && ev
         ? await supabase.from("meetings_1to1").select("*").in("empresa_user_id", teamIds).eq("event_id", ev.id).order("scheduled_time")
         : { data: [] as any[] };
+      const { data: slotWindows } = ev
+        ? await supabase.from("event_agenda").select("event_date, time_start, time_end, agenda_type").eq("event_id", ev.id).eq("agenda_type", "reuniones_1to1")
+        : { data: [] as any[] };
 
       const sponsorAccIds = Array.from(new Set((meetings ?? []).map((m: any) => m.sponsor_account_id).filter(Boolean)));
       const { data: sps } = sponsorAccIds.length
@@ -43,6 +47,7 @@ function ReunionesEmpresa() {
         const myProf = teamMap.get(m.empresa_user_id) as any;
         return {
           ...m,
+          slot_label: getSlotInfo(m.scheduled_time, m.duration_minutes, (slotWindows ?? []) as any[])?.label ?? null,
           partner_name: sp?.company_name ?? "Solución",
           partner_logo: sp?.logo_url ?? null,
           responsable: resp?.full_name ?? null,
@@ -96,7 +101,7 @@ export function MeetingsList({ rows, published = true }: { rows: any[]; publishe
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-base truncate">{r.partner_name}</div>
+                        <div className="flex flex-wrap items-center gap-2"><div className="font-semibold text-base truncate">{r.partner_name}</div>{r.slot_label && <span className="rounded-full bg-primary/15 text-primary border border-primary/30 px-2.5 py-0.5 text-xs font-bold whitespace-nowrap">{r.slot_label}</span>}</div>
                         <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground mt-1">
                           {r.my_attendee && <span className="inline-flex items-center gap-1 text-primary"><User className="h-3 w-3" />Asiste: {r.my_attendee}</span>}
                           {r.responsable && <span className="inline-flex items-center gap-1"><User className="h-3 w-3" />{r.responsable}</span>}
