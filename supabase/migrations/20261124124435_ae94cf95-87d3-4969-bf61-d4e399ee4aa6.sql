@@ -1,0 +1,1 @@
+ALTER TYPE public.agenda_type_t ADD VALUE IF NOT EXISTS 'actividad_recreativa';

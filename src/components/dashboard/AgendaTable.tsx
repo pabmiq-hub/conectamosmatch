@@ -21,6 +21,7 @@ const typeMeta: Record<string, { label: string; emoji: string; color: string }> 
   coffee_break:  { label: "COFFEE BREAK",  emoji: "☕", color: "bg-bronze/30 text-foreground" },
   comida:        { label: "COMIDA",        emoji: "🍽️", color: "bg-bronze/30 text-foreground" },
   reuniones_1to1:{ label: "REUNIONES 1TO1",emoji: "📅", color: "bg-primary text-primary-foreground" },
+  actividad_recreativa:{ label: "ACTIVIDAD RECREATIVA", emoji: "🎉", color: "bg-accent text-accent-foreground" },
   cierre:        { label: "CIERRE",        emoji: "🏆", color: "bg-platinum/40 text-foreground" },
   panel:         { label: "PANEL",         emoji: "🗣️", color: "bg-muted text-foreground" },
 };

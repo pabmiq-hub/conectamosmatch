@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { toast } from "sonner";
 import { createAgendaItem, updateAgendaItem } from "@/lib/admin-agenda.functions";
 
-const AGENDA_TYPES = ["bienvenida", "charla", "panel", "coffee_break", "comida", "networking", "reuniones_1to1", "cierre"] as const;
+const AGENDA_TYPES = ["bienvenida", "charla", "panel", "coffee_break", "comida", "networking", "reuniones_1to1", "cierre", "actividad_recreativa"] as const;
 
 export function AgendaItemModal({ eventId, item, onClose, onSaved }: { eventId: string; item: any | null; onClose: () => void; onSaved: () => void }) {
   const create = useServerFn(createAgendaItem);
@@ -94,7 +94,7 @@ export function AgendaItemModal({ eventId, item, onClose, onSaved }: { eventId: 
           <div>
             <L>Tipo</L>
             <select value={f.agenda_type} onChange={(e) => set("agenda_type", e.target.value)} className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
-              {AGENDA_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              {AGENDA_TYPES.map((t) => <option key={t} value={t}>{t === "actividad_recreativa" ? "actividad recreativa" : t}</option>)}
             </select>
           </div>
           <div>

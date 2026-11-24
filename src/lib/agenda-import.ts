@@ -1,4 +1,4 @@
-export type AgendaType = "bienvenida" | "charla" | "panel" | "coffee_break" | "comida" | "networking" | "reuniones_1to1" | "cierre";
+export type AgendaType = "bienvenida" | "charla" | "panel" | "coffee_break" | "comida" | "networking" | "reuniones_1to1" | "cierre" | "actividad_recreativa";
 export type ParsedAgendaItem = {
   day_index: number; event_date: string | null; time_start: string; time_end: string;
   title: string; description: string; room: string; agenda_type: AgendaType; order_index: number;
@@ -9,6 +9,7 @@ const pad = (n: number) => String(n).padStart(2, "0");
 export function classifyAgenda(text: string): AgendaType {
   const t = text.toLowerCase();
   if (/one 2 one|1to1|1 to 1|one2one|1:1/.test(t)) return "reuniones_1to1";
+  if (/breathwork|respiraci|yoga|actividad recreativa|juego|excursi/.test(t)) return "actividad_recreativa";
   if (/coffee|café/.test(t)) return "coffee_break";
   if (/acreditaci|apertura|bienvenida/.test(t)) return "bienvenida";
   if (/cena|comida|almuerzo|desayuno/.test(t)) return "comida";

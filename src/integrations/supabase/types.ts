@@ -1896,6 +1896,7 @@ export type Database = {
         | "reuniones_1to1"
         | "cierre"
         | "panel"
+        | "actividad_recreativa"
       app_role: "super_admin" | "empresa" | "sponsor"
       attendee_role_t: "empresa" | "sponsor"
       bulletin_scope_t: "global" | "event"
@@ -2061,6 +2062,7 @@ export const Constants = {
         "reuniones_1to1",
         "cierre",
         "panel",
+        "actividad_recreativa",
       ],
       app_role: ["super_admin", "empresa", "sponsor"],
       attendee_role_t: ["empresa", "sponsor"],
