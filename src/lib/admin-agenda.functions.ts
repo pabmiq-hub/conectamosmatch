@@ -68,3 +68,20 @@ export const deleteAgendaItem = createServerFn({ method: "POST" })
     if (error) throw new Response(error.message, { status: 400 });
     return { ok: true };
   });
+
+export const importAgenda = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ event_id: z.string().uuid(), replace: z.boolean(), items: z.array(itemSchema.omit({ event_id: true })).min(1).max(300) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+    if (data.replace) {
+      const { error } = await supabaseAdmin.from("event_agenda").delete().eq("event_id", data.event_id);
+      if (error) throw new Response(error.message, { status: 400 });
+    }
+    const rows = data.items.map((it) => ({ ...it, event_id: data.event_id }));
+    const { error } = await supabaseAdmin.from("event_agenda").insert(rows);
+    if (error) throw new Response(error.message, { status: 400 });
+    return { inserted: rows.length };
+  });

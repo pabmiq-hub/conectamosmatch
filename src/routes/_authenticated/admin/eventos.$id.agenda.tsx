@@ -2,10 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, EmptyState } from "@/components/dashboard/EmptyState";
-import { ListChecks, Plus, Edit3, Trash2, ArrowLeft } from "lucide-react";
+import { ListChecks, Plus, Upload, Edit3, Trash2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { listAgenda, deleteAgendaItem } from "@/lib/admin-agenda.functions";
 import { AgendaItemModal } from "@/components/admin/AgendaItemModal";
+import { ImportAgendaModal } from "@/components/admin/ImportAgendaModal";
 import { groupAgendaByDay } from "@/components/dashboard/AgendaTable";
 
 function dayLabel(date: string | null, idx: number) {
@@ -26,6 +27,7 @@ function AdminAgenda() {
   const [items, setItems] = useState<any[]>([]);
   const [editing, setEditing] = useState<any | null>(null);
   const [show, setShow] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   async function load() {
     try { const r = await list({ data: { event_id: id } }); setItems(r.items); }
@@ -36,10 +38,16 @@ function AdminAgenda() {
   return (
     <div className="space-y-6">
       <PageHeader title="Agenda del evento" subtitle="Ponencias, mesas redondas, descansos y networking" right={
+        <div className="flex gap-2">
+        <button onClick={() => setShowImport(true)} className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-xs font-bold text-uppercase-wide">
+          <Upload className="h-4 w-4" /> Importar agenda
+        </button>
         <button onClick={() => { setEditing(null); setShow(true); }} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-xs font-bold text-primary-foreground text-uppercase-wide">
           <Plus className="h-4 w-4" /> Nuevo item
         </button>
+        </div>
       } />
+      {showImport && <ImportAgendaModal eventId={id} hasItems={items.length > 0} onClose={() => setShowImport(false)} onSaved={load} />}
       {show && <AgendaItemModal eventId={id} item={editing} onClose={() => setShow(false)} onSaved={load} />}
       {items.length === 0 ? <EmptyState icon={ListChecks} title="Sin agenda" hint="Añade el primer item" /> : (
         <div className="space-y-6">
