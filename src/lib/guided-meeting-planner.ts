@@ -32,6 +32,10 @@ export type Sponsor = {
   reps: Rep[];
   /** slots donde una sesión admite 2 DRH (Leeters viernes) */
   groupSlots?: string[];
+  /** cuentas DRH preferidas por el sponsor, en orden (preferencia, nunca obligatoria) */
+  priorityAccounts?: string[];
+  /** cuentas DRH vetadas por el sponsor */
+  vetoAccounts?: string[];
 };
 export type Fixed = { unitId: string; sponsorId: string; slotId: string };
 export type PlanInput = {
@@ -41,8 +45,12 @@ export type PlanInput = {
   fixed?: Fixed[];
   minFreeOnTalk: number;
   closedListMax?: number; // 6
+  /** fase de reoptimización: subir DRH a este nº de reuniones con matches mutuos */
+  reoptTarget?: number;
+  /** holgura máxima para la fase de protección de escasez (por defecto 2) */
+  scarcitySlack?: number;
 };
-export type Kind = "FIJA" | "SELECCION_DRH" | "GARANTIA" | "EXTRA_PROTECCION_DRH" | "MINIMO_DRH" | "EXTRA_PROMOCIONAL";
+export type Kind = "FIJA" | "SELECCION_DRH" | "GARANTIA" | "EXTRA_PROTECCION_DRH" | "MINIMO_DRH" | "EXTRA_PROMOCIONAL" | "REOPTIMIZACION";
 export type Session = { id: string; slotId: string; sponsorId: string; repUserId: string; table: number; units: string[] };
 export type Assignment = { unitId: string; sponsorId: string; slotId: string; sessionId: string; mutual: boolean; kind: Kind };
 export type Issue = { unitId?: string; sponsorId?: string; reason: string };
@@ -67,13 +75,15 @@ export function planMeetings(input: PlanInput) {
   for (const u of input.units) for (const s of u.slots) presentBySlot.set(s, (presentBySlot.get(s) ?? 0) + u.members.length);
 
   const isClosed = (u: Unit) => u.selections.length >= 1 && u.selections.length <= closedMax;
-  const groupKey = (u: Unit) => u.disjointGroup ?? `u:${u.id}`;
+  // Unicidad corporativa: una empresa solo ve a cada sponsor una vez en todo el evento.
+  const groupKey = (u: Unit) => u.disjointGroup ?? `a:${u.accountId}`;
+  const prio = (sp: Sponsor, u: Unit) => { const i = sp.priorityAccounts?.indexOf(u.accountId) ?? -1; return i < 0 ? 999 : i; };
 
   function canUnit(u: Unit, sp: Sponsor, slotId: string) {
     if (!u.slots.includes(slotId)) return "no disponible";
     if (unitBusy.get(u.id)?.has(slotId)) return "ocupado";
     if ((unitCount.get(u.id) ?? 0) >= u.maxMeetings) return "tope DRH";
-    if (u.vetoes?.includes(sp.accountId)) return "veto";
+    if (u.vetoes?.includes(sp.accountId) || sp.vetoAccounts?.includes(u.accountId)) return "veto";
     if (pairDone.has(`${u.id}|${sp.accountId}`)) return "repetida";
     if (groupSponsors.get(groupKey(u))?.has(sp.accountId)) return "repite sponsor en grupo";
     const slot = input.slots[slotIdx.get(slotId)!]!;
@@ -83,7 +93,7 @@ export function planMeetings(input: PlanInput) {
   /** Devuelve sesión existente a la que unirse o datos para una nueva. */
   function seat(u: Unit, sp: Sponsor, slotId: string): { join?: Session; rep?: string; table?: number } | null {
     if (u.members.length === 1 && sp.groupSlots?.includes(slotId)) {
-      const open = sessions.find((s) => s.slotId === slotId && s.sponsorId === sp.accountId && s.units.length === 1 && unitById.get(s.units[0]!)!.members.length === 1);
+      const open = sessions.find((s) => s.slotId === slotId && s.sponsorId === sp.accountId && s.units.length === 1 && unitById.get(s.units[0]!)!.members.length === 1 && unitById.get(s.units[0]!)!.accountId !== u.accountId);
       if (open) return { join: open };
     }
     const here = sessions.filter((s) => s.slotId === slotId && s.sponsorId === sp.accountId);
@@ -136,6 +146,17 @@ export function planMeetings(input: PlanInput) {
     if (why || !place(u, sp, f.slotId, "FIJA")) issues.push({ unitId: u.id, sponsorId: sp.accountId, reason: `Cita fija imposible: ${why ?? "sin mesa/representante"}` });
   }
 
+  // A2. Protección de escasez: sponsors con holgura ≤ scarcitySlack (candidatos abiertos − garantía) reservan antes
+  // de que las listas cerradas llenen los slots con Talk. Solo DRH abiertos que los eligieron.
+  const open = input.units.filter((u) => u.selections.length > closedMax);
+  const candidatesFor = (sp: Sponsor) => open.filter((u) => u.selections.includes(sp.accountId) && feasibleCount(u, sp) > 0);
+  for (const sp of input.sponsors.filter((s) => candidatesFor(s).length - s.guarantee <= (input.scarcitySlack ?? 2)).sort((a, b) => (candidatesFor(a).length - a.guarantee) - (candidatesFor(b).length - b.guarantee))) {
+    while (left(sp) > 0) {
+      const c = candidatesFor(sp).sort((a, b) => feasibleCount(a, sp) - feasibleCount(b, sp) || Number(b.mutual.includes(sp.accountId)) - Number(a.mutual.includes(sp.accountId)) || prio(sp, a) - prio(sp, b));
+      if (!c.length || !tryPlace(c[0]!, sp, "GARANTIA")) break;
+    }
+  }
+
   // B. Listas cerradas: unidades con menos holgura primero; mutuos primero.
   const closed = input.units.filter(isClosed).sort((a, b) => (Number(!!b.exactSlots) - Number(!!a.exactSlots)) || a.slots.length - b.slots.length);
   for (const u of closed) {
@@ -149,15 +170,13 @@ export function planMeetings(input: PlanInput) {
   }
 
   // C. Garantías: sponsor con menor holgura (candidatos viables − pendiente), luego categoría.
-  const open = input.units.filter((u) => u.selections.length > closedMax);
-  const candidatesFor = (sp: Sponsor) => open.filter((u) => u.selections.includes(sp.accountId) && feasibleCount(u, sp) > 0);
   for (let guard = 0; guard < 5000; guard++) {
     const pending = input.sponsors.filter((s) => left(s) > 0).map((s) => ({ s, c: candidatesFor(s) })).filter((x) => x.c.length);
     if (!pending.length) break;
     pending.sort((a, b) => (a.c.length - left(a.s)) - (b.c.length - left(b.s)) || TIER_ORDER[a.s.tier] - TIER_ORDER[b.s.tier]);
     const { s, c } = pending[0]!;
     // DRH: mutuo primero, con menos reuniones y menos alternativas
-    c.sort((a, b) => Number(b.mutual.includes(s.accountId)) - Number(a.mutual.includes(s.accountId)) || (unitCount.get(a.id) ?? 0) - (unitCount.get(b.id) ?? 0) || feasibleCount(a, s) - feasibleCount(b, s));
+    c.sort((a, b) => prio(s, a) - prio(s, b) || Number(b.mutual.includes(s.accountId)) - Number(a.mutual.includes(s.accountId)) || (unitCount.get(a.id) ?? 0) - (unitCount.get(b.id) ?? 0) || feasibleCount(a, s) - feasibleCount(b, s));
     if (!tryPlace(c[0]!, s, "GARANTIA")) break;
   }
 
@@ -173,8 +192,18 @@ export function planMeetings(input: PlanInput) {
   // E. Extras promocionales hasta promoTarget.
   for (const sp of input.sponsors.filter((s) => s.promoTarget)) {
     while ((participations.get(sp.accountId) ?? 0) < sp.promoTarget!) {
-      const c = candidatesFor(sp).sort((a, b) => Number(b.mutual.includes(sp.accountId)) - Number(a.mutual.includes(sp.accountId)) || (unitCount.get(a.id) ?? 0) - (unitCount.get(b.id) ?? 0));
+      const c = candidatesFor(sp).sort((a, b) => prio(sp, a) - prio(sp, b) || Number(b.mutual.includes(sp.accountId)) - Number(a.mutual.includes(sp.accountId)) || (unitCount.get(a.id) ?? 0) - (unitCount.get(b.id) ?? 0));
       if (!c.length || !tryPlace(c[0]!, sp, "EXTRA_PROMOCIONAL")) break;
+    }
+  }
+
+  // F. Reoptimización: DRH con target-1 reuniones y matches mutuos libres suben a target (déficit primero).
+  if (input.reoptTarget) {
+    for (const u of open) {
+      if ((unitCount.get(u.id) ?? 0) !== input.reoptTarget - 1) continue;
+      const opts = u.mutual.map((id) => spById.get(id)).filter((s): s is Sponsor => !!s && feasibleCount(u, s) > 0)
+        .sort((a, b) => left(b) - left(a) || prio(a, u) - prio(b, u));
+      if (opts.length) tryPlace(u, opts[0]!, left(opts[0]!) > 0 ? "GARANTIA" : "REOPTIMIZACION");
     }
   }
 

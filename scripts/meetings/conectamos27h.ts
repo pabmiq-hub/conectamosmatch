@@ -1,5 +1,5 @@
 /**
- * Genera el borrador de reuniones 1to1 de «Conectamos 27h» según la Guía técnica v13,
+ * Genera el borrador de reuniones 1to1 de «Conectamos 27h» según la Guía técnica v18,
  * usando el planificador puro src/lib/guided-meeting-planner.ts.
  * Uso: bun scripts/meetings/conectamos27h.ts            (simulación + informe, no escribe)
  *      bun scripts/meetings/conectamos27h.ts --apply    (reemplaza reuniones del evento; quedan en borrador)
@@ -34,8 +34,17 @@ const MIN4 = ["Arantxa Martínez", "Àurea Benito"];
 const JOINT = ["Bárbara Alós", "África Villar"];
 const DISJOINT = { group: "easyjet", names: ["Laia Parellada", "Alexi Choucha"], max: 4 };
 const FIXED = [{ name: "Ramón Amorós", sponsor: "leeters", slot: `${FRI} 10:50` }];
-const LEETERS_GROUP_SLOTS = ["10:50", "11:05", "11:20", "11:35", "11:50", "12:05"].map((t) => `${FRI} ${t}`);
+// v15+: Leeters viernes slot 1 privado (Ramón), slot 2 individual, slots 3–8 dobles
+const LEETERS_GROUP_SLOTS = ["11:20", "11:35", "11:50", "12:05", "12:20", "12:35"].map((t) => `${FRI} ${t}`);
 const WAVVEUEP_THU_TABLES = 2;
+const SPONSOR_VETO_COMPANIES: Record<string, string[]> = { leeters: ["bain", "casa del libro"] };
+// v18: preferencias en orden (subordinadas a garantías, vetos y unicidad por empresa)
+const PRIORITIES: Record<string, string[]> = {
+  clasing: ["isdin", "kantar", "bosch", "fribin", "werfoods", "arabella", "zest", "lacer", "universidad de navarra", "cognita", "taurus", "endesa", "bain", "humaneva"],
+  hastee: ["endesa", "linde", "optica universitaria", "samu", "cognita", "dkv", "atletico", "fcc", "domusvi", "torraspapel", "antolin", "kantar", "europastry"],
+  "tti success insights": ["fribin", "paraguas", "menarini", "mattel", "atresmedia", "isdin", "werfoods", "garmin", "bain", "neural", "zest"],
+};
+const REOPT_TARGET = 6;
 // ======================================================
 
 const APPLY = process.argv.includes("--apply");
@@ -106,6 +115,8 @@ for (const s of sps) {
     tableCap: isL ? 1 : isW ? Math.max(cap, WAVVEUEP_THU_TABLES) : cap,
     reps: myReps.map((r, i) => ({ userId: r.id, slots: isW && i > 0 ? daySlots(THU) : both })),
     groupSlots: isL ? LEETERS_GROUP_SLOTS : undefined,
+    priorityAccounts: (PRIORITIES[key] ?? []).map((k) => { const hit = emps.find((e) => norm(e.company_name).includes(k)); if (!hit) warnings.push(`Prioridad de ${s.company_name} no encontrada: ${k}`); return hit?.id; }).filter((x): x is string => !!x),
+    vetoAccounts: (SPONSOR_VETO_COMPANIES[key] ?? []).flatMap((k) => emps.filter((e) => norm(e.company_name).includes(k)).map((e) => e.id)),
   });
 }
 const spKey = (k: string) => sponsors.find((s) => norm(s.name).includes(k))?.accountId;
@@ -149,7 +160,7 @@ for (const p of drh) {
 for (const n of [...THU_ONLY, ...FRI_ONLY, ...THU_ONLY_EXACT6, ...MIN4, ...Object.keys(VETOES)]) if (!findDrh(n)) warnings.push(`Persona de la guía no encontrada entre las inscritas: ${n}`);
 const fixed = FIXED.map((f) => ({ unitId: findDrh(f.name)?.id ?? "?", sponsorId: spKey(f.sponsor) ?? "?", slotId: f.slot }));
 
-const r = planMeetings({ slots, units, sponsors, fixed, minFreeOnTalk: MIN_FREE_TALK });
+const r = planMeetings({ slots, units, sponsors, fixed, minFreeOnTalk: MIN_FREE_TALK, reoptTarget: REOPT_TARGET });
 
 // ---------- Informe ----------
 const uName = new Map(units.map((u) => [u.id, u.name])), sName = new Map(sponsors.map((s) => [s.accountId, s.name]));
@@ -163,7 +174,7 @@ console.log(`\nINCIDENCIAS (${r.issues.length}):`); r.issues.forEach((i) => cons
 const total = r.sponsorReport.reduce((t, s) => t + s.participations, 0), def = r.sponsorReport.reduce((t, s) => t + s.deficit, 0);
 console.log(`\nTOTAL participaciones DRH: ${total} · Déficit total sobre garantías: ${def}`);
 
-const KIND_LABEL: Record<string, string> = { FIJA: "Cita fija", SELECCION_DRH: "Garantía (selección DRH)", GARANTIA: "Garantía", EXTRA_PROTECCION_DRH: "EXTRA — PROTECCIÓN DRH", MINIMO_DRH: "Mínimo DRH", EXTRA_PROMOCIONAL: "EXTRA — PROMOCIONAL" };
+const KIND_LABEL: Record<string, string> = { FIJA: "Cita fija", SELECCION_DRH: "Garantía (selección DRH)", GARANTIA: "Garantía", EXTRA_PROTECCION_DRH: "EXTRA — PROTECCIÓN DRH", MINIMO_DRH: "Mínimo DRH", EXTRA_PROMOCIONAL: "EXTRA — PROMOCIONAL", REOPTIMIZACION: "Reoptimización 5→6" };
 const wb = XLSX.utils.book_new();
 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(r.assignments.map((a) => {
   const sess = r.sessions.find((s) => s.id === a.sessionId)!;
@@ -173,6 +184,11 @@ XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(r.sponsorReport.map((s
 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(units.map((u) => ({ DRH: u.name, Empresa: empName.get(u.accountId), Días: u.slots.length === 14 ? "26 y 27" : u.slots[0]?.startsWith(THU) ? "Solo 26" : u.slots.length ? "Solo 27" : "-", Selecciones: u.selections.length, "Matches mutuos": u.mutual.length, Asignadas: r.unitCount[u.id] ?? 0, "Seleccionadas pendientes": u.selections.length <= 6 ? u.selections.filter((s) => !r.assignments.some((a) => a.unitId === u.id && a.sponsorId === s)).map((s) => sName.get(s)).join(", ") : "" }))), "Por DRH");
 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(r.slotReport.map((s) => ({ Slot: s.slotId, Talk: s.talk ? "Sí" : "No", Presentes: s.present, Ocupados: s.occupied, Libres: s.free }))), "Por slot");
 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([...warnings.map((w) => ({ Tipo: "Aviso", Detalle: w })), ...r.issues.map((i) => ({ Tipo: "Incidencia", Detalle: `${uName.get(i.unitId ?? "") ?? ""} ${sName.get(i.sponsorId ?? "") ?? ""}: ${i.reason}` }))]), "Incidencias");
+const dup = new Map<string, number>();
+for (const a of r.assignments) { const k = `${units.find((u) => u.id === a.unitId)!.accountId}|${a.sponsorId}`; dup.set(k, (dup.get(k) ?? 0) + 1); }
+const dupRows = [...dup].filter(([, n]) => n > 1).map(([k, n]) => ({ Empresa: empName.get(k.split("|")[0]!), Solución: sName.get(k.split("|")[1]!), Veces: n }));
+console.log(`Duplicados empresa–solución: ${dupRows.length}`);
+XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dupRows.length ? dupRows : [{ Resultado: "0 duplicados empresa–solución (Consum cuenta como 1 sesión conjunta)" }]), "Auditoría exclusividad");
 const out = process.env.OUT ?? "/tmp/conectamos27h-reuniones.xlsx";
 XLSX.writeFile(wb, out); console.log("Informe:", out);
 

@@ -47,3 +47,22 @@ describe("planificador guiado", () => {
     expect(new Set(r.assignments.map((a) => a.slotId)).size).toBe(3);
   });
 });
+
+describe("reglas v18", () => {
+  const slots = [{ id: "s1", date: "d", start: "10:00", end: "10:15", talk: false }, { id: "s2", date: "d", start: "10:15", end: "10:30", talk: false }];
+  const sp = { accountId: "SP", name: "SP", tier: "GOLD" as const, guarantee: 5, tableCap: 3, reps: [{ userId: "r1", slots: ["s1", "s2"] }, { userId: "r2", slots: ["s1", "s2"] }] };
+  const many = ["SP", "x1", "x2", "x3", "x4", "x5", "x6"];
+  const unit = (id: string, acc: string) => ({ id, members: [id], accountId: acc, name: id, slots: ["s1", "s2"], selections: many, mutual: many, maxMeetings: 2 });
+  it("una empresa nunca ve dos veces al mismo sponsor aunque envíe dos DRH", () => {
+    const r = planMeetings({ slots, units: [unit("a", "ACC"), unit("b", "ACC")], sponsors: [sp], minFreeOnTalk: 0 });
+    expect(r.assignments.filter((x) => x.sponsorId === "SP")).toHaveLength(1);
+  });
+  it("el sponsor no se reúne con empresas vetadas", () => {
+    const r = planMeetings({ slots, units: [unit("a", "BAIN")], sponsors: [{ ...sp, vetoAccounts: ["BAIN"] }], minFreeOnTalk: 0 });
+    expect(r.assignments).toHaveLength(0);
+  });
+  it("con cupo limitado se atiende primero a la empresa prioritaria", () => {
+    const r = planMeetings({ slots: [slots[0]!], units: [unit("a", "A"), unit("b", "B")], sponsors: [{ ...sp, guarantee: 1, tableCap: 1, reps: [{ userId: "r1", slots: ["s1"] }], priorityAccounts: ["B"] }], minFreeOnTalk: 0 });
+    expect(r.assignments.map((x) => x.unitId)).toEqual(["b"]);
+  });
+});
