@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { X } from "lucide-react";
 import { toast } from "sonner";
-import { createMeeting, listAllParticipants } from "@/lib/admin-meetings.functions";
+import { createMeeting, listAllParticipants, getMeetingSlotAvailability } from "@/lib/admin-meetings.functions";
 
 type Responsable = { profile_id: string; full_name: string; role?: string | null; email?: string | null };
 type Party = { account_id: string; user_id: string | null; name: string; responsables: Responsable[] };
@@ -18,6 +18,9 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
   const [time, setTime] = useState("");
   const [room, setRoom] = useState("");
   const [busy, setBusy] = useState(false);
+  const avail = useServerFn(getMeetingSlotAvailability);
+  const [slots, setSlots] = useState<{ iso: string; free: boolean; reasons: string[]; suggested_room: string | null }[] | null>(null);
+  const [slotIso, setSlotIso] = useState("");
 
   useEffect(() => { list({ data: { event_id: eventId } }).then(setParts as any).catch(() => setParts({ empresas: [], sponsors: [] })); }, [eventId]);
 
@@ -28,6 +31,13 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
 
   useEffect(() => { setEmpResp(""); }, [empresa]);
   useEffect(() => { setSpResp(""); }, [sponsor]);
+  useEffect(() => {
+    setSlots(null); setSlotIso("");
+    if (!eventId || !empresa || !sponsor) return;
+    avail({ data: { event_id: eventId, empresa_account_id: empresa, sponsor_account_id: sponsor, empresa_user_id: empResp || null } })
+      .then((r: any) => setSlots(r.slots)).catch(() => setSlots([]));
+  }, [eventId, empresa, sponsor, empResp]);
+  const fmt = (iso: string) => new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 
   async function submit() {
     if (!empresa || !sponsor) return toast.error("Elige empresa y solución");
@@ -43,7 +53,7 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
         // If a responsable is chosen, the meeting belongs to that profile so it shows in their agenda
         empresa_user_id: empresaUserId,
         sponsor_user_id: sponsorUserId,
-        scheduled_time: time ? new Date(time).toISOString() : null,
+        scheduled_time: slotIso || (time ? new Date(time).toISOString() : null),
         room: room || null,
         empresa_responsable: ep ? { full_name: ep.full_name, role: ep.role ?? "", email: ep.email ?? "" } : null,
         sponsor_responsable: sp ? { full_name: sp.full_name, role: sp.role ?? "", email: sp.email ?? "" } : null,
@@ -93,9 +103,24 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
               </select>
             </Field>
           )}
+          {slots && slots.length > 0 && (
+            <Field label="Slot disponible">
+              <div className="grid grid-cols-2 gap-1.5 max-h-56 overflow-y-auto">
+                {slots.map((sl, i) => (
+                  <button key={sl.iso} type="button" disabled={!sl.free}
+                    onClick={() => { setSlotIso(sl.iso); setTime(""); if (sl.suggested_room) setRoom(sl.suggested_room); }}
+                    title={sl.reasons.join(" · ")}
+                    className={`rounded-md border px-2 py-1.5 text-left text-xs ${slotIso === sl.iso ? "border-primary bg-primary/15" : sl.free ? "border-border hover:border-primary" : "border-destructive/40 bg-destructive/10 opacity-60 cursor-not-allowed"}`}>
+                    <div className="font-bold">Slot {i + 1} · {fmt(sl.iso)}</div>
+                    <div className={sl.free ? "text-muted-foreground" : "text-destructive"}>{sl.free ? `Libre${sl.suggested_room ? ` · ${sl.suggested_room}` : ""}` : sl.reasons.join(" · ")}</div>
+                  </button>
+                ))}
+              </div>
+            </Field>
+          )}
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Hora (opcional)">
-              <input type="datetime-local" value={time} onChange={(e) => setTime(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm" />
+            <Field label={slots && slots.length ? "u otra hora (opcional)" : "Hora (opcional)"}>
+              <input type="datetime-local" value={time} onChange={(e) => { setTime(e.target.value); setSlotIso(""); }} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm" />
             </Field>
             <Field label="Mesa (opcional)">
               <input value={room} onChange={(e) => setRoom(e.target.value)} placeholder="Mesa 1" className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm" />
