@@ -24,22 +24,28 @@ const TALKS = [
   { id: "Talk D", slotIds: ["11:35", "11:50", "12:05"].map((t) => `${FRI} ${t}`) },
 ];
 const GUARANTEE: Record<string, [number, Sponsor["tier"]?, number?]> = {
-  "tti success insights": [11], "talentia": [10], "payfit": [10], "learning heroes": [10], "fermi casado": [11],
+  "tti success insights": [10], "talentia": [10], "payfit": [10], "learning heroes": [10], "fermi casado": [10],
   "marlex": [10], "happydonia": [20, "GOLD"], "job": [20, "GOLD"], "adp": [20, "GOLD"], "coaching": [20, "GOLD"],
   "vidext": [24, "PREMIUM"], "cloud": [20, "GOLD"], "tamigo": [14, "PREMIUM"], "vip district": [14, "PREMIUM"],
   "leeters": [20, "GOLD"], "clasing": [14, "PREMIUM"], "foxize": [15, "PREMIUM"], "hastee": [15, "PREMIUM"],
   "talentware": [15, "PREMIUM"], "wavveup": [10, undefined, 15], "beambassador": [10, undefined, 14],
-  "genera": [10], "kombo": [11],
+  "genera": [10], "kombo": [10],
 };
 const THU_ONLY = ["Albert Sala", "Bárbara Alós", "Imma Xampeny", "Mireia Marimon", "Sandra Dorado", "África Villar", "Laia Parellada", "Pilar Insua"];
-// v21: Daba Nespresso solo viernes 27 (llegada del 26 incierta)
-const FRI_FULL = ["Carlos Carriedo"];
-const ONLY_SPONSORS: Record<string, string[]> = { "Carlos Carriedo": ["job", "adp", "vidext"] };
+// v22: Daba Nespresso (Carlos Carriedo) 6 reuniones el jueves 26; el viernes 27 libre para Talks C y D
+const FRI_FULL: string[] = [];
+const ONLY_SPONSORS: Record<string, string[]> = {};
+// v22: soluciones que completan su garantía con empresas seleccionadas por ellas mismas
+const SPONSOR_FILL = ["leeters", "adp"];
+// v22: soluciones con garantía estricta (nunca más reuniones que las contratadas)
+const STRICT_CAP = ["kombo", "tti success insights", "fermi casado", "payfit", "leeters", "adp"];
+// v22: nº máximo de representantes por solución
+const MAX_REPS: Record<string, number> = { adp: 2 };
 // v21: mesas por solución y soluciones solo con match mutuo
-const TABLES: Record<string, number> = { marlex: 2, vidext: 3 };
-const MUTUAL_ONLY = ["vidext"];
+const TABLES: Record<string, number> = { marlex: 2, vidext: 3, adp: 2 };
+const MUTUAL_ONLY = ["vidext", "payfit"];
 const FRI_ONLY = ["Carolina Maniuc", "Alexi Choucha", "Ramón Amorós"];
-const THU_ONLY_EXACT6 = ["Andrea Varela", "Sonia Arceredillo"];
+const THU_ONLY_EXACT6 = ["Andrea Varela", "Sonia Arceredillo", "Carlos Carriedo"];
 // v20: Silvia Bueso-Inchausti fuera del matching automático (solo alta manual si confirma)
 const PENDING = ["Miquel Martí", "Jethro Cortés", "Nines Espejo", "Silvia Bueso"];
 const EXCLUDED_COMPANIES = ["relats"];
@@ -97,11 +103,12 @@ const findDrh = (n: string) => drh.find((p) => nameIs(p.full_name, n));
 const warnings: string[] = [];
 
 // Selecciones por cuenta
-const sel = new Map<string, Set<string>>(), back = new Map<string, Set<string>>();
+const sel = new Map<string, Set<string>>(), back = new Map<string, Set<string>>(), drhSel = new Set<string>();
 for (const l of likes) {
   const a = allAcc.get(l.from_user_id), b = allAcc.get(l.to_user_id); if (!a || !b) continue;
   if (empName.has(a) && spRow.has(b)) { if (!sel.has(a)) sel.set(a, new Set()); sel.get(a)!.add(b); }
   if (spRow.has(a) && empName.has(b)) { if (!back.has(b)) back.set(b, new Set()); back.get(b)!.add(a); }
+  if (empName.has(a) && spRow.has(b)) drhSel.add(`${a}|${b}`);
 }
 
 // Slots
@@ -117,9 +124,11 @@ const both = slots.map((s) => s.id);
 // Sponsors
 const sponsors: Sponsor[] = [];
 for (const s of sps) {
-  const myReps = reps.filter((r) => r.account_id === s.id); if (!myReps.length) continue;
+  const allReps = reps.filter((r) => r.account_id === s.id); if (!allReps.length) continue;
   const key = Object.keys(GUARANTEE).find((k) => norm(s.company_name).includes(k));
   if (!key) { warnings.push(`Solución sin garantía en la guía: ${s.company_name}`); continue; }
+  const myReps = MAX_REPS[key] ? allReps.slice(0, MAX_REPS[key]) : allReps;
+  if (myReps.length < allReps.length) warnings.push(`${s.company_name}: ${myReps.length} representantes usados (${myReps.map((r) => r.full_name).join(", ")})`);
   const [g, tierG, promo] = GUARANTEE[key]!;
   const lvl = String(s.sponsorship_level ?? "").toUpperCase();
   const tier = (tierG ?? (["PLATINUM", "GOLD", "PREMIUM", "STARTUP"].includes(lvl) ? lvl : "BASIC")) as Sponsor["tier"];
@@ -142,8 +151,9 @@ const spIds = new Set(sponsors.map((s) => s.accountId));
 const units: Unit[] = [];
 const used = new Set<string>();
 const mutualOnlyIds = new Set(MUTUAL_ONLY.map((k) => spKey(k)).filter(Boolean));
-const accSel = (acc: string) => [...(sel.get(acc) ?? [])].filter((x) => spIds.has(x) && (!mutualOnlyIds.has(x) || back.get(acc)?.has(x)));
-const accMut = (acc: string) => accSel(acc).filter((x) => back.get(acc)?.has(x));
+const fillIds = SPONSOR_FILL.map((k) => spKey(k)).filter((x): x is string => !!x);
+const accSel = (acc: string) => [...new Set([...(sel.get(acc) ?? []), ...fillIds.filter((f) => back.get(acc)?.has(f))])].filter((x) => spIds.has(x) && (!mutualOnlyIds.has(x) || back.get(acc)?.has(x)));
+const accMut = (acc: string) => accSel(acc).filter((x) => back.get(acc)?.has(x) && drhSel.has(`${acc}|${x}`));
 const jointPeople = JOINT.map(findDrh);
 if (jointPeople.every(Boolean)) {
   const acc = jointPeople[0]!.account_id;
@@ -187,6 +197,10 @@ const talkOf = new Map<string, string[]>();
 for (const [t, us] of tr.reserved) for (const u of us) talkOf.set(u, [...(talkOf.get(u) ?? []), t]);
 const r = planMeetings({ slots, units: tr.units, sponsors, fixed, minFreeOnTalk: 0, reoptTarget: REOPT_TARGET });
 r.issues.unshift(...tr.issues);
+for (const k of STRICT_CAP) { const rep = r.sponsorReport.find((x) => norm(x.name).includes(k)); if (rep && rep.participations !== rep.guarantee) throw new Error(`${rep.name}: ${rep.participations} reuniones, debe tener exactamente ${rep.guarantee}`); }
+{ const pf = spKey("payfit"); if (r.assignments.some((a) => a.sponsorId === pf && !a.mutual)) throw new Error("Payfit con reunión sin match mutuo"); }
+{ const c = findDrh("Carlos Carriedo"); if (c && r.assignments.some((a) => a.unitId === c.id && !a.slotId.startsWith(THU))) throw new Error("Carlos Carriedo con reunión el viernes"); }
+warnings.push("Carlos Carriedo (Daba Nespresso): viernes 27 sin reuniones para asistir a Talk C y Talk D");
 for (const t of TALKS) { const us = tr.reserved.get(t.id) ?? []; const clash = us.filter((u) => r.assignments.some((a) => a.unitId === u && t.slotIds.includes(a.slotId))); console.log(`${t.id}: ${us.length} DRH reservados, solapes=${clash.length}`); if (clash.length) throw new Error(`${t.id} con solapes`); }
 
 // ---------- Informe ----------
@@ -205,7 +219,7 @@ const KIND_LABEL: Record<string, string> = { FIJA: "Cita fija", SELECCION_DRH: "
 const wb = XLSX.utils.book_new();
 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(r.assignments.map((a) => {
   const sess = r.sessions.find((s) => s.id === a.sessionId)!;
-  return { Día: a.slotId.slice(0, 10), Hora: a.slotId.slice(11), Empresa: empName.get(units.find((u) => u.id === a.unitId)!.accountId), DRH: uName.get(a.unitId), Solución: sName.get(a.sponsorId), Representante: pName.get(sess.repUserId), Mesa: `${sName.get(a.sponsorId)} ${sess.table}`, Sesión: sess.units.length > 1 || a.unitId.includes("+") ? "Grupal" : "Individual", "Tipo match": a.mutual ? "Match mutuo" : "Selección DRH", Tipo: KIND_LABEL[a.kind] };
+  return { Día: a.slotId.slice(0, 10), Hora: a.slotId.slice(11), Empresa: empName.get(units.find((u) => u.id === a.unitId)!.accountId), DRH: uName.get(a.unitId), Solución: sName.get(a.sponsorId), Representante: pName.get(sess.repUserId), Mesa: `${sName.get(a.sponsorId)} ${sess.table}`, Sesión: sess.units.length > 1 || a.unitId.includes("+") ? "Grupal" : "Individual", "Tipo match": a.mutual ? "Match mutuo" : drhSel.has(`${units.find((u) => u.id === a.unitId)!.accountId}|${a.sponsorId}`) ? "Selección DRH" : "Selección solución", Tipo: KIND_LABEL[a.kind] };
 }).sort((x, y) => (x.Día + x.Hora + x.Solución).localeCompare(y.Día + y.Hora + y.Solución))), "Reuniones");
 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(r.sponsorReport.map((s) => ({ Solución: s.name, Categoría: s.tier, Garantía: s.guarantee, "Matches mutuos": s.mutualMatches, "Selecciones unilaterales DRH": s.unilateralSelections, Sesiones: s.sessions, "Participaciones DRH": s.participations, "Extras protección DRH": s.protectionExtras, "Extras promocionales": s.promoExtras, Déficit: s.deficit }))), "Por solución");
 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(units.map((u) => ({ DRH: u.name, Empresa: empName.get(u.accountId), Días: u.slots.length === 14 ? "26 y 27" : u.slots[0]?.startsWith(THU) ? "Solo 26" : u.slots.length ? "Solo 27" : "-", Selecciones: u.selections.length, "Matches mutuos": u.mutual.length, Asignadas: r.unitCount[u.id] ?? 0, Talks: (talkOf.get(u.id) ?? []).join(", "), "Seleccionadas pendientes": u.selections.length <= 6 ? u.selections.filter((s) => !r.assignments.some((a) => a.unitId === u.id && a.sponsorId === s)).map((s) => sName.get(s)).join(", ") : "" }))), "Por DRH");
@@ -232,7 +246,7 @@ if (APPLY) {
       event_id: EVENT, empresa_user_id: m, sponsor_user_id: sess.repUserId, empresa_account_id: u.accountId, sponsor_account_id: a.sponsorId,
       scheduled_time: madrid(slot.date, slot.start), duration_minutes: 15, room: `${sName.get(a.sponsorId)} · Mesa ${sess.table}`,
       slot: slot.start, bloque: slot.date === THU ? "18:15–19:45" : "10:50–12:50", tipo_sponsor: sponsors.find((s) => s.accountId === a.sponsorId)!.tier,
-      tipo_match: a.mutual ? "Match mutuo" : "Selección DRH", status: "confirmed",
+      tipo_match: a.mutual ? "Match mutuo" : drhSel.has(`${units.find((u) => u.id === a.unitId)!.accountId}|${a.sponsorId}`) ? "Selección DRH" : "Selección solución", status: "confirmed",
       notes: [KIND_LABEL[a.kind], group ? `Sesión grupal ${sess.id}` : null].filter(Boolean).join(" · "),
       empresa_responsable: resp(m), sponsor_responsable: resp(sess.repUserId),
     }));
