@@ -231,3 +231,34 @@ export function planMeetings(input: PlanInput) {
   const slotReport = input.slots.map((s) => ({ slotId: s.id, talk: s.talk, present: presentBySlot.get(s.id) ?? 0, occupied: occupiedBySlot.get(s.id) ?? 0, free: (presentBySlot.get(s.id) ?? 0) - (occupiedBySlot.get(s.id) ?? 0) }));
   return { sessions, assignments, issues, sponsorReport, slotReport, unitCount: Object.fromEntries(unitCount) };
 }
+
+/**
+ * v19: reserva íntegra de Talks. Asigna al menos `perTalk` DRH distintos a cada Talk y bloquea
+ * sus slots completos (se eliminan de su disponibilidad). Un DRH va como máximo a un Talk por día.
+ * Prioriza DRH con más slots libres y no reserva unidades exactas ni sesiones conjuntas.
+ */
+export type TalkDef = { id: string; slotIds: string[] };
+export function reserveTalks(units: Unit[], talks: TalkDef[], perTalk: number, eligible: (u: Unit) => boolean) {
+  const reserved = new Map<string, string[]>();
+  const dayOf = (s: string) => s.slice(0, 10);
+  const used = new Map<string, Set<string>>(); // unit -> días ya con Talk
+  const issues: Issue[] = [];
+  const ok = new Set(units.filter(eligible).map((u) => u.id));
+  const out = units.map((u) => ({ ...u, slots: [...u.slots] }));
+  for (const t of talks) {
+    const day = dayOf(t.slotIds[0]!);
+    const cands = out
+      .filter((u) => u.members.length === 1 && !u.exactSlots && ok.has(u.id) && t.slotIds.every((s) => u.slots.includes(s)) && !used.get(u.id)?.has(day))
+      .filter((u) => u.slots.length - t.slotIds.length >= Math.min(u.maxMeetings, u.selections.length))
+      .sort((a, b) => (used.get(a.id)?.size ?? 0) - (used.get(b.id)?.size ?? 0) || b.slots.length - a.slots.length || a.id.localeCompare(b.id));
+    const pick = cands.slice(0, perTalk);
+    if (pick.length < perTalk) issues.push({ reason: `Talk ${t.id}: solo ${pick.length} DRH reservables (mínimo ${perTalk})` });
+    for (const u of pick) {
+      u.slots = u.slots.filter((s) => !t.slotIds.includes(s));
+      if (!used.has(u.id)) used.set(u.id, new Set());
+      used.get(u.id)!.add(day);
+    }
+    reserved.set(t.id, pick.map((u) => u.id));
+  }
+  return { units: out, reserved, issues };
+}

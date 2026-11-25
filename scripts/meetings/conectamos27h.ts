@@ -1,11 +1,11 @@
 /**
- * Genera el borrador de reuniones 1to1 de «Conectamos 27h» según la Guía técnica v18,
+ * Genera el borrador de reuniones 1to1 de «Conectamos 27h» según la Guía técnica v20,
  * usando el planificador puro src/lib/guided-meeting-planner.ts.
  * Uso: bun scripts/meetings/conectamos27h.ts            (simulación + informe, no escribe)
  *      bun scripts/meetings/conectamos27h.ts --apply    (reemplaza reuniones del evento; quedan en borrador)
  * Para otro evento: copiar este archivo y cambiar la sección CONFIG.
  */
-import { planMeetings, type PSlot, type Unit, type Sponsor } from "../../src/lib/guided-meeting-planner";
+import { planMeetings, reserveTalks, type PSlot, type Unit, type Sponsor } from "../../src/lib/guided-meeting-planner";
 import * as XLSX from "xlsx";
 
 // ======================= CONFIG =======================
@@ -15,7 +15,14 @@ const SLOT_TIMES: [string, string[], [string, string][]][] = [
   [THU, ["18:15", "18:30", "18:45", "19:00", "19:15", "19:30"], [["18:15", "19:45"]]],
   [FRI, ["10:50", "11:05", "11:20", "11:35", "11:50", "12:05", "12:20", "12:35"], [["10:50", "12:20"]]],
 ];
-const MIN_FREE_TALK = 25;
+// v19: 20 DRH reservados durante los 45 min completos de cada Talk (sustituye "25 libres por slot")
+const TALK_MIN = 20;
+const TALKS = [
+  { id: "Talk A", slotIds: ["18:15", "18:30", "18:45"].map((t) => `${THU} ${t}`) },
+  { id: "Talk B", slotIds: ["19:00", "19:15", "19:30"].map((t) => `${THU} ${t}`) },
+  { id: "Talk C", slotIds: ["10:50", "11:05", "11:20"].map((t) => `${FRI} ${t}`) },
+  { id: "Talk D", slotIds: ["11:35", "11:50", "12:05"].map((t) => `${FRI} ${t}`) },
+];
 const GUARANTEE: Record<string, [number, Sponsor["tier"]?, number?]> = {
   "tti success insights": [10], "talentia": [10], "payfit": [10], "learning heroes": [10], "fermi casado": [10],
   "marlex": [10], "happydonia": [20, "GOLD"], "job": [20, "GOLD"], "adp": [20, "GOLD"], "coaching": [20, "GOLD"],
@@ -27,7 +34,8 @@ const GUARANTEE: Record<string, [number, Sponsor["tier"]?, number?]> = {
 const THU_ONLY = ["Albert Sala", "Bárbara Alós", "Imma Xampeny", "Mireia Marimon", "Sandra Dorado", "África Villar", "Laia Parellada"];
 const FRI_ONLY = ["Carolina Maniuc", "Alexi Choucha", "Ramón Amorós"];
 const THU_ONLY_EXACT6 = ["Andrea Varela", "Sonia Arceredillo"];
-const PENDING = ["Miquel Martí", "Jethro Cortés", "Nines Espejo"];
+// v20: Silvia Bueso-Inchausti fuera del matching automático (solo alta manual si confirma)
+const PENDING = ["Miquel Martí", "Jethro Cortés", "Nines Espejo", "Silvia Bueso"];
 const EXCLUDED_COMPANIES = ["relats"];
 const VETOES: Record<string, string[]> = { "Miguel Núñez": ["adp", "payfit", "talentia"] };
 const MIN4 = ["Arantxa Martínez", "Àurea Benito"];
@@ -134,6 +142,7 @@ if (jointPeople.every(Boolean)) {
   units.push({ id: jointPeople.map((p) => p!.id).join("+"), members: jointPeople.map((p) => p!.id), accountId: acc, name: JOINT.join(" + "), slots: daySlots(THU), selections: accSel(acc), mutual: accMut(acc), maxMeetings: 6, exactSlots: true });
   jointPeople.forEach((p) => used.add(p!.id));
 } else warnings.push("No se encontraron Bárbara Alós y/o África Villar");
+let thuAlt = 1;
 // easyJet: reparte selecciones de la cuenta, mismo grupo sin repetir sponsor
 for (const p of drh) {
   if (used.has(p.id)) continue;
@@ -142,8 +151,9 @@ for (const p of drh) {
   if (is(PENDING)) { warnings.push(`Pendiente/baja, sin reuniones: ${n}`); continue; }
   const acc = p.account_id;
   let av = both, max = 8, exact = false;
-  if (is(THU_ONLY)) { av = daySlots(THU); max = 4; }
-  if (is(FRI_ONLY)) { av = daySlots(FRI); max = 4; }
+  // v19: un solo día con 4 citas → 4 slots consecutivos al inicio o al final (viernes: final, deja Talk C completo)
+  if (is(THU_ONLY)) { const d = daySlots(THU); av = (thuAlt++ % 2 === 0) ? d.slice(0, 4) : d.slice(-4); max = 4; }
+  if (is(FRI_ONLY)) { av = nameIs(n, "Ramón Amorós") ? daySlots(FRI) : daySlots(FRI).slice(-4); max = 4; }
   if (is(THU_ONLY_EXACT6)) { av = daySlots(THU); max = 6; exact = true; }
   const s = accSel(acc);
   if (s.length <= 6 && s.length > max) max = Math.min(s.length, av.length);
@@ -160,7 +170,13 @@ for (const p of drh) {
 for (const n of [...THU_ONLY, ...FRI_ONLY, ...THU_ONLY_EXACT6, ...MIN4, ...Object.keys(VETOES)]) if (!findDrh(n)) warnings.push(`Persona de la guía no encontrada entre las inscritas: ${n}`);
 const fixed = FIXED.map((f) => ({ unitId: findDrh(f.name)?.id ?? "?", sponsorId: spKey(f.sponsor) ?? "?", slotId: f.slot }));
 
-const r = planMeetings({ slots, units, sponsors, fixed, minFreeOnTalk: MIN_FREE_TALK, reoptTarget: REOPT_TARGET });
+const twoDay = (u: Unit) => u.slots.length === slots.length;
+const tr = reserveTalks(units, TALKS, TALK_MIN, twoDay);
+const talkOf = new Map<string, string[]>();
+for (const [t, us] of tr.reserved) for (const u of us) talkOf.set(u, [...(talkOf.get(u) ?? []), t]);
+const r = planMeetings({ slots, units: tr.units, sponsors, fixed, minFreeOnTalk: 0, reoptTarget: REOPT_TARGET });
+r.issues.unshift(...tr.issues);
+for (const t of TALKS) { const us = tr.reserved.get(t.id) ?? []; const clash = us.filter((u) => r.assignments.some((a) => a.unitId === u && t.slotIds.includes(a.slotId))); console.log(`${t.id}: ${us.length} DRH reservados, solapes=${clash.length}`); if (clash.length) throw new Error(`${t.id} con solapes`); }
 
 // ---------- Informe ----------
 const uName = new Map(units.map((u) => [u.id, u.name])), sName = new Map(sponsors.map((s) => [s.accountId, s.name]));
@@ -181,7 +197,8 @@ XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(r.assignments.map((a) 
   return { Día: a.slotId.slice(0, 10), Hora: a.slotId.slice(11), Empresa: empName.get(units.find((u) => u.id === a.unitId)!.accountId), DRH: uName.get(a.unitId), Solución: sName.get(a.sponsorId), Representante: pName.get(sess.repUserId), Mesa: `${sName.get(a.sponsorId)} ${sess.table}`, Sesión: sess.units.length > 1 || a.unitId.includes("+") ? "Grupal" : "Individual", "Tipo match": a.mutual ? "Match mutuo" : "Selección DRH", Tipo: KIND_LABEL[a.kind] };
 }).sort((x, y) => (x.Día + x.Hora + x.Solución).localeCompare(y.Día + y.Hora + y.Solución))), "Reuniones");
 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(r.sponsorReport.map((s) => ({ Solución: s.name, Categoría: s.tier, Garantía: s.guarantee, "Matches mutuos": s.mutualMatches, "Selecciones unilaterales DRH": s.unilateralSelections, Sesiones: s.sessions, "Participaciones DRH": s.participations, "Extras protección DRH": s.protectionExtras, "Extras promocionales": s.promoExtras, Déficit: s.deficit }))), "Por solución");
-XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(units.map((u) => ({ DRH: u.name, Empresa: empName.get(u.accountId), Días: u.slots.length === 14 ? "26 y 27" : u.slots[0]?.startsWith(THU) ? "Solo 26" : u.slots.length ? "Solo 27" : "-", Selecciones: u.selections.length, "Matches mutuos": u.mutual.length, Asignadas: r.unitCount[u.id] ?? 0, "Seleccionadas pendientes": u.selections.length <= 6 ? u.selections.filter((s) => !r.assignments.some((a) => a.unitId === u.id && a.sponsorId === s)).map((s) => sName.get(s)).join(", ") : "" }))), "Por DRH");
+XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(units.map((u) => ({ DRH: u.name, Empresa: empName.get(u.accountId), Días: u.slots.length === 14 ? "26 y 27" : u.slots[0]?.startsWith(THU) ? "Solo 26" : u.slots.length ? "Solo 27" : "-", Selecciones: u.selections.length, "Matches mutuos": u.mutual.length, Asignadas: r.unitCount[u.id] ?? 0, Talks: (talkOf.get(u.id) ?? []).join(", "), "Seleccionadas pendientes": u.selections.length <= 6 ? u.selections.filter((s) => !r.assignments.some((a) => a.unitId === u.id && a.sponsorId === s)).map((s) => sName.get(s)).join(", ") : "" }))), "Por DRH");
+XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(TALKS.flatMap((t) => (tr.reserved.get(t.id) ?? []).map((u) => ({ Talk: t.id, Inicio: t.slotIds[0], DRH: uName.get(u), Empresa: empName.get(units.find((x) => x.id === u)!.accountId) })))), "Talks reservados");
 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(r.slotReport.map((s) => ({ Slot: s.slotId, Talk: s.talk ? "Sí" : "No", Presentes: s.present, Ocupados: s.occupied, Libres: s.free }))), "Por slot");
 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([...warnings.map((w) => ({ Tipo: "Aviso", Detalle: w })), ...r.issues.map((i) => ({ Tipo: "Incidencia", Detalle: `${uName.get(i.unitId ?? "") ?? ""} ${sName.get(i.sponsorId ?? "") ?? ""}: ${i.reason}` }))]), "Incidencias");
 const dup = new Map<string, number>();
