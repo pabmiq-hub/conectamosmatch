@@ -24,14 +24,20 @@ const TALKS = [
   { id: "Talk D", slotIds: ["11:35", "11:50", "12:05"].map((t) => `${FRI} ${t}`) },
 ];
 const GUARANTEE: Record<string, [number, Sponsor["tier"]?, number?]> = {
-  "tti success insights": [10], "talentia": [10], "payfit": [10], "learning heroes": [10], "fermi casado": [10],
+  "tti success insights": [11], "talentia": [10], "payfit": [10], "learning heroes": [10], "fermi casado": [11],
   "marlex": [10], "happydonia": [20, "GOLD"], "job": [20, "GOLD"], "adp": [20, "GOLD"], "coaching": [20, "GOLD"],
-  "vidext": [14, "PREMIUM"], "cloud": [20, "GOLD"], "tamigo": [14, "PREMIUM"], "vip district": [14, "PREMIUM"],
-  "leeters": [20, "GOLD"], "clasing": [14, "PREMIUM"], "foxize": [14, "PREMIUM"], "hastee": [14, "PREMIUM"],
-  "talentware": [14, "PREMIUM"], "wavveup": [10, undefined, 15], "beambassador": [10, undefined, 14],
-  "genera": [10], "kombo": [10],
+  "vidext": [24, "PREMIUM"], "cloud": [20, "GOLD"], "tamigo": [14, "PREMIUM"], "vip district": [14, "PREMIUM"],
+  "leeters": [20, "GOLD"], "clasing": [14, "PREMIUM"], "foxize": [15, "PREMIUM"], "hastee": [15, "PREMIUM"],
+  "talentware": [15, "PREMIUM"], "wavveup": [10, undefined, 15], "beambassador": [10, undefined, 14],
+  "genera": [10], "kombo": [11],
 };
-const THU_ONLY = ["Albert Sala", "Bárbara Alós", "Imma Xampeny", "Mireia Marimon", "Sandra Dorado", "África Villar", "Laia Parellada"];
+const THU_ONLY = ["Albert Sala", "Bárbara Alós", "Imma Xampeny", "Mireia Marimon", "Sandra Dorado", "África Villar", "Laia Parellada", "Pilar Insua"];
+// v21: Daba Nespresso solo viernes 27 (llegada del 26 incierta)
+const FRI_FULL = ["Carlos Carriedo"];
+const ONLY_SPONSORS: Record<string, string[]> = { "Carlos Carriedo": ["job", "adp", "vidext"] };
+// v21: mesas por solución y soluciones solo con match mutuo
+const TABLES: Record<string, number> = { marlex: 2, vidext: 3 };
+const MUTUAL_ONLY = ["vidext"];
 const FRI_ONLY = ["Carolina Maniuc", "Alexi Choucha", "Ramón Amorós"];
 const THU_ONLY_EXACT6 = ["Andrea Varela", "Sonia Arceredillo"];
 // v20: Silvia Bueso-Inchausti fuera del matching automático (solo alta manual si confirma)
@@ -53,6 +59,7 @@ const PRIORITIES: Record<string, string[]> = {
   "tti success insights": ["fribin", "paraguas", "menarini", "mattel", "atresmedia", "isdin", "werfoods", "garmin", "bain", "neural", "zest"],
 };
 const REOPT_TARGET = 6;
+const GOLD_MAX_DRH = 8; // v21: DRH que eligen Gold deficitarias pueden llegar a 7-8
 // ======================================================
 
 const APPLY = process.argv.includes("--apply");
@@ -120,7 +127,7 @@ for (const s of sps) {
   const isW = key === "wavveup", isL = key === "leeters";
   sponsors.push({
     accountId: s.id, name: s.company_name, tier, guarantee: g, promoTarget: promo,
-    tableCap: isL ? 1 : isW ? Math.max(cap, WAVVEUEP_THU_TABLES) : cap,
+    tableCap: isL ? 1 : isW ? Math.max(cap, WAVVEUEP_THU_TABLES) : TABLES[key] ?? cap,
     reps: myReps.map((r, i) => ({ userId: r.id, slots: isW && i > 0 ? daySlots(THU) : both })),
     groupSlots: isL ? LEETERS_GROUP_SLOTS : undefined,
     priorityAccounts: (PRIORITIES[key] ?? []).map((k) => { const hit = emps.find((e) => norm(e.company_name).includes(k)); if (!hit) warnings.push(`Prioridad de ${s.company_name} no encontrada: ${k}`); return hit?.id; }).filter((x): x is string => !!x),
@@ -134,7 +141,8 @@ const spIds = new Set(sponsors.map((s) => s.accountId));
 // Unidades DRH
 const units: Unit[] = [];
 const used = new Set<string>();
-const accSel = (acc: string) => [...(sel.get(acc) ?? [])].filter((x) => spIds.has(x));
+const mutualOnlyIds = new Set(MUTUAL_ONLY.map((k) => spKey(k)).filter(Boolean));
+const accSel = (acc: string) => [...(sel.get(acc) ?? [])].filter((x) => spIds.has(x) && (!mutualOnlyIds.has(x) || back.get(acc)?.has(x)));
 const accMut = (acc: string) => accSel(acc).filter((x) => back.get(acc)?.has(x));
 const jointPeople = JOINT.map(findDrh);
 if (jointPeople.every(Boolean)) {
@@ -154,14 +162,17 @@ for (const p of drh) {
   // v19: un solo día con 4 citas → 4 slots consecutivos al inicio o al final (viernes: final, deja Talk C completo)
   if (is(THU_ONLY)) { const d = daySlots(THU); av = (thuAlt++ % 2 === 0) ? d.slice(0, 4) : d.slice(-4); max = 4; }
   if (is(FRI_ONLY)) { av = nameIs(n, "Ramón Amorós") ? daySlots(FRI) : daySlots(FRI).slice(-4); max = 4; }
+  if (is(FRI_FULL)) { av = daySlots(FRI); max = 3; }
   if (is(THU_ONLY_EXACT6)) { av = daySlots(THU); max = 6; exact = true; }
-  const s = accSel(acc);
+  const onlyKey = Object.keys(ONLY_SPONSORS).find((k) => nameIs(n, k));
+  const onlyIds = onlyKey ? ONLY_SPONSORS[onlyKey]!.map(spKey) : null;
+  const s = accSel(acc).filter((x) => !onlyIds || onlyIds.includes(x));
   if (s.length <= 6 && s.length > max) max = Math.min(s.length, av.length);
   const isDis = is(DISJOINT.names);
   if (isDis) max = DISJOINT.max;
   const vetoKey = Object.keys(VETOES).find((k) => nameIs(n, k));
   units.push({
-    id: p.id, members: [p.id], accountId: acc, name: n, slots: av, selections: s, mutual: accMut(acc), maxMeetings: max, exactSlots: exact,
+    id: p.id, members: [p.id], accountId: acc, name: n, slots: av, selections: s, mutual: accMut(acc).filter((x) => !onlyIds || onlyIds.includes(x)), maxMeetings: max, exactSlots: exact,
     vetoes: vetoKey ? VETOES[vetoKey]!.map(spKey).filter((x): x is string => !!x) : undefined,
     minMeetings: is(MIN4) || isDis ? 4 : undefined, disjointGroup: isDis ? DISJOINT.group : undefined,
   });
