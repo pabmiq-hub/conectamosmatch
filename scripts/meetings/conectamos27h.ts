@@ -234,6 +234,11 @@ for (const a of r.assignments) { const k = `${units.find((u) => u.id === a.unitI
 const dupRows = [...dup].filter(([, n]) => n > 1).map(([k, n]) => ({ Empresa: empName.get(k.split("|")[0]!), Solución: sName.get(k.split("|")[1]!), Veces: n }));
 console.log(`Duplicados empresa–solución: ${dupRows.length}`);
 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dupRows.length ? dupRows : [{ Resultado: "0 duplicados empresa–solución (Consum cuenta como 1 sesión conjunta)" }]), "Auditoría exclusividad");
+{
+  const fs = await import("node:fs");
+  const talksJson = { eventId: EVENT, generatedAt: new Date().toISOString(), talks: TALKS.map((t) => ({ id: t.id, date: t.slotIds[0]!.slice(0, 10), start: t.slotIds[0]!.slice(11), end: (() => { const l = slots.find((s) => s.id === t.slotIds[t.slotIds.length - 1])!; return l.end; })(), people: (tr.reserved.get(t.id) ?? []).map((u) => ({ name: uName.get(u) ?? "", empresa: empName.get(units.find((x) => x.id === u)!.accountId) ?? "" })).sort((a, b) => a.name.localeCompare(b.name, "es")) })) };
+  if (APPLY || process.env.WRITE_TALKS) fs.writeFileSync("src/data/talks-conectamos27h.json", JSON.stringify(talksJson, null, 2));
+}
 const out = process.env.OUT ?? "/tmp/conectamos27h-reuniones.xlsx";
 XLSX.writeFile(wb, out); console.log("Informe:", out);
 

@@ -1,0 +1,358 @@
+{
+  "eventId": "b07b2f16-fb8a-4ae6-b655-a62606c2dde3",
+  "generatedAt": "2026-11-25T16:03:26.378Z",
+  "talks": [
+    {
+      "id": "Talk A",
+      "date": "2026-11-26",
+      "start": "18:15",
+      "end": "19:00",
+      "people": [
+        {
+          "name": "Álvaro Benavente Cabello",
+          "empresa": "Santander Alternative Investments"
+        },
+        {
+          "name": "Arantxa Martínez García",
+          "empresa": "ISDIN"
+        },
+        {
+          "name": "Àurea Benito",
+          "empresa": "ISDIN"
+        },
+        {
+          "name": "Begoña Dominguez",
+          "empresa": "Adevinta"
+        },
+        {
+          "name": "Claudia Ortiz",
+          "empresa": "Cognita Schools"
+        },
+        {
+          "name": "Cristina Rodriguez",
+          "empresa": "DKV SEGUROS"
+        },
+        {
+          "name": "Dinorah Hurtado",
+          "empresa": "Endesa"
+        },
+        {
+          "name": "Erika Adais Narvaéz Rojas",
+          "empresa": "Samu"
+        },
+        {
+          "name": "Esther Comabella",
+          "empresa": "Renishaw"
+        },
+        {
+          "name": "Esther Martin",
+          "empresa": "Hospital Olot"
+        },
+        {
+          "name": "Esther Ovejero",
+          "empresa": "ZEST Hotel & Resort Ibiza"
+        },
+        {
+          "name": "Fidel Alonso-Allende",
+          "empresa": "Universidad de Navarra"
+        },
+        {
+          "name": "Gemma Solé",
+          "empresa": "CET10"
+        },
+        {
+          "name": "Isabel Martínez",
+          "empresa": "Magnera"
+        },
+        {
+          "name": "Laia Pérez Hernández",
+          "empresa": "Bosch Service Solutions S.A.U"
+        },
+        {
+          "name": "Mariel Calabuig Sancho",
+          "empresa": "Neural  Health Group"
+        },
+        {
+          "name": "Miquel Magrinyà",
+          "empresa": "Optica Universitaria"
+        },
+        {
+          "name": "Raúl Gomez",
+          "empresa": "Grupo Paraguas"
+        },
+        {
+          "name": "Roberto Azanza",
+          "empresa": "LINDE WIEMANN"
+        },
+        {
+          "name": "Santiago Gato Garcia",
+          "empresa": "FCC Medio Ambiente, S.A."
+        }
+      ]
+    },
+    {
+      "id": "Talk B",
+      "date": "2026-11-26",
+      "start": "19:00",
+      "end": "19:45",
+      "people": [
+        {
+          "name": "Alba Medina",
+          "empresa": "Job&Talent"
+        },
+        {
+          "name": "Alexandre Gonzalez",
+          "empresa": "Taurus Group"
+        },
+        {
+          "name": "Aroa Gil Moreno",
+          "empresa": "Club Atlético de Madrid"
+        },
+        {
+          "name": "Clotilde Teson",
+          "empresa": "DRAXTON"
+        },
+        {
+          "name": "Georgina Mayol",
+          "empresa": "Europastry"
+        },
+        {
+          "name": "Imma Bardes",
+          "empresa": "Kantar"
+        },
+        {
+          "name": "Jennifer Rodríguez Pernia",
+          "empresa": "SANI IKOS"
+        },
+        {
+          "name": "Jessica Bendel",
+          "empresa": "Ingram Micro"
+        },
+        {
+          "name": "Mari Pau Gómez",
+          "empresa": "torraspapel SA"
+        },
+        {
+          "name": "María de la Peña",
+          "empresa": "Atresmedia"
+        },
+        {
+          "name": "Mercedes Moreno",
+          "empresa": "Arabella Hospitality España"
+        },
+        {
+          "name": "Miguel Núñez",
+          "empresa": "Laboratorios Menarini"
+        },
+        {
+          "name": "Miquel Navarro",
+          "empresa": "Solucioning Group Spain, SL"
+        },
+        {
+          "name": "Pàola Manén Borrull",
+          "empresa": "Garmin"
+        },
+        {
+          "name": "Paola Morán",
+          "empresa": "TEDi Comercio, S.L.U"
+        },
+        {
+          "name": "Rocío Capel",
+          "empresa": "Casa del Libro"
+        },
+        {
+          "name": "Rosana Gonzalez",
+          "empresa": "Selecta"
+        },
+        {
+          "name": "Thais Souza",
+          "empresa": "Mattel"
+        },
+        {
+          "name": "Thalía Penagos",
+          "empresa": "IPC"
+        },
+        {
+          "name": "Xavier Matute Crespo",
+          "empresa": "FRIBIN FOODS SL"
+        }
+      ]
+    },
+    {
+      "id": "Talk C",
+      "date": "2026-11-27",
+      "start": "10:50",
+      "end": "11:35",
+      "people": [
+        {
+          "name": "Álvaro Benavente Cabello",
+          "empresa": "Santander Alternative Investments"
+        },
+        {
+          "name": "Arantxa Martínez García",
+          "empresa": "ISDIN"
+        },
+        {
+          "name": "Àurea Benito",
+          "empresa": "ISDIN"
+        },
+        {
+          "name": "Begoña Dominguez",
+          "empresa": "Adevinta"
+        },
+        {
+          "name": "Cristina Rodriguez",
+          "empresa": "DKV SEGUROS"
+        },
+        {
+          "name": "Dinorah Hurtado",
+          "empresa": "Endesa"
+        },
+        {
+          "name": "Emili Sánchez",
+          "empresa": "weRfoods"
+        },
+        {
+          "name": "Esther Martin",
+          "empresa": "Hospital Olot"
+        },
+        {
+          "name": "Esther Ovejero",
+          "empresa": "ZEST Hotel & Resort Ibiza"
+        },
+        {
+          "name": "Esther Villarreal",
+          "empresa": "Attindas"
+        },
+        {
+          "name": "Fayna Perez",
+          "empresa": "Humaneva Group"
+        },
+        {
+          "name": "Fidel Alonso-Allende",
+          "empresa": "Universidad de Navarra"
+        },
+        {
+          "name": "Gemma Solé",
+          "empresa": "CET10"
+        },
+        {
+          "name": "Isabel Martínez",
+          "empresa": "Magnera"
+        },
+        {
+          "name": "Mariel Calabuig Sancho",
+          "empresa": "Neural  Health Group"
+        },
+        {
+          "name": "Miquel Magrinyà",
+          "empresa": "Optica Universitaria"
+        },
+        {
+          "name": "Patricia Casares",
+          "empresa": "Médicos sin fronteras"
+        },
+        {
+          "name": "Raúl Gomez",
+          "empresa": "Grupo Paraguas"
+        },
+        {
+          "name": "Roberto Azanza",
+          "empresa": "LINDE WIEMANN"
+        },
+        {
+          "name": "Santiago Gato Garcia",
+          "empresa": "FCC Medio Ambiente, S.A."
+        }
+      ]
+    },
+    {
+      "id": "Talk D",
+      "date": "2026-11-27",
+      "start": "11:35",
+      "end": "12:20",
+      "people": [
+        {
+          "name": "Alba Medina",
+          "empresa": "Job&Talent"
+        },
+        {
+          "name": "Alexandre Gonzalez",
+          "empresa": "Taurus Group"
+        },
+        {
+          "name": "Aroa Gil Moreno",
+          "empresa": "Club Atlético de Madrid"
+        },
+        {
+          "name": "Claudia Ortiz",
+          "empresa": "Cognita Schools"
+        },
+        {
+          "name": "Clotilde Teson",
+          "empresa": "DRAXTON"
+        },
+        {
+          "name": "Erika Adais Narvaéz Rojas",
+          "empresa": "Samu"
+        },
+        {
+          "name": "Esther Comabella",
+          "empresa": "Renishaw"
+        },
+        {
+          "name": "Imma Bardes",
+          "empresa": "Kantar"
+        },
+        {
+          "name": "Jennifer Rodríguez Pernia",
+          "empresa": "SANI IKOS"
+        },
+        {
+          "name": "Jessica Bendel",
+          "empresa": "Ingram Micro"
+        },
+        {
+          "name": "Laia Pérez Hernández",
+          "empresa": "Bosch Service Solutions S.A.U"
+        },
+        {
+          "name": "Mari Pau Gómez",
+          "empresa": "torraspapel SA"
+        },
+        {
+          "name": "Miquel Navarro",
+          "empresa": "Solucioning Group Spain, SL"
+        },
+        {
+          "name": "Pàola Manén Borrull",
+          "empresa": "Garmin"
+        },
+        {
+          "name": "Paola Morán",
+          "empresa": "TEDi Comercio, S.L.U"
+        },
+        {
+          "name": "Rocío Capel",
+          "empresa": "Casa del Libro"
+        },
+        {
+          "name": "Rosana Gonzalez",
+          "empresa": "Selecta"
+        },
+        {
+          "name": "Thais Souza",
+          "empresa": "Mattel"
+        },
+        {
+          "name": "Thalía Penagos",
+          "empresa": "IPC"
+        },
+        {
+          "name": "Xavier Matute Crespo",
+          "empresa": "FRIBIN FOODS SL"
+        }
+      ]
+    }
+  ]
+}

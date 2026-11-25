@@ -14,6 +14,7 @@ import { listAgenda } from "@/lib/admin-agenda.functions";
 import { CreateMeetingModal } from "@/components/admin/CreateMeetingModal";
 import { ImportMeetingsModal } from "@/components/admin/ImportMeetingsModal";
 import { GenerateMeetingsModal } from "@/components/admin/GenerateMeetingsModal";
+import { TalksPanel } from "@/components/admin/TalksPanel";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -83,6 +84,7 @@ function AdminReuniones() {
   const [pendingExport, setPendingExport] = useState<"excel" | "pdf" | null>(null);
   const [showAvailability, setShowAvailability] = useState(false);
   const [agendaItems, setAgendaItems] = useState<any[]>([]);
+  const [tab, setTab] = useState<"reuniones" | "talks">("reuniones");
 
   // Filters
   const [empresaFilter, setEmpresaFilter] = useState<string>("");
@@ -370,6 +372,13 @@ function AdminReuniones() {
         />
       )}
 
+      <div className="flex gap-2">
+        {([["reuniones", "Reuniones 1to1"], ["talks", "Personas en Talks"]] as const).map(([k, l]) => (
+          <button key={k} onClick={() => setTab(k)} className={`rounded-full border px-4 py-1.5 text-xs font-bold text-uppercase-wide ${tab === k ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-muted"}`}>{l}</button>
+        ))}
+      </div>
+
+      {tab === "talks" ? <TalksPanel eventId={eventId || null} /> : <>
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-3">
         <span className="rounded-md border border-primary/40 bg-primary/5 px-3 py-1.5 text-xs font-bold text-primary">{events.find((e) => e.id === eventId)?.title ?? "Sin evento"}</span>
@@ -394,6 +403,7 @@ function AdminReuniones() {
       ) : (
         <FlatMeetingsTable rows={filtered} windows={agendaItems} onUpdate={upd} onDelete={del} reload={load} />
       )}
+      </>}
     </div>
   );
 }
