@@ -43,6 +43,9 @@ const STRICT_CAP = ["kombo", "tti success insights", "fermi casado", "payfit", "
 const MAX_REPS: Record<string, number> = { adp: 2 };
 // v21: mesas por solución y soluciones solo con match mutuo
 const TABLES: Record<string, number> = { marlex: 2, vidext: 3, adp: 2 };
+// Disposición física de mesas (Excel «Mesas_número»): mesa k de cada solución → número real
+const TABLE_NUMBERS: [string, number[]][] = [["tti",[1]],["talentia",[2]],["payfit",[3,4]],["learning heroes",[5]],["fermi",[6]],["marlex",[7,8]],["happydonia",[9,10,11]],["job",[12,13,14]],["adp",[15,16]],["coaching",[17,18,19]],["vidext",[20,21,22]],["cloud",[23,24]],["tamigo",[25,26]],["vip district",[27,28]],["leeters",[29]],["clasing",[30,31]],["foxize",[32,33]],["hastee",[34,35]],["talentware",[36,37]],["wavveup",[38,39]],["beambassador",[40]],["genera",[41]],["kombo",[42]]];
+const tableNumber = (sponsorName: string, k: number) => { const n = TABLE_NUMBERS.find(([key]) => sponsorName.toLowerCase().includes(key))?.[1][k - 1]; if (!n) throw new Error(`Sin mesa física para ${sponsorName} ${k}`); return n; };
 const MUTUAL_ONLY = ["vidext", "payfit"];
 const FRI_ONLY = ["Carolina Maniuc", "Alexi Choucha", "Ramón Amorós"];
 const THU_ONLY_EXACT6 = ["Andrea Varela", "Sonia Arceredillo", "Carlos Carriedo"];
@@ -219,7 +222,7 @@ const KIND_LABEL: Record<string, string> = { FIJA: "Cita fija", SELECCION_DRH: "
 const wb = XLSX.utils.book_new();
 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(r.assignments.map((a) => {
   const sess = r.sessions.find((s) => s.id === a.sessionId)!;
-  return { Día: a.slotId.slice(0, 10), Hora: a.slotId.slice(11), Empresa: empName.get(units.find((u) => u.id === a.unitId)!.accountId), DRH: uName.get(a.unitId), Solución: sName.get(a.sponsorId), Representante: pName.get(sess.repUserId), Mesa: `${sName.get(a.sponsorId)} ${sess.table}`, Sesión: sess.units.length > 1 || a.unitId.includes("+") ? "Grupal" : "Individual", "Tipo match": a.mutual ? "Match mutuo" : drhSel.has(`${units.find((u) => u.id === a.unitId)!.accountId}|${a.sponsorId}`) ? "Selección DRH" : "Selección solución", Tipo: KIND_LABEL[a.kind] };
+  return { Día: a.slotId.slice(0, 10), Hora: a.slotId.slice(11), Empresa: empName.get(units.find((u) => u.id === a.unitId)!.accountId), DRH: uName.get(a.unitId), Solución: sName.get(a.sponsorId), Representante: pName.get(sess.repUserId), Mesa: `Mesa ${tableNumber(sName.get(a.sponsorId)!, sess.table)}`, Sesión: sess.units.length > 1 || a.unitId.includes("+") ? "Grupal" : "Individual", "Tipo match": a.mutual ? "Match mutuo" : drhSel.has(`${units.find((u) => u.id === a.unitId)!.accountId}|${a.sponsorId}`) ? "Selección DRH" : "Selección solución", Tipo: KIND_LABEL[a.kind] };
 }).sort((x, y) => (x.Día + x.Hora + x.Solución).localeCompare(y.Día + y.Hora + y.Solución))), "Reuniones");
 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(r.sponsorReport.map((s) => ({ Solución: s.name, Categoría: s.tier, Garantía: s.guarantee, "Matches mutuos": s.mutualMatches, "Selecciones unilaterales DRH": s.unilateralSelections, Sesiones: s.sessions, "Participaciones DRH": s.participations, "Extras protección DRH": s.protectionExtras, "Extras promocionales": s.promoExtras, Déficit: s.deficit }))), "Por solución");
 XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(units.map((u) => ({ DRH: u.name, Empresa: empName.get(u.accountId), Días: u.slots.length === 14 ? "26 y 27" : u.slots[0]?.startsWith(THU) ? "Solo 26" : u.slots.length ? "Solo 27" : "-", Selecciones: u.selections.length, "Matches mutuos": u.mutual.length, Asignadas: r.unitCount[u.id] ?? 0, Talks: (talkOf.get(u.id) ?? []).join(", "), "Seleccionadas pendientes": u.selections.length <= 6 ? u.selections.filter((s) => !r.assignments.some((a) => a.unitId === u.id && a.sponsorId === s)).map((s) => sName.get(s)).join(", ") : "" }))), "Por DRH");
@@ -244,7 +247,7 @@ if (APPLY) {
     const group = sess.units.length > 1 || u.members.length > 1;
     return u.members.map((m) => ({
       event_id: EVENT, empresa_user_id: m, sponsor_user_id: sess.repUserId, empresa_account_id: u.accountId, sponsor_account_id: a.sponsorId,
-      scheduled_time: madrid(slot.date, slot.start), duration_minutes: 15, room: `${sName.get(a.sponsorId)} · Mesa ${sess.table}`,
+      scheduled_time: madrid(slot.date, slot.start), duration_minutes: 15, room: `Mesa ${tableNumber(sName.get(a.sponsorId)!, sess.table)}`,
       slot: slot.start, bloque: slot.date === THU ? "18:15–19:45" : "10:50–12:50", tipo_sponsor: sponsors.find((s) => s.accountId === a.sponsorId)!.tier,
       tipo_match: a.mutual ? "Match mutuo" : drhSel.has(`${units.find((u) => u.id === a.unitId)!.accountId}|${a.sponsorId}`) ? "Selección DRH" : "Selección solución", status: "confirmed",
       notes: [KIND_LABEL[a.kind], group ? `Sesión grupal ${sess.id}` : null].filter(Boolean).join(" · "),

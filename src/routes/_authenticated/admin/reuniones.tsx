@@ -87,8 +87,7 @@ function AdminReuniones() {
   // Filters
   const [empresaFilter, setEmpresaFilter] = useState<string>("");
   const [sponsorFilter, setSponsorFilter] = useState<string>("");
-  const [viewFilter, setViewFilter] = useState<"all" | "sin-reunion" | "manual" | "agendadas">("all");
-  const [grouped, setGrouped] = useState<boolean>(true);
+  const viewFilter = "agendadas" as "all" | "sin-reunion" | "manual" | "agendadas";
 
   useEffect(() => {
     (async () => {
@@ -166,7 +165,7 @@ function AdminReuniones() {
       if (viewFilter === "manual" && (r.match_id || r.virtual)) return false;
       if (viewFilter === "agendadas" && !r.scheduled_time) return false;
       return true;
-    });
+    }).sort((a, b) => String(a.scheduled_time).localeCompare(String(b.scheduled_time)) || String(a.room ?? "").localeCompare(String(b.room ?? ""), "es", { numeric: true }));
   }, [allRows, empresaFilter, sponsorFilter, viewFilter]);
 
 
@@ -387,25 +386,11 @@ function AdminReuniones() {
         <button onClick={() => setShowAvailability(true)} disabled={!eventId} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs font-bold text-uppercase-wide hover:bg-muted disabled:opacity-50">
           <CalendarCheck className="h-3.5 w-3.5" /> Ver disponibilidad
         </button>
-        <label className="ml-auto inline-flex items-center gap-2 text-xs">
-          <input type="checkbox" checked={grouped} onChange={(e) => setGrouped(e.target.checked)} /> Agrupar por cuenta
-        </label>
-        <span className="text-xs text-muted-foreground">{filtered.length} resultado{filtered.length === 1 ? "" : "s"}</span>
+        <span className="ml-auto text-xs font-bold">{filtered.length} reunión{filtered.length === 1 ? "" : "es"} asignada{filtered.length === 1 ? "" : "s"}</span>
       </div>
-
-      {/* View-switching tabs */}
-      <div className="grid gap-3 md:grid-cols-4">
-        <FilterTab active={viewFilter === "all"} onClick={() => setViewFilter("all")} icon={ClipboardList} label="Todas" count={allRows.length} tone="muted" />
-        <FilterTab active={viewFilter === "sin-reunion"} onClick={() => setViewFilter("sin-reunion")} icon={Heart} label="Matches sin reunión" count={counts.sinReunion} tone="warning" />
-        <FilterTab active={viewFilter === "manual"} onClick={() => setViewFilter("manual")} icon={Wand2} label="Reuniones manuales" count={counts.manual} tone="info" />
-        <FilterTab active={viewFilter === "agendadas"} onClick={() => setViewFilter("agendadas")} icon={CalendarCheck} label="Reuniones agendadas" count={counts.agendadas} tone="success" />
-      </div>
-
 
       {filtered.length === 0 ? (
-        <EmptyState icon={ClipboardList} title="Sin reuniones" hint="Ajusta filtros o crea una reunión manual" />
-      ) : grouped ? (
-        <GroupedMeetingsView rows={filtered} windows={agendaItems} onUpdate={upd} onDelete={del} reload={load} />
+        <EmptyState icon={ClipboardList} title="Sin reuniones" hint="No hay reuniones asignadas con estos filtros" />
       ) : (
         <FlatMeetingsTable rows={filtered} windows={agendaItems} onUpdate={upd} onDelete={del} reload={load} />
       )}
@@ -466,22 +451,15 @@ function FlatMeetingsTable({ rows, windows = [], onUpdate, onDelete, reload, com
       <table className="w-full text-sm">
         <thead className="bg-muted/40 text-[10px] text-uppercase-wide text-muted-foreground"><tr>
           {!compact && <><th className="px-4 py-3 text-left">Empresa</th><th className="px-4 py-3 text-left">Solución</th></>}
-          <th className="px-4 py-3 text-left">Origen</th>
-          <th className="px-4 py-3 text-left">Slot</th><th className="px-4 py-3 text-left">Hora</th><th className="px-4 py-3 text-left">Mesa</th><th className="px-4 py-3 text-left">Estado</th><th />
+          <th className="px-4 py-3 text-left">Slot</th><th className="px-4 py-3 text-left">Hora</th><th className="px-4 py-3 text-left">Mesa</th><th />
         </tr></thead>
         <tbody>
           {rows.map((r) => (
             <tr key={r.id} className="border-t border-border">
               {!compact && <>
-                <td className="px-4 py-3 font-medium text-xs">{r.empresa_name}</td>
-                <td className="px-4 py-3 font-medium text-xs">{r.sponsor_name}</td>
+                <td className="px-4 py-3 text-xs"><div className="font-medium">{r.empresa_name}</div><div className="text-muted-foreground">{r.empresa_responsable?.full_name ?? ""}</div></td>
+                <td className="px-4 py-3 text-xs"><div className="font-medium">{r.sponsor_name}</div><div className="text-muted-foreground">{r.sponsor_responsable?.full_name ?? ""}</div></td>
               </>}
-              <td className="px-4 py-3">
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold text-uppercase-wide ${r.match_id ? "bg-success/15 text-success" : "bg-primary/10 text-primary"}`}>
-                  {r.match_id ? "Match" : "Manual"}
-                </span>
-                {r.virtual && <span className="ml-1 rounded-full bg-warning/15 text-warning px-2 py-0.5 text-[10px] font-bold text-uppercase-wide">Sin asignar</span>}
-              </td>
               <td className="px-4 py-3 whitespace-nowrap">
                 {(() => { const si = r.virtual ? null : getSlotInfo(r.scheduled_time, r.duration_minutes, windows); return si ? (
                   <div><span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold">{si.short}</span><div className="text-[10px] text-muted-foreground mt-0.5">{si.start} – {si.end}</div></div>
@@ -508,17 +486,6 @@ function FlatMeetingsTable({ rows, windows = [], onUpdate, onDelete, reload, com
                   }} className="w-24 rounded-md border border-border bg-input px-2 py-1 text-xs" />
                 )}
               </td>
-              <td className="px-4 py-3">
-                {r.virtual ? <span className="text-[11px] text-muted-foreground">pending</span> : (
-                  <select value={r.status} onChange={async (e) => {
-                    try { await onUpdate({ data: { id: r.id, patch: { status: e.target.value as any } } }); toast.success("Estado actualizado"); reload(); }
-                    catch (err: any) { toast.error(err?.message ?? "Error"); }
-                  }} className="rounded-md border border-border bg-input px-2 py-1 text-xs">
-                    {["pending", "confirmed", "completed", "cancelled"].map((s) => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                )}
-              </td>
-
               <td className="px-4 py-3 text-right">
                 {!r.virtual && (
                   <button onClick={async () => {
