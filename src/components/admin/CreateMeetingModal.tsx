@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { createMeeting, listAllParticipants } from "@/lib/admin-meetings.functions";
 
 type Responsable = { profile_id: string; full_name: string; role?: string | null; email?: string | null };
-type Party = { user_id: string; name: string; responsables: Responsable[] };
+type Party = { account_id: string; user_id: string | null; name: string; responsables: Responsable[] };
 
 export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: string | null; onClose: () => void; onCreated: () => void }) {
   const list = useServerFn(listAllParticipants);
@@ -21,8 +21,8 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
 
   useEffect(() => { list({ data: { event_id: eventId } }).then(setParts as any).catch(() => setParts({ empresas: [], sponsors: [] })); }, [eventId]);
 
-  const empParty = useMemo(() => parts?.empresas.find((e) => e.user_id === empresa), [parts, empresa]);
-  const spParty = useMemo(() => parts?.sponsors.find((s) => s.user_id === sponsor), [parts, sponsor]);
+  const empParty = useMemo(() => parts?.empresas.find((e) => e.account_id === empresa), [parts, empresa]);
+  const spParty = useMemo(() => parts?.sponsors.find((s) => s.account_id === sponsor), [parts, sponsor]);
   const empRespList = empParty?.responsables ?? [];
   const spRespList = spParty?.responsables ?? [];
 
@@ -31,15 +31,18 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
 
   async function submit() {
     if (!empresa || !sponsor) return toast.error("Elige empresa y solución");
+    const ep = empRespList.find((r) => r.profile_id === empResp);
+    const sp = spRespList.find((r) => r.profile_id === spResp);
+    const empresaUserId = ep?.profile_id ?? empParty?.user_id;
+    const sponsorUserId = sp?.profile_id ?? spParty?.user_id;
+    if (!empresaUserId || !sponsorUserId) return toast.error("La cuenta necesita un responsable activo para crear una reunión");
     setBusy(true);
     try {
-      const ep = empRespList.find((r) => r.profile_id === empResp);
-      const sp = spRespList.find((r) => r.profile_id === spResp);
       await create({ data: {
         event_id: eventId,
         // If a responsable is chosen, the meeting belongs to that profile so it shows in their agenda
-        empresa_user_id: ep?.profile_id ?? empresa,
-        sponsor_user_id: sp?.profile_id ?? sponsor,
+        empresa_user_id: empresaUserId,
+        sponsor_user_id: sponsorUserId,
         scheduled_time: time ? new Date(time).toISOString() : null,
         room: room || null,
         empresa_responsable: ep ? { full_name: ep.full_name, role: ep.role ?? "", email: ep.email ?? "" } : null,
@@ -65,7 +68,7 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
           <Field label="Empresa *">
             <select value={empresa} onChange={(e) => setEmpresa(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
               <option value="">— Selecciona empresa —</option>
-              {parts?.empresas.map((e) => <option key={e.user_id} value={e.user_id}>{e.name}</option>)}
+              {parts?.empresas.map((e) => <option key={e.account_id} value={e.account_id} disabled={!e.user_id}>{e.name}{!e.user_id ? " · Sin responsable activo" : ""}</option>)}
             </select>
           </Field>
           {empresa && (
@@ -79,7 +82,7 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
           <Field label="Solución *">
             <select value={sponsor} onChange={(e) => setSponsor(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
               <option value="">— Selecciona solución —</option>
-              {parts?.sponsors.map((s) => <option key={s.user_id} value={s.user_id}>{s.name}</option>)}
+              {parts?.sponsors.map((s) => <option key={s.account_id} value={s.account_id} disabled={!s.user_id}>{s.name}{!s.user_id ? " · Sin responsable activo" : ""}</option>)}
             </select>
           </Field>
           {sponsor && (

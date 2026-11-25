@@ -1,3 +1,10 @@
+# Filtros de reuniones por cuenta
+- [x] Incluir todas las cuentas del evento y resolver sus responsables para filtros, creación y disponibilidad.
+- [x] Validar 23 pruebas de regresión; aplicación sin errores y acceso protegido comprobado.
+- [ ] Verificar las tres vistas con sesión real de superadministrador: Supabase externo sin sesión disponible.
+- Regla revisada: todas las cuentas inscritas deben aparecer, aunque tengan varios responsables o el vínculo antiguo vacío.
+- Código revisado: filtros Empresa/Solución y selección combinada por cuenta; Crear reunión y responsables; Ver disponibilidad y su Excel comparten la lista corregida. Importación y generador ya filtran por cuentas del evento, no por el vínculo antiguo. Lectura de reuniones no excluye cuentas; Matches incluye cuentas sin actividad. No hay tareas automáticas ni funciones de base de datos que alimenten estos selectores; no se modifican registros, permisos ni ajustes.
+
 # Excel de credenciales individuales
 - [x] Descargar una sola fila con las mismas claves al enviar a un participante, también desde editar contraseña.
 - [x] Validar 4 pruebas de credenciales y descarga aislada de Excel con una fila y contraseña exacta; aplicación sin errores.

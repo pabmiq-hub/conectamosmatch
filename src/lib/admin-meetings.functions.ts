@@ -1,9 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { assertSuperAdmin } from "./admin-shared.server";
-import { getEventScope } from "./event-scope.server";
+import { fetchAll, getEventScope } from "./event-scope.server";
+import { buildMeetingParticipants } from "./meeting-participants";
 
 export const listMeetings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -12,6 +12,7 @@ export const listMeetings = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let q = supabaseAdmin.from("meetings_1to1").select("*").order("scheduled_time", { ascending: true, nullsFirst: false });
     if (data.event_id) q = q.eq("event_id", data.event_id);
     const { data: meetings, error } = await q;
@@ -49,6 +50,7 @@ export const autoAssignSlots = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ event_id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: result, error } = await supabaseAdmin.rpc("assign_meeting_slots", { p_event_id: data.event_id });
     if (error) throw new Response(error.message, { status: 400 });
     const row = Array.isArray(result) ? result[0] : result;
@@ -75,6 +77,7 @@ export const updateMeeting = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: m, error } = await supabaseAdmin
       .from("meetings_1to1")
       .update({ ...data.patch, assigned_by: context.userId })
@@ -90,6 +93,7 @@ export const deleteMeeting = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("meetings_1to1").delete().eq("id", data.id);
     if (error) throw new Response(error.message, { status: 400 });
     return { ok: true };
@@ -100,6 +104,7 @@ export const clearMeetings = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ event_id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error, count } = await supabaseAdmin
       .from("meetings_1to1")
       .delete({ count: "exact" })
@@ -130,6 +135,7 @@ export const createMeeting = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // Resolve account ids for both sides so dashboards can filter by account
     const { data: pr } = await supabaseAdmin
       .from("profiles")
@@ -164,47 +170,16 @@ export const listAllParticipants = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ event_id: z.string().uuid().nullable().optional() }).parse(input ?? {}))
   .handler(async ({ context, data: input }) => {
     await assertSuperAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const scope = input.event_id ? await getEventScope(supabaseAdmin, input.event_id) : null;
-    const [{ data: empsRaw }, { data: spsRaw }, { data: profs }] = await Promise.all([
-      supabaseAdmin.from("empresa_profiles").select("id, user_id, company_name").order("company_name"),
-      supabaseAdmin.from("sponsor_profiles").select("id, user_id, company_name").order("company_name"),
-      supabaseAdmin.from("profiles").select("id, account_id, full_name, email, account_role, role, is_active"),
+    const [empresas, sponsors, members] = await Promise.all([
+      fetchAll((from, to) => supabaseAdmin.from("empresa_profiles").select("id, user_id, company_name").order("id").range(from, to)),
+      fetchAll((from, to) => supabaseAdmin.from("sponsor_profiles").select("id, user_id, company_name").order("id").range(from, to)),
+      fetchAll((from, to) => supabaseAdmin.from("profiles").select("id, account_id, full_name, email, account_role, is_active").order("id").range(from, to)),
     ]);
-    // Inside an event only its registered accounts are offered
-    const emps = (empsRaw ?? []).filter((e: any) => !scope || scope.accountIds.has(e.id));
-    const sps = (spsRaw ?? []).filter((s: any) => !scope || scope.accountIds.has(s.id));
-
-    const ownerAccount = new Map<string, string>();
-    const byAccount = new Map<string, any[]>();
-    (profs ?? []).forEach((p: any) => {
-      if (!p.account_id) return;
-      if (p.is_active === false) return;
-      const arr = byAccount.get(p.account_id) ?? [];
-      arr.push(p);
-      byAccount.set(p.account_id, arr);
-      ownerAccount.set(p.id, p.account_id);
-    });
-
-    const buildResp = (ownerUserId: string) => {
-      const accId = ownerAccount.get(ownerUserId);
-      if (!accId) return [];
-      const members = (byAccount.get(accId) ?? []).slice();
-      members.sort((a, b) => (a.account_role === "owner" ? -1 : b.account_role === "owner" ? 1 : 0));
-      return members.map((m: any) => ({
-        profile_id: m.id,
-        full_name: m.full_name ?? "(sin nombre)",
-        role: m.account_role ?? "",
-        email: m.email ?? "",
-      }));
-    };
-
     return {
-      empresas: (emps ?? []).filter((e: any) => e.user_id).map((e: any) => ({
-        user_id: e.user_id, account_id: e.id, name: e.company_name, responsables: buildResp(e.user_id),
-      })),
-      sponsors: (sps ?? []).filter((s: any) => s.user_id).map((s: any) => ({
-        user_id: s.user_id, account_id: s.id, name: s.company_name, responsables: buildResp(s.user_id),
-      })),
+      empresas: buildMeetingParticipants(empresas, members, scope?.accountIds),
+      sponsors: buildMeetingParticipants(sponsors, members, scope?.accountIds),
     };
   });
 
@@ -349,6 +324,7 @@ export const importMeetingsFromExcel = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const [{ data: emps }, { data: sps }, { data: profs }] = await Promise.all([
       supabaseAdmin.from("empresa_profiles").select("id, user_id, company_name"),
@@ -492,6 +468,7 @@ export const generateMeetingProposal = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ event_id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { generateProposal } = await import("./meeting-generator");
     const { data: ev, error: evErr } = await supabaseAdmin.from("events").select("*").eq("id", data.event_id).single();
     if (evErr || !ev) throw new Error("Evento no encontrado");
@@ -577,6 +554,7 @@ export const approveMeetingProposal = createServerFn({ method: "POST" })
   }).parse(input))
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: ev } = await supabaseAdmin.from("events").select("slot_duration_minutes").eq("id", data.event_id).single();
     const ids = Array.from(new Set(data.proposals.flatMap((p) => [p.empresa_user_id, p.sponsor_user_id])));
     const { data: pr } = await supabaseAdmin.from("profiles").select("id, full_name, email, account_role").in("id", ids);
@@ -604,6 +582,7 @@ export const setMeetingsPublished = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ event_id: z.string().uuid(), published: z.boolean() }).parse(input))
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("events")
       .update({ meetings_published: data.published, meetings_published_at: data.published ? new Date().toISOString() : null })

@@ -20,6 +20,14 @@ import autoTable from "jspdf-autotable";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/admin/reuniones")({
+  head: () => ({ meta: [
+    { title: "Reuniones 1to1 · Administración | Conectamos Match" },
+    { name: "description", content: "Gestiona las reuniones, empresas, soluciones y disponibilidad del evento en Conectamos Match." },
+    { property: "og:title", content: "Reuniones 1to1 · Administración | Conectamos Match" },
+    { property: "og:description", content: "Reuniones y disponibilidad de las empresas y soluciones del evento." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: AdminReuniones,
 });
 
@@ -534,8 +542,8 @@ function AvailabilityModal({ onClose, event, agendaItems, meetings, empresas, sp
   event: any;
   agendaItems: any[];
   meetings: any[];
-  empresas: { account_id?: string; user_id: string; name: string }[];
-  sponsors: { account_id?: string; user_id: string; name: string }[];
+  empresas: { account_id?: string; user_id: string | null; name: string }[];
+  sponsors: { account_id?: string; user_id: string | null; name: string }[];
 }) {
   const slotMin = event?.slot_duration_minutes ?? 15;
   const blocks = useMemo(() => {
