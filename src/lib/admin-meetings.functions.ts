@@ -20,15 +20,18 @@ export const listMeetings = createServerFn({ method: "POST" })
 
     // Build account_id -> company_name maps via owners
     const [{ data: emps }, { data: sps }, { data: profs }] = await Promise.all([
-      supabaseAdmin.from("empresa_profiles").select("user_id, company_name"),
-      supabaseAdmin.from("sponsor_profiles").select("user_id, company_name"),
-      supabaseAdmin.from("profiles").select("id, account_id"),
+      fetchAll((f, t) => supabaseAdmin.from("empresa_profiles").select("id, user_id, company_name").range(f, t)).then((data) => ({ data })),
+      fetchAll((f, t) => supabaseAdmin.from("sponsor_profiles").select("id, user_id, company_name").range(f, t)).then((data) => ({ data })),
+      fetchAll((f, t) => supabaseAdmin.from("profiles").select("id, account_id").range(f, t)).then((data) => ({ data })),
     ]);
+    const real = (n: any) => (n && n !== "Mi Empresa" ? n : null);
+    const empById = new Map((emps ?? []).map((e: any) => [e.id, real(e.company_name)]));
+    const spById = new Map((sps ?? []).map((s: any) => [s.id, real(s.company_name)]));
     const profAcc = new Map((profs ?? []).map((p: any) => [p.id, p.account_id]));
     const empAccName = new Map<string, string>();
-    (emps ?? []).forEach((e: any) => { const a = profAcc.get(e.user_id); if (a) empAccName.set(a, e.company_name); });
+    (emps ?? []).forEach((e: any) => { const a = profAcc.get(e.user_id); if (a && real(e.company_name)) empAccName.set(a, e.company_name); });
     const spAccName = new Map<string, string>();
-    (sps ?? []).forEach((s: any) => { const a = profAcc.get(s.user_id); if (a) spAccName.set(a, s.company_name); });
+    (sps ?? []).forEach((s: any) => { const a = profAcc.get(s.user_id); if (a && real(s.company_name)) spAccName.set(a, s.company_name); });
     const empOwnerName = new Map((emps ?? []).map((e: any) => [e.user_id, e.company_name]));
     const spOwnerName = new Map((sps ?? []).map((s: any) => [s.user_id, s.company_name]));
 
@@ -38,8 +41,8 @@ export const listMeetings = createServerFn({ method: "POST" })
         const sAcc = m.sponsor_account_id ?? profAcc.get(m.sponsor_user_id);
         return {
           ...m,
-          empresa_name: (eAcc && empAccName.get(eAcc)) ?? empOwnerName.get(m.empresa_user_id) ?? "—",
-          sponsor_name: (sAcc && spAccName.get(sAcc)) ?? spOwnerName.get(m.sponsor_user_id) ?? "—",
+          empresa_name: (eAcc && (empById.get(eAcc) ?? empAccName.get(eAcc))) || real(empOwnerName.get(m.empresa_user_id)) || "—",
+          sponsor_name: (sAcc && (spById.get(sAcc) ?? spAccName.get(sAcc))) || real(spOwnerName.get(m.sponsor_user_id)) || "—",
         };
       }),
     };
