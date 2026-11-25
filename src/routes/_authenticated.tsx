@@ -21,6 +21,7 @@ function AuthLayout() {
   const [retoActive, setRetoActive] = useState(false);
   const [retoEventId, setRetoEventId] = useState<string | null>(null);
   const [allowAvailability, setAllowAvailability] = useState(false);
+  const [isAccountAdmin, setIsAccountAdmin] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -38,12 +39,13 @@ function AuthLayout() {
       }
       const { data: p } = await supabase
         .from("profiles")
-        .select("id, role, full_name, email, avatar_url")
+        .select("id, role, full_name, email, avatar_url, account_role")
         .eq("id", session.user.id)
         .maybeSingle();
       if (!mounted) return;
       const prof = p as AppProfile | null;
       setProfile(prof);
+      setIsAccountAdmin((p as any)?.account_role === "owner");
 
       // path-based role enforcement
       const path = window.location.pathname;
@@ -86,9 +88,9 @@ function AuthLayout() {
 
   return (
     <div className="min-h-screen flex bg-background">
-      <Sidebar role={profile.role} companyName={companyName} logoUrl={logoUrl} retoActive={retoActive} allowAvailability={allowAvailability} />
+      <Sidebar role={profile.role} companyName={companyName} logoUrl={logoUrl} retoActive={retoActive} allowAvailability={allowAvailability} isAccountAdmin={isAccountAdmin} />
       <div className="flex-1 flex flex-col min-w-0">
-        <Topbar userName={profile.full_name ?? profile.email} role={profile.role} companyName={companyName} logoUrl={logoUrl} retoActive={retoActive} allowAvailability={allowAvailability} title={profile.role === "super_admin" ? "Panel de administración" : ""} />
+        <Topbar userName={profile.full_name ?? profile.email} role={profile.role} companyName={companyName} logoUrl={logoUrl} retoActive={retoActive} allowAvailability={allowAvailability} isAccountAdmin={isAccountAdmin} title={profile.role === "super_admin" ? "Panel de administración" : ""} />
         <main className="flex-1 p-4 md:p-8">
           <Outlet />
         </main>

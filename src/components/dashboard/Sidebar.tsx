@@ -58,8 +58,9 @@ export const navByRole: Record<AppRole, NavItem[]> = {
 };
 
 /** Nav items for a role, adding the Reto 2.700 entry only when the person plays in an active Reto. */
-export function navItemsFor(role: AppRole, retoActive?: boolean, allowAvailability?: boolean): NavItem[] {
-  const all = navByRole[role];
+export function navItemsFor(role: AppRole, retoActive?: boolean, allowAvailability?: boolean, isAccountAdmin?: boolean): NavItem[] {
+  // "Mi Ficha" is only for the account administrator (owner).
+  const all = role === "super_admin" || isAccountAdmin ? navByRole[role] : navByRole[role].filter((it) => !it.to.endsWith("/mi-ficha"));
   // "Mi disponibilidad" only shows when the event lets participants set it.
   const base = role === "super_admin" || allowAvailability ? all : all.filter((it) => !it.to.endsWith("/disponibilidad"));
   if (!retoActive || role === "super_admin") return base;
@@ -224,8 +225,8 @@ function UserNav({ items, onNavigate, large }: { items: NavItem[]; onNavigate?: 
   );
 }
 
-export function Sidebar({ role, companyName, logoUrl, retoActive, allowAvailability }: { role: AppRole; companyName: string; logoUrl?: string | null; retoActive?: boolean; allowAvailability?: boolean }) {
-  const items = navItemsFor(role, retoActive, allowAvailability);
+export function Sidebar({ role, companyName, logoUrl, retoActive, allowAvailability, isAccountAdmin }: { role: AppRole; companyName: string; logoUrl?: string | null; retoActive?: boolean; allowAvailability?: boolean; isAccountAdmin?: boolean }) {
+  const items = navItemsFor(role, retoActive, allowAvailability, isAccountAdmin);
   const roleBadge = role === "super_admin" ? "ADMIN" : role === "sponsor" ? "SPONSOR" : "EMPRESA";
 
   return (

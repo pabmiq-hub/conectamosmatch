@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/dashboard/EmptyState";
@@ -30,13 +30,17 @@ function MiFichaEmpresa() {
   const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
   const [accountId, setAccountId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [allowed, setAllowed] = useState<boolean | null>(null);
 
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
-      const { data: prof } = await supabase.from("profiles").select("account_id").eq("id", user.id).maybeSingle();
+      const { data: prof } = await supabase.from("profiles").select("account_id, account_role, role").eq("id", user.id).maybeSingle();
+      const ok = (prof as any)?.account_role === "owner" || (prof as any)?.role === "super_admin";
+      setAllowed(ok);
+      if (!ok) { toast.error("Solo la persona administradora de la cuenta puede ver y editar la ficha"); return; }
       const accId = prof?.account_id ?? null;
       setAccountId(accId);
       const query = accId
@@ -51,7 +55,7 @@ function MiFichaEmpresa() {
   }, []);
 
   async function save() {
-    if (!userId) return;
+    if (!userId || !allowed) return;
     setBusy(true);
     const tags = form.tags ? form.tags.split(",").map((t: string) => t.trim()).filter(Boolean) : [];
     const baseFields = {
@@ -80,6 +84,8 @@ function MiFichaEmpresa() {
     toast.success("Ficha guardada");
   }
 
+  if (allowed === false) return <Navigate to="/empresa/dashboard" replace />;
+  if (allowed === null) return null;
   return (
     <div className="space-y-6 max-w-4xl">
       <PageHeader title="Mi ficha" subtitle="Datos visibles para soluciones y otras empresas" right={
