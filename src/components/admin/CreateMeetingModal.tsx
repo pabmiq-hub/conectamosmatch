@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { X } from "lucide-react";
 import { toast } from "sonner";
-import { createMeeting, listAllParticipants, getMeetingSlotAvailability } from "@/lib/admin-meetings.functions";
+import { createMeeting, listAllParticipants, getMeetingSlotAvailability, getEventSlotOccupancy } from "@/lib/admin-meetings.functions";
 
 type Responsable = { profile_id: string; full_name: string; role?: string | null; email?: string | null };
 type Party = { account_id: string; user_id: string | null; name: string; responsables: Responsable[] };
@@ -21,6 +21,12 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
   const avail = useServerFn(getMeetingSlotAvailability);
   const [slots, setSlots] = useState<{ iso: string; free: boolean; reasons: string[]; suggested_room: string | null }[] | null>(null);
   const [slotIso, setSlotIso] = useState("");
+  const occFn = useServerFn(getEventSlotOccupancy);
+  const [occ, setOcc] = useState<{ iso: string; empresas: string[]; sponsors: string[] }[]>([]);
+  const [preSlot, setPreSlot] = useState("");
+  useEffect(() => { if (eventId) occFn({ data: { event_id: eventId } }).then((r: any) => setOcc(r.slots)).catch(() => setOcc([])); }, [eventId]);
+  const preOcc = occ.find((o) => o.iso === preSlot);
+  const oneSide = (empresa ? 1 : 0) + (sponsor ? 1 : 0) === 1;
 
   useEffect(() => { list({ data: { event_id: eventId } }).then(setParts as any).catch(() => setParts({ empresas: [], sponsors: [] })); }, [eventId]);
 
@@ -35,7 +41,7 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
     setSlots(null); setSlotIso("");
     if (!eventId || !empresa || !sponsor) return;
     avail({ data: { event_id: eventId, empresa_account_id: empresa, sponsor_account_id: sponsor, empresa_user_id: empResp || null } })
-      .then((r: any) => setSlots(r.slots)).catch(() => setSlots([]));
+      .then((r: any) => { setSlots(r.slots); const m = r.slots.find((x: any) => x.iso === preSlot && x.free); if (m) { setSlotIso(m.iso); if (m.suggested_room) setRoom(m.suggested_room); } }).catch(() => setSlots([]));
   }, [eventId, empresa, sponsor, empResp]);
   const fmt = (iso: string) => new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 
@@ -75,10 +81,22 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
         <p className="text-[11px] text-muted-foreground mb-4">Puedes asignar una reunión entre cualquier empresa y solución, aunque no exista match entre ambos.</p>
 
         <div className="space-y-4">
+          {occ.length > 0 && (
+            <Field label="Empezar por slot (opcional)">
+              <select value={preSlot} onChange={(e) => setPreSlot(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
+                <option value="">— Cualquier slot —</option>
+                {occ.map((o, i) => {
+                  const busy = (empresa && o.empresas.includes(empresa)) || (sponsor && o.sponsors.includes(sponsor));
+                  return <option key={o.iso} value={o.iso} disabled={!!busy}>Slot {i + 1} · {fmt(o.iso)}{busy ? " · Ocupado" : ""}</option>;
+                })}
+              </select>
+              {preSlot && oneSide && <p className="mt-1 text-[11px] text-muted-foreground">En la otra lista solo podrás elegir cuentas libres en ese slot.</p>}
+            </Field>
+          )}
           <Field label="Empresa *">
             <select value={empresa} onChange={(e) => setEmpresa(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
               <option value="">— Selecciona empresa —</option>
-              {parts?.empresas.map((e) => <option key={e.account_id} value={e.account_id} disabled={!e.user_id}>{e.name}{!e.user_id ? " · Sin responsable activo" : ""}</option>)}
+              {parts?.empresas.map((e) => <option key={e.account_id} value={e.account_id} disabled={!e.user_id || !!preOcc?.empresas.includes(e.account_id)}>{e.name}{!e.user_id ? " · Sin responsable activo" : preOcc?.empresas.includes(e.account_id) ? " · Ocupada en ese slot" : ""}</option>)}
             </select>
           </Field>
           {empresa && (
@@ -92,7 +110,7 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
           <Field label="Solución *">
             <select value={sponsor} onChange={(e) => setSponsor(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
               <option value="">— Selecciona solución —</option>
-              {parts?.sponsors.map((s) => <option key={s.account_id} value={s.account_id} disabled={!s.user_id}>{s.name}{!s.user_id ? " · Sin responsable activo" : ""}</option>)}
+              {parts?.sponsors.map((s) => <option key={s.account_id} value={s.account_id} disabled={!s.user_id || !!preOcc?.sponsors.includes(s.account_id)}>{s.name}{!s.user_id ? " · Sin responsable activo" : preOcc?.sponsors.includes(s.account_id) ? " · Ocupada en ese slot" : ""}</option>)}
             </select>
           </Field>
           {sponsor && (

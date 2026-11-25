@@ -678,3 +678,26 @@ export const getMeetingSlotAvailability = createServerFn({ method: "POST" })
     });
     return { slots };
   });
+
+// Occupancy per slot for the whole event (lets the admin pick one side + slot first)
+export const getEventSlotOccupancy = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ event_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const rows = await fetchAll((from, to) =>
+      supabaseAdmin.from("meetings_1to1")
+        .select("id, scheduled_time, empresa_account_id, sponsor_account_id")
+        .eq("event_id", data.event_id).not("scheduled_time", "is", null).neq("status", "cancelled")
+        .order("id").range(from, to));
+    const map = new Map<string, { empresas: Set<string>; sponsors: Set<string> }>();
+    for (const r of rows as any[]) {
+      const iso = new Date(r.scheduled_time).toISOString();
+      const e = map.get(iso) ?? { empresas: new Set(), sponsors: new Set() };
+      if (r.empresa_account_id) e.empresas.add(r.empresa_account_id);
+      if (r.sponsor_account_id) e.sponsors.add(r.sponsor_account_id);
+      map.set(iso, e);
+    }
+    return { slots: [...map.keys()].sort().map((iso) => ({ iso, empresas: [...map.get(iso)!.empresas], sponsors: [...map.get(iso)!.sponsors] })) };
+  });
