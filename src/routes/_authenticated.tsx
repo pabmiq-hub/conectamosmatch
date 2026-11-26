@@ -39,7 +39,7 @@ function AuthLayout() {
       }
       const { data: p } = await supabase
         .from("profiles")
-        .select("id, role, full_name, email, avatar_url, account_role")
+        .select("id, role, full_name, email, avatar_url, account_role, account_id")
         .eq("id", session.user.id)
         .maybeSingle();
       if (!mounted) return;
@@ -57,11 +57,17 @@ function AuthLayout() {
 
       // load company name
       if (role === "empresa") {
-        const { data: e } = await supabase.from("empresa_profiles").select("company_name, logo_url").eq("user_id", session.user.id).maybeSingle();
+        const accId = (p as { account_id?: string | null } | null)?.account_id ?? null;
+        const { data: e } = accId
+          ? await supabase.from("empresa_profiles").select("company_name, logo_url").eq("id", accId).maybeSingle()
+          : await supabase.from("empresa_profiles").select("company_name, logo_url").eq("user_id", session.user.id).maybeSingle();
         setCompanyName(e?.company_name ?? prof?.full_name ?? "Empresa");
         setLogoUrl(e?.logo_url ?? null);
       } else if (role === "sponsor") {
-        const { data: s } = await supabase.from("sponsor_profiles").select("company_name, logo_url").eq("user_id", session.user.id).maybeSingle();
+        const accId = (p as { account_id?: string | null } | null)?.account_id ?? null;
+        const { data: s } = accId
+          ? await supabase.from("sponsor_profiles").select("company_name, logo_url").eq("id", accId).maybeSingle()
+          : await supabase.from("sponsor_profiles").select("company_name, logo_url").eq("user_id", session.user.id).maybeSingle();
         setCompanyName(s?.company_name ?? prof?.full_name ?? "Solución");
         setLogoUrl(s?.logo_url ?? null);
       } else {

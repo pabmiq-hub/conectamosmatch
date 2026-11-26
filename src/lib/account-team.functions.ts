@@ -38,12 +38,13 @@ export const listMyTeam = createServerFn({ method: "GET" })
     const ids = (members ?? []).map((m) => m.id);
     if (!ids.length) return [];
 
-    const partnerColumn = me.role === "empresa" ? "sponsor_user_id" : "empresa_user_id";
+    const partnerColumn = me.role === "empresa" ? "sponsor_account_id" : "empresa_account_id";
+    const partnerRespColumn = me.role === "empresa" ? "sponsor_responsable" : "empresa_responsable";
     const ownColumn = me.role === "empresa" ? "empresa_user_id" : "sponsor_user_id";
 
     const { data: meetings } = await supabase
       .from("meetings_1to1")
-      .select(`id, scheduled_time, room, status, ${ownColumn}, ${partnerColumn}`)
+      .select(`id, scheduled_time, room, status, ${ownColumn}, ${partnerColumn}, ${partnerRespColumn}`)
       .in(ownColumn, ids)
       .order("scheduled_time", { ascending: true });
 
@@ -51,9 +52,9 @@ export const listMyTeam = createServerFn({ method: "GET" })
     const partnerIds = Array.from(new Set((meetings ?? []).map((m: any) => m[partnerColumn]).filter(Boolean)));
     const partnerTable = me.role === "empresa" ? "sponsor_profiles" : "empresa_profiles";
     const { data: partners } = partnerIds.length
-      ? await supabase.from(partnerTable).select("user_id, company_name").in("user_id", partnerIds)
+      ? await supabase.from(partnerTable).select("id, company_name").in("id", partnerIds)
       : { data: [] as any[] };
-    const partnerMap = new Map((partners ?? []).map((p: any) => [p.user_id, p.company_name]));
+    const partnerMap = new Map((partners ?? []).map((p: any) => [p.id, p.company_name]));
 
     return (members ?? []).map((m) => ({
       id: m.id,
@@ -68,7 +69,11 @@ export const listMyTeam = createServerFn({ method: "GET" })
           scheduled_time: mt.scheduled_time,
           room: mt.room,
           status: mt.status,
-          partner_name: partnerMap.get(mt[partnerColumn]) ?? null,
+          partner_name: (() => {
+            const name = partnerMap.get(mt[partnerColumn]) ?? null;
+            const person = mt[partnerRespColumn]?.full_name;
+            return name && person ? `${name} · ${person}` : name;
+          })(),
         })),
     }));
   });
