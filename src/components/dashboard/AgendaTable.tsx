@@ -1,5 +1,5 @@
 import { getSlotInfo } from "@/lib/meeting-slot";
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -91,63 +91,69 @@ export function AgendaTable({ items, meetings = [] }: { items: AgendaRow[]; meet
     arr.sort((a, b) => (a.scheduled_time ?? "").localeCompare(b.scheduled_time ?? ""));
   }
 
+  const toggle = (id: string) => setExpanded((s) => ({ ...s, [id]: !s[id] }));
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {groups.map((g, gi) => (
-        <div key={g.date ?? "none"} className="rounded-xl border border-border bg-card overflow-hidden">
-          <div className="bg-primary/10 border-b border-border px-4 py-3">
-            <div className="font-display text-sm font-bold text-uppercase-wide text-primary">{formatDayHeader(g.date, gi)}</div>
-          </div>
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40">
-              <tr className="text-left text-[10px] text-uppercase-wide text-muted-foreground">
-                <th className="px-4 py-3">Horario</th>
-                <th className="px-4 py-3">Actividad</th>
-                <th className="px-4 py-3">Sala</th>
-                <th className="px-4 py-3">Ponente</th>
-              </tr>
-            </thead>
-            <tbody>
-              {g.items.map((it, i) => {
-                const meta = typeMeta[it.agenda_type ?? ""] ?? { label: "", emoji: "", color: "bg-muted" };
-                const dayMeetings = it.agenda_type === "reuniones_1to1" && g.date ? meetingsByDate.get(g.date) ?? [] : [];
-                const isExpandable = dayMeetings.length > 0;
-                const isOpen = !!expanded[it.id];
-                return (
-                  <Fragment key={it.id}>
-                    <tr
-                      className={`${i % 2 ? "bg-background" : "bg-card"} ${isExpandable ? "cursor-pointer hover:bg-primary/5" : ""}`}
-                      onClick={isExpandable ? () => setExpanded((s) => ({ ...s, [it.id]: !s[it.id] })) : undefined}
-                    >
-                      <td className="px-4 py-3 font-mono text-xs">{it.time_start?.slice(0,5)} – {it.time_end?.slice(0,5)}</td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium flex items-center gap-2">
-                          {isExpandable && (isOpen ? <ChevronDown className="h-4 w-4 text-primary" /> : <ChevronRight className="h-4 w-4 text-primary" />)}
-                          {it.title}
-                        </div>
-                        {meta.label && (
-                          <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wider ${meta.color}`}>
-                            {meta.emoji} {meta.label}
-                          </span>
+        <section key={g.date ?? "none"}>
+          <h3 className="mb-4 font-display text-sm font-bold text-uppercase-wide text-primary">{formatDayHeader(g.date, gi)}</h3>
+          <ol className="relative space-y-3 border-l-2 border-primary/20 pl-4 sm:pl-6">
+            {g.items.map((it) => {
+              const meta = typeMeta[it.agenda_type ?? ""] ?? { label: "", emoji: "", color: "bg-muted" };
+              const dayMeetings = it.agenda_type === "reuniones_1to1" && g.date ? meetingsByDate.get(g.date) ?? [] : [];
+              const desc = (it.description ?? "").trim();
+              const lines = desc ? desc.split(/\n+/).map((l) => l.trim()).filter(Boolean) : [];
+              const summary = lines[0] ?? "";
+              const rest = lines.slice(1);
+              const longSummary = summary.length > 160;
+              const hasDetails = rest.length > 0 || longSummary || dayMeetings.length > 0 || !!it.speaker_role;
+              const isOpen = !!expanded[it.id];
+              return (
+                <li key={it.id} className="relative">
+                  <span className="absolute -left-[23px] top-5 h-3 w-3 rounded-full border-2 border-primary bg-background sm:-left-[31px]" />
+                  <article className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-primary">{it.time_start?.slice(0,5)} – {it.time_end?.slice(0,5)}</span>
+                      {meta.label && (
+                        <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wider ${meta.color}`}>{meta.emoji} {meta.label}</span>
+                      )}
+                    </div>
+                    <h4 className="mt-2 break-words font-display text-base font-semibold leading-snug">{it.title}</h4>
+                    <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      {it.room && <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-primary" />{it.room}</span>}
+                      {it.speaker_name && <span className="font-medium text-foreground">🎙️ {it.speaker_name}</span>}
+                    </div>
+                    {summary && (
+                      <p className={`mt-2 break-words text-sm text-muted-foreground ${longSummary && !isOpen ? "line-clamp-2" : ""}`}>{summary}</p>
+                    )}
+                    {hasDetails && (
+                      <button
+                        type="button"
+                        onClick={() => toggle(it.id)}
+                        aria-expanded={isOpen}
+                        className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                      >
+                        {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        {isOpen ? "Ocultar detalles" : dayMeetings.length > 0 ? `Ver detalles y tus ${dayMeetings.length} reuniones` : "Ver detalles"}
+                      </button>
+                    )}
+                    {hasDetails && isOpen && (
+                      <div className="mt-3 space-y-3 border-t border-border pt-3">
+                        {it.speaker_role && (
+                          <div className="text-xs"><span className="font-medium">{it.speaker_name}</span>{it.speaker_name ? " · " : ""}<span className="text-muted-foreground">{it.speaker_role}</span></div>
                         )}
-                        {isExpandable && <span className="ml-2 text-[10px] text-muted-foreground">({dayMeetings.length} reuniones)</span>}
-                      </td>
-                      <td className="px-4 py-3 text-xs">
-                        {it.room && <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-primary" />{it.room}</span>}
-                      </td>
-                      <td className="px-4 py-3 text-xs">
-                        {it.speaker_name && <div className="font-medium">{it.speaker_name}</div>}
-                        {it.speaker_role && <div className="text-muted-foreground">{it.speaker_role}</div>}
-                      </td>
-                    </tr>
-                    {isExpandable && isOpen && (
-                      <tr key={`${it.id}-meetings`} className="bg-primary/5">
-                        <td colSpan={4} className="px-4 py-3">
+                        {rest.length > 0 && (
+                          <ul className="space-y-1 text-sm text-muted-foreground">
+                            {rest.map((l, li) => <li key={li} className="break-words">{l}</li>)}
+                          </ul>
+                        )}
+                        {dayMeetings.length > 0 && (
                           <div className="space-y-2">
                             <div className="text-[10px] font-bold text-uppercase-wide text-primary">Tus reuniones 1to1 ({dayMeetings.length})</div>
                             <div className="grid gap-2">
                               {dayMeetings.map((m) => (
-                                <div key={m.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-border bg-card px-3 py-2 text-xs">
+                                <div key={m.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-border bg-primary/5 px-3 py-2 text-xs">
                                   <span className="font-mono font-bold text-primary">{meetingTimeLabel(m.scheduled_time)}</span>
                                   {(() => { const si = getSlotInfo(m.scheduled_time, m.duration_minutes, items); return si?.number ? <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold">{si.label}</span> : null; })()}
                                   <span className="font-medium">{m.partner_name ?? "—"}</span>
@@ -158,15 +164,15 @@ export function AgendaTable({ items, meetings = [] }: { items: AgendaRow[]; meet
                               ))}
                             </div>
                           </div>
-                        </td>
-                      </tr>
+                        )}
+                      </div>
                     )}
-                  </Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                  </article>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
       ))}
     </div>
   );
