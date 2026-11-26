@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertSuperAdmin } from "./admin-shared.server";
 import { fetchAll, getEventScope } from "./event-scope.server";
 import { buildMeetingParticipants } from "./meeting-participants";
+import { overlapsTalk } from "./talk-attendance";
 
 export const listMeetings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -148,6 +149,11 @@ export const createMeeting = createServerFn({ method: "POST" })
 
     if (data.scheduled_time && data.event_id) {
       const iso = new Date(data.scheduled_time).toISOString();
+      const { readEventTalks, profileTalks } = await import("./talk-attendance.server");
+      const talks = await readEventTalks(supabaseAdmin, data.event_id);
+      const personTalks = (await Promise.all([data.empresa_user_id, data.sponsor_user_id].map((id) => profileTalks(supabaseAdmin, talks, id)))).flat();
+      const conflict = personTalks.find((t) => overlapsTalk(iso, data.duration_minutes ?? 15, t));
+      if (conflict) throw new Error(`La persona está en ${conflict.id}. Quítala de ese Talk antes de crear la reunión.`);
       const { data: clash } = await supabaseAdmin.from("meetings_1to1")
         .select("empresa_user_id, sponsor_account_id, room")
         .eq("event_id", data.event_id).eq("scheduled_time", iso).neq("status", "cancelled");
@@ -637,6 +643,7 @@ export const getMeetingSlotAvailability = createServerFn({ method: "POST" })
       empresa_account_id: z.string().uuid(),
       sponsor_account_id: z.string().uuid(),
       empresa_user_id: z.string().uuid().nullable().optional(),
+      sponsor_user_id: z.string().uuid().nullable().optional(),
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -652,25 +659,18 @@ export const getMeetingSlotAvailability = createServerFn({ method: "POST" })
     const roomCount = new Map<string, number>();
     for (const r of rows as any[]) if (r.sponsor_account_id === data.sponsor_account_id && r.room) roomCount.set(r.room, (roomCount.get(r.room) ?? 0) + 1);
     const sponsorRooms = [...roomCount.entries()].sort((a, b) => b[1] - a[1]).map(([r]) => r);
-    // Talks (planner output) for the chosen person
-    let talkSlots: { start: string; end: string; id: string }[] = [];
-    if (data.empresa_user_id) {
-      try {
-        const talks = (await import("@/data/talks-conectamos27h.json")).default as any;
-        if (talks.eventId === data.event_id) {
-          const { data: p } = await supabaseAdmin.from("profiles").select("full_name").eq("id", data.empresa_user_id).maybeSingle();
-          const n = (p?.full_name ?? "").trim().toLowerCase();
-          for (const t of talks.talks) if (n && t.people.some((x: any) => x.name.trim().toLowerCase() === n))
-            talkSlots.push({ id: t.id, start: madridIso(t.date, t.start), end: madridIso(t.date, t.end) });
-        }
-      } catch { /* no talks file */ }
-    }
+    // The panel and manual creation use the same durable Talk exclusions.
+    const { readEventTalks, profileTalks } = await import("./talk-attendance.server");
+    const talks = await readEventTalks(supabaseAdmin, data.event_id);
+    const personTalks = (await Promise.all([data.empresa_user_id, data.sponsor_user_id]
+      .filter((id): id is string => !!id)
+      .map((id) => profileTalks(supabaseAdmin, talks, id)))).flat();
     const slots = times.map((iso) => {
       const at = rows.filter((r: any) => new Date(r.scheduled_time).toISOString() === iso) as any[];
       const reasons: string[] = [];
       if (at.some((r) => r.empresa_account_id === data.empresa_account_id && (!data.empresa_user_id || r.empresa_user_id === data.empresa_user_id))) reasons.push("Empresa ocupada");
       if (at.some((r) => r.sponsor_account_id === data.sponsor_account_id)) reasons.push("Solución ocupada");
-      const talk = talkSlots.find((t) => iso >= t.start && iso < t.end);
+      const talk = personTalks.find((t) => overlapsTalk(iso, 15, t));
       if (talk) reasons.push(`En ${talk.id}`);
       const used = new Set(at.map((r) => r.room).filter(Boolean));
       const room = sponsorRooms.find((r) => !used.has(r)) ?? null;

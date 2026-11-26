@@ -1,3 +1,9 @@
+# Quitar personas de Talks
+- [x] Añadir retirada por persona y Talk con confirmación y guardado por evento.
+- [x] Compartir la asistencia efectiva con disponibilidad y creación de reuniones.
+- [x] Validar 15 pruebas de reglas, retirada/lectura, permisos y regresión; aplicación sin errores y acceso protegido.
+- [ ] Verificar retirada y creación reales desde el panel: Supabase externo sin sesión de administrador disponible.
+
 # Filtros de reuniones por cuenta
 - [x] Incluir todas las cuentas del evento y resolver sus responsables para filtros, creación y disponibilidad.
 - [x] Validar 23 pruebas de regresión; aplicación sin errores y acceso protegido comprobado.

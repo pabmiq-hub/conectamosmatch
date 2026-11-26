@@ -480,6 +480,44 @@ export type Database = {
           },
         ]
       }
+      event_talk_exclusions: {
+        Row: {
+          company_name: string
+          created_at: string
+          event_id: string
+          person_name: string
+          removed_by: string
+          talk_id: string
+          updated_at: string
+        }
+        Insert: {
+          company_name: string
+          created_at?: string
+          event_id: string
+          person_name: string
+          removed_by: string
+          talk_id: string
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string
+          created_at?: string
+          event_id?: string
+          person_name?: string
+          removed_by?: string
+          talk_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_talk_exclusions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           allow_participant_availability: boolean

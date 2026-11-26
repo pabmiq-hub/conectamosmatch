@@ -40,9 +40,9 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
   useEffect(() => {
     setSlots(null); setSlotIso("");
     if (!eventId || !empresa || !sponsor) return;
-    avail({ data: { event_id: eventId, empresa_account_id: empresa, sponsor_account_id: sponsor, empresa_user_id: empResp || null } })
+    avail({ data: { event_id: eventId, empresa_account_id: empresa, sponsor_account_id: sponsor, empresa_user_id: empResp || empParty?.user_id || null, sponsor_user_id: spResp || spParty?.user_id || null } })
       .then((r: any) => { setSlots(r.slots); const m = r.slots.find((x: any) => x.iso === preSlot && x.free); if (m) { setSlotIso(m.iso); if (m.suggested_room) setRoom(m.suggested_room); } }).catch(() => setSlots([]));
-  }, [eventId, empresa, sponsor, empResp]);
+  }, [eventId, empresa, sponsor, empResp, spResp, empParty?.user_id, spParty?.user_id]);
   const fmt = (iso: string) => new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 
   async function submit() {
