@@ -154,16 +154,18 @@ export function RetoRanking() {
 function Row({ r, me, unit }: { r: RankedRow; me: string | null; unit: string }) {
   const isMe = r.user_id === me;
   return (
-    <li className={`flex items-center gap-3 px-4 py-2.5 border-b border-border last:border-0 ${isMe ? "bg-primary/10" : ""}`}>
-      <span className="w-7 text-center font-display text-lg font-bold">{r.rank}</span>
+    <li className={`grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-2.5 border-b border-border last:border-0 ${isMe ? "bg-primary/10" : ""}`}>
+      <div className="flex min-w-0 items-center gap-3">
+      <span className="w-7 shrink-0 text-center font-display text-lg font-bold">{r.rank}</span>
       <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-muted flex items-center justify-center text-xs font-bold">
         {r.photo_url ? <img src={r.photo_url} alt={r.display_name} className="h-full w-full object-cover" /> : r.display_name.slice(0, 1).toUpperCase()}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-bold">{r.display_name}{isMe && <span className="ml-1 text-xs text-primary">(tú)</span>}</div>
-        <div className="truncate text-xs text-muted-foreground">{r.company_name ?? "—"}</div>
+        <div className="break-words text-sm font-bold leading-snug">{r.display_name}{isMe && <span className="ml-1 text-xs text-primary">(tú)</span>}</div>
+        <div className="break-words text-xs leading-relaxed text-muted-foreground">{r.company_name ?? "—"}</div>
       </div>
-      <span className="font-display text-lg font-bold">{r.value}<span className="ml-1 text-[10px] text-muted-foreground">{unit}</span></span>
+      </div>
+      <span className="shrink-0 whitespace-nowrap font-display text-lg font-bold">{r.value}<span className="ml-1 text-[10px] text-muted-foreground">{unit}</span></span>
     </li>
   );
 }
@@ -181,11 +183,11 @@ function Stat({ icon: Icon, label, value, hint }: { icon: typeof Trophy; label: 
 function Leader({ icon: Icon, title, row, tie, unit, metric, tag }: { icon: typeof Trophy; title: string; row: ScoreRow | null; tie: boolean; unit: string; metric: "connections" | "points"; tag: string }) {
   return (
     <div className="rounded-xl border border-primary/40 bg-primary/5 p-4">
-      <div className="flex items-center gap-2 text-[10px] font-bold text-uppercase-wide text-primary"><Icon className="h-3.5 w-3.5" /> {title} · {tag}</div>
+      <div className="flex min-w-0 items-start gap-2 text-[10px] font-bold uppercase text-primary"><Icon className="h-3.5 w-3.5 shrink-0" /> <span className="min-w-0 break-words">{title} · {tag}</span></div>
       {row ? (
         <>
-          <div className="mt-1 truncate text-sm font-bold">{row.display_name}{tie && <span className="ml-1 text-xs font-normal text-muted-foreground">(empate)</span>}</div>
-          <div className="truncate text-xs text-muted-foreground">{row.company_name ?? "—"} · {row[metric]} {unit}</div>
+          <div className="mt-1 break-words text-sm font-bold">{row.display_name}{tie && <span className="ml-1 text-xs font-normal text-muted-foreground">(empate)</span>}</div>
+          <div className="break-words text-xs text-muted-foreground">{row.company_name ?? "—"} · {row[metric]} {unit}</div>
         </>
       ) : (
         <div className="mt-1 text-sm text-muted-foreground">Aún sin puntuación</div>

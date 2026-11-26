@@ -1,3 +1,9 @@
+# Legibilidad del Reto
+- [x] Separar información y acciones del álbum; mostrar nombres y empresas completos.
+- [x] Ajustar progreso, ranking, misiones y presentaciones sin cambiar reglas ni datos.
+- [x] Verificar componentes reales con datos ficticios a 320, 375 y 1257 px: sin texto truncado, desbordamientos ni errores; filtros y búsqueda funcionan; 36 pruebas pasan.
+- [ ] Verificar álbum, ranking y misiones con datos reales: no se puede obtener una sesión del Supabase externo; las páginas protegidas redirigen al acceso.
+
 # Disponibilidad por responsable y mesa
 - [x] Permitir reuniones paralelas de una misma cuenta con responsables y mesas distintos.
 - [x] Mostrar responsables ocupados/libres y mantener seleccionables las cuentas con alguien disponible.

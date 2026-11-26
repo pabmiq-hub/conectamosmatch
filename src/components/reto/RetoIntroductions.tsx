@@ -5,6 +5,7 @@ import {
 } from "@/lib/reto";
 import { Check, Clock, Handshake, Search, Sparkles, UserPlus, X } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 export type IntroPerson = {
   user_id: string;
@@ -70,10 +71,10 @@ export function IntroducePanel({ eventId, me, enabled }: { eventId: string; me: 
 
   async function submit() {
     const err = introPickError(me, p1, p2);
-    if (err) { toast.error(err); return; }
+    if (err || !p1 || !p2) { if (err) toast.error(err); return; }
     setBusy(true);
     try {
-      await createIntroduction(eventId, p1!, p2!);
+      await createIntroduction(eventId, p1, p2);
       toast.success("Presentación enviada. Ahora las dos personas tienen que confirmarla.");
       setP1(null); setP2(null);
       await reload();
@@ -93,9 +94,9 @@ export function IntroducePanel({ eventId, me, enabled }: { eventId: string; me: 
 
   return (
     <div className="rounded-xl border border-primary/40 bg-card">
-      <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
-        <div className="flex items-center gap-2 font-bold"><UserPlus className="h-4 w-4 text-primary" /> ¡Te presento!</div>
-        <div className="text-xs font-bold text-uppercase-wide text-muted-foreground">
+      <div className="grid min-w-0 gap-2 border-b border-border px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+        <div className="flex min-w-0 items-center gap-2 font-bold"><UserPlus className="h-4 w-4 shrink-0 text-primary" /> ¡Te presento!</div>
+        <div className="min-w-0 break-words text-xs font-bold uppercase text-muted-foreground">
           {validated}/{INTRO_MAX} validadas · +{validated * INTRO_POINTS}
         </div>
       </div>
@@ -115,10 +116,10 @@ export function IntroducePanel({ eventId, me, enabled }: { eventId: string; me: 
               <PersonPicker label="Persona 1" people={candidates.filter((p) => p.user_id !== p2)} value={p1} onChange={setP1} map={map} />
               <PersonPicker label="Persona 2" people={candidates.filter((p) => p.user_id !== p1)} value={p2} onChange={setP2} map={map} />
             </div>
-            <button disabled={busy || !p1 || !p2} onClick={submit}
-              className="w-full rounded-lg bg-primary px-3 py-2.5 text-xs font-bold text-uppercase-wide text-primary-foreground disabled:opacity-50">
+            <Button disabled={busy || !p1 || !p2} onClick={submit}
+              className="h-auto min-h-9 w-full whitespace-normal break-words px-3 py-2.5 text-xs font-bold uppercase">
               Presentarles · te quedan {left}
-            </button>
+            </Button>
           </div>
         )}
 
@@ -128,8 +129,8 @@ export function IntroducePanel({ eventId, me, enabled }: { eventId: string; me: 
               const miss = introMissing(r);
               return (
                 <li key={r.id} className="rounded-lg border border-border px-3 py-2 text-sm">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0 truncate font-bold">{nameOf(map, r.person_a)} <span className="text-muted-foreground">+</span> {nameOf(map, r.person_b)}</div>
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+                    <div className="min-w-0 break-words font-bold">{nameOf(map, r.person_a)} <span className="text-muted-foreground">+</span> {nameOf(map, r.person_b)}</div>
                     <IntroBadge r={r} />
                   </div>
                   {r.status === "pending" && (
@@ -155,8 +156,8 @@ export function IntroducePanel({ eventId, me, enabled }: { eventId: string; me: 
 
 function Step({ ok, label }: { ok: boolean; label: string }) {
   return (
-    <span className={`inline-flex items-center gap-1 ${ok ? "text-primary font-bold" : ""}`}>
-      {ok ? <Check className="h-3 w-3" /> : <Clock className="h-3 w-3" />} {label}
+    <span className={`inline-flex min-w-0 items-start gap-1 ${ok ? "text-primary font-bold" : ""}`}>
+      {ok ? <Check className="h-3 w-3 shrink-0" /> : <Clock className="h-3 w-3 shrink-0" />} <span className="min-w-0 break-words">{label}</span>
     </span>
   );
 }
@@ -180,34 +181,34 @@ function PersonPicker({ label, people, value, onChange, map }: {
     : [];
   if (selected) {
     return (
-      <div>
+      <div className="min-w-0">
         <div className="mb-1 text-[10px] font-bold text-uppercase-wide text-muted-foreground">{label}</div>
         <div className="flex items-center gap-2 rounded-lg border border-primary bg-primary/5 px-3 py-2">
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-bold">{selected.display_name}</div>
-            <div className="truncate text-xs text-muted-foreground">{selected.company_name}</div>
+            <div className="break-words text-sm font-bold">{selected.display_name}</div>
+            <div className="break-words text-xs text-muted-foreground">{selected.company_name}</div>
           </div>
-          <button aria-label={`Quitar ${selected.display_name}`} onClick={() => onChange(null)} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+          <Button variant="ghost" size="icon" aria-label={`Quitar ${selected.display_name}`} title="Quitar persona" onClick={() => onChange(null)} className="shrink-0 text-muted-foreground"><X className="h-4 w-4" /></Button>
         </div>
       </div>
     );
   }
   return (
-    <div>
+    <div className="min-w-0">
       <div className="mb-1 text-[10px] font-bold text-uppercase-wide text-muted-foreground">{label}</div>
       <div className="relative">
         <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar nombre o empresa…" aria-label={label}
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar personas…" aria-label={`${label}: buscar nombre o empresa`}
           className="w-full rounded-lg border border-border bg-background pl-9 pr-3 py-2 text-sm" />
       </div>
       {results.length > 0 && (
         <ul className="mt-1 overflow-hidden rounded-lg border border-border bg-popover">
           {results.map((p) => (
             <li key={p.user_id}>
-              <button onClick={() => { onChange(p.user_id); setQ(""); }} className="w-full px-3 py-2 text-left text-sm hover:bg-accent">
+              <Button variant="ghost" onClick={() => { onChange(p.user_id); setQ(""); }} className="block h-auto min-h-9 w-full whitespace-normal break-words px-3 py-2 text-left text-sm">
                 <span className="font-bold">{p.display_name}</span>
                 {p.company_name && <span className="text-muted-foreground"> · {p.company_name}</span>}
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
@@ -265,32 +266,34 @@ export function IntroInbox({ eventId, me, people, iMarked, onChanged }: {
           const other = r.person_a === me ? r.person_b : r.person_a;
           const iConfirmed = r.person_a === me ? r.a_confirmed : r.b_confirmed;
           return (
-            <li key={r.id} className="flex flex-wrap items-center gap-3 border-b border-primary/10 px-4 py-3 last:border-0">
+            <li key={r.id} className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 border-b border-primary/10 px-4 py-3 last:border-0 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center">
               <Handshake className="h-5 w-5 shrink-0 text-primary" />
-              <div className="min-w-0 flex-1 text-sm">
+              <div className="min-w-0 break-words text-sm">
                 <b>{nameOf(map, r.introducer_id)}</b> te presenta a <b>{nameOf(map, other)}</b>
                 {map.get(other)?.company_name && <span className="text-muted-foreground"> · {map.get(other)?.company_name}</span>}
                 <div className="text-xs text-muted-foreground">
                   {r.status === "validated" ? "Validada" : iConfirmed ? "Has confirmado · falta la otra persona o vuestra conexión" : "Confirma si os han presentado de verdad"}
                 </div>
               </div>
+              <div className="col-span-2 min-w-0 sm:col-span-1">
               {iConfirmed ? (
-                <button disabled={busy === r.id} onClick={() => act(r, "withdraw")}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-xs font-bold text-uppercase-wide text-muted-foreground disabled:opacity-50">
+                <Button variant="outline" disabled={busy === r.id} onClick={() => act(r, "withdraw")}
+                  className="h-auto min-h-9 whitespace-normal px-3 py-2 text-xs font-bold uppercase text-muted-foreground">
                   Retirar
-                </button>
+                </Button>
               ) : (
                 <div className="flex gap-2">
-                  <button disabled={busy === r.id} onClick={() => act(r, "decline")}
-                    className="rounded-lg border border-border bg-background px-3 py-2 text-xs font-bold text-uppercase-wide text-muted-foreground disabled:opacity-50">
+                  <Button variant="outline" disabled={busy === r.id} onClick={() => act(r, "decline")}
+                    className="h-auto min-h-9 whitespace-normal px-3 py-2 text-xs font-bold uppercase text-muted-foreground">
                     No
-                  </button>
-                  <button disabled={busy === r.id} onClick={() => act(r, "confirm")}
-                    className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-uppercase-wide text-primary-foreground disabled:opacity-50">
+                  </Button>
+                  <Button disabled={busy === r.id} onClick={() => act(r, "confirm")}
+                    className="h-auto min-h-9 whitespace-normal px-3 py-2 text-xs font-bold uppercase">
                     Confirmar
-                  </button>
+                  </Button>
                 </div>
               )}
+              </div>
             </li>
           );
         })}

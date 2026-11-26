@@ -12,12 +12,12 @@ export function EmptyState({ icon: Icon, title, hint }: { icon: LucideIcon; titl
 
 export function PageHeader({ title, subtitle, right }: { title: string; subtitle?: string; right?: React.ReactNode }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h1 className="font-display text-2xl md:text-3xl font-bold text-uppercase-wide">{title}</h1>
+    <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+      <div className="min-w-0">
+        <h1 className="break-words font-display text-2xl md:text-3xl font-bold uppercase">{title}</h1>
         {subtitle && <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>}
       </div>
-      {right}
+      {right && <div className="min-w-0 sm:shrink-0">{right}</div>}
     </div>
   );
 }

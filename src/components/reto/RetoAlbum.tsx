@@ -6,6 +6,7 @@ import { retoDb, connectionStatus, getMyActiveRetoEvent, type RetoStatus } from 
 import { Check, Clock, Handshake, Search, Sparkles, Trophy, UserCheck, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { RetoProgress } from "./RetoProgress";
+import { Button } from "@/components/ui/button";
 import { IntroInbox } from "./RetoIntroductions";
 import { fetchRetoConfig, finalizeIfDue, retoPhase, type RetoConfig } from "@/lib/reto-admin";
 
@@ -194,11 +195,11 @@ export function RetoAlbum() {
 
       <div className="relative">
         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, empresa o cargo…"
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar personas…" aria-label="Buscar por nombre, empresa o cargo"
           className="w-full rounded-lg border border-border bg-card pl-9 pr-3 py-2.5 text-sm" />
       </div>
 
-      <div className="-mx-4 px-4 flex gap-2 overflow-x-auto pb-1 md:mx-0 md:px-0 md:flex-wrap">
+      <div className="flex flex-wrap gap-2">
         {FILTERS.map((f) => (
           <button key={f.key} onClick={() => setFilter(f.key)}
             className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold text-uppercase-wide transition-colors ${
@@ -214,28 +215,34 @@ export function RetoAlbum() {
       ) : (
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {visible.map((p) => (
-            <li key={p.user_id} className="flex min-w-0 items-center gap-3 rounded-xl border border-border bg-card p-3">
+            <li key={p.user_id} className="flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-card p-3">
+              <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-start gap-3">
               <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-muted flex items-center justify-center font-display text-sm font-bold">
                 {p.photo_url ? <img src={p.photo_url} alt={p.display_name} className="h-full w-full object-cover" />
                   : p.display_name.slice(0, 1).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-bold">{p.display_name}</div>
-                <div className="truncate text-xs text-muted-foreground">{[p.cargo, p.company_name].filter(Boolean).join(" · ")}</div>
+                <div className="break-words text-sm font-bold leading-snug">{p.display_name}</div>
+                <div className="mt-1 break-words text-xs leading-relaxed text-muted-foreground">{[p.cargo, p.company_name].filter(Boolean).join(" · ")}</div>
                 <StatusTag status={p.status} />
               </div>
+              </div>
+              <div className="mt-auto grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-t border-border pt-3">
+              <Button asChild variant="outline" size="icon" className="text-muted-foreground">
               <Link to={`${chatBase}/mensajes` as any} search={{ con: p.user_id } as any} aria-label={`Enviar mensaje a ${p.display_name}`} title="Enviar mensaje"
-                className="shrink-0 rounded-lg border border-border bg-background p-2 text-muted-foreground hover:text-primary hover:border-primary transition-colors">
+                >
                 <MessageSquare className="h-4 w-4" />
               </Link>
-              {open && <button disabled={busy === p.user_id} onClick={() => toggle(p)}
-                className={`shrink-0 rounded-lg px-3 py-2 text-xs font-bold text-uppercase-wide transition-colors disabled:opacity-50 ${
+              </Button>
+              {open && <Button variant={out.has(p.user_id) ? "outline" : "default"} disabled={busy === p.user_id} onClick={() => toggle(p)}
+                className={`h-auto min-h-9 min-w-0 whitespace-normal break-words px-3 py-2 text-xs font-bold uppercase leading-snug ${
                   out.has(p.user_id)
                     ? "border border-border bg-background text-muted-foreground hover:text-foreground"
                     : "bg-primary text-primary-foreground hover:opacity-90"
                 }`}>
                 {out.has(p.user_id) ? "Desmarcar" : p.status === "por_confirmar" ? "Confirmar" : "Hemos conectado"}
-              </button>}
+              </Button>}
+              </div>
             </li>
           ))}
         </ul>

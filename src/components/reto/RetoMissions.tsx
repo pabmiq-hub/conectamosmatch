@@ -109,15 +109,15 @@ export function RetoMissions() {
         ) : (
           <ul>
             {log.map((l) => (
-              <li key={l.id} className="flex items-center gap-3 border-b border-border px-4 py-2 last:border-0 text-sm">
-                <span className={`w-12 font-display font-bold ${l.delta >= 0 ? "text-primary" : "text-destructive"}`}>
+              <li key={l.id} className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-start gap-3 border-b border-border px-4 py-2 last:border-0 text-sm sm:grid-cols-[auto_minmax(0,1fr)_auto]">
+                <span className={`w-12 shrink-0 font-display font-bold ${l.delta >= 0 ? "text-primary" : "text-destructive"}`}>
                   {l.delta >= 0 ? `+${l.delta}` : l.delta}
                 </span>
-                <span className="min-w-0 flex-1 truncate">
+                <span className="min-w-0 break-words">
                   {(l.mission_code && titleByCode[l.mission_code]) || l.mission_code}
                   <span className="ml-1 text-xs text-muted-foreground">{l.reason === "award" ? "· conseguida" : "· retirada (se deshizo una conexión o se desactivó)"}</span>
                 </span>
-                <span className="text-xs text-muted-foreground">
+                <span className="col-start-2 text-xs text-muted-foreground sm:col-start-auto">
                   {new Date(l.created_at).toLocaleString("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
                 </span>
               </li>
@@ -140,9 +140,9 @@ function MissionCard({ m }: { m: MissionRow }) {
           {state === "completada" ? <CheckCircle2 className="h-5 w-5" /> : state === "bloqueada" ? <Lock className="h-4 w-4" /> : <Target className="h-4 w-4" />}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <div className="font-bold">{m.title}</div>
-            <span className="shrink-0 font-display text-lg font-bold text-primary">
+          <div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+            <div className="min-w-0 break-words font-bold">{m.title}</div>
+            <span className="min-w-0 break-words font-display text-lg font-bold text-primary">
               +{m.bonus_points}{m.max_awards > 1 && <span className="ml-1 text-[10px] text-muted-foreground">×{m.max_awards} (máx. {missionMaxBonus(m)})</span>}
             </span>
           </div>
