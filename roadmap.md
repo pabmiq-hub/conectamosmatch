@@ -1,3 +1,8 @@
+# Reunión Cloud and Delivery–Adevinta y guardado de slots
+- [ ] Fijar una sola reunión el 27/11 a las 11:20 con Jim Ballesta y Begoña Dominguez, Mesa 23; eliminar la otra entrada pendiente.
+- [x] Unificar ambos selectores de slot y rechazar el envío de slots pendientes de comprobar o no disponibles.
+- [ ] Validar pruebas y comprobar guardado; panel real requiere sesión de administrador no disponible en este Supabase externo.
+
 # Quitar personas de Talks
 - [x] Añadir retirada por persona y Talk con confirmación y guardado por evento.
 - [x] Compartir la asistencia efectiva con disponibilidad y creación de reuniones.

@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { createMeeting, listAllParticipants, getMeetingSlotAvailability, getEventSlotOccupancy } from "@/lib/admin-meetings.functions";
+import { resolveMeetingFormTime } from "@/lib/meeting-form-time";
 
 type Responsable = { profile_id: string; full_name: string; role?: string | null; email?: string | null };
 type Party = { account_id: string; user_id: string | null; name: string; responsables: Responsable[] };
@@ -25,7 +26,7 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
   const [slotIso, setSlotIso] = useState("");
   const occFn = useServerFn(getEventSlotOccupancy);
   const [occ, setOcc] = useState<{ iso: string; empresas: string[]; sponsors: string[] }[]>([]);
-  const [preSlot, setPreSlot] = useState("");
+  const preSlot = slotIso;
   useEffect(() => { if (eventId) occFn({ data: { event_id: eventId } }).then((r: any) => setOcc(r.slots)).catch(() => setOcc([])); }, [eventId]);
   const preOcc = occ.find((o) => o.iso === preSlot);
   const oneSide = (empresa ? 1 : 0) + (sponsor ? 1 : 0) === 1;
@@ -40,14 +41,17 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
   useEffect(() => { setEmpResp(""); }, [empresa]);
   useEffect(() => { setSpResp(""); }, [sponsor]);
   useEffect(() => {
-    setSlots(null); setSlotIso("");
+    let cancelled = false;
+    setSlots(null);
     if (!eventId || (!empresa && !sponsor)) return;
     avail({ data: { event_id: eventId, empresa_account_id: empresa || null, sponsor_account_id: sponsor || null, empresa_user_id: empresa ? (empResp || empParty?.user_id || null) : null, sponsor_user_id: sponsor ? (spResp || spParty?.user_id || null) : null } })
-      .then((r: any) => { setSlots(r.slots); const m = r.slots.find((x: any) => x.iso === preSlot && x.free); if (m) { setSlotIso(m.iso); if (m.suggested_room) setRoom(m.suggested_room); } }).catch(() => setSlots([]));
+      .then((r: any) => { if (!cancelled) setSlots(r.slots); }).catch(() => { if (!cancelled) setSlots([]); });
+    return () => { cancelled = true; };
   }, [eventId, empresa, sponsor, empResp, spResp, empParty?.user_id, spParty?.user_id]);
   const fmt = (iso: string) => new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 
   const chosen = slots?.find((x) => x.iso === slotIso);
+  useEffect(() => { if (chosen?.free && chosen.suggested_room) setRoom(chosen.suggested_room); }, [chosen]);
   const rescue = empresa && sponsor ? chosen?.talk_conflicts ?? [] : [];
   async function submit() {
     if (!empresa || !sponsor) return toast.error("Elige empresa y solución");
@@ -58,12 +62,13 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
     if (!empresaUserId || !sponsorUserId) return toast.error("La cuenta necesita un responsable activo para crear una reunión");
     setBusy(true);
     try {
+      const scheduledTime = resolveMeetingFormTime(slotIso, time, slots);
       await create({ data: {
         event_id: eventId,
         // If a responsable is chosen, the meeting belongs to that profile so it shows in their agenda
         empresa_user_id: empresaUserId,
         sponsor_user_id: sponsorUserId,
-        scheduled_time: slotIso || (time ? new Date(time).toISOString() : null),
+        scheduled_time: scheduledTime,
         room: room || null,
         empresa_responsable: ep ? { full_name: ep.full_name, role: ep.role ?? "", email: ep.email ?? "" } : null,
         sponsor_responsable: sp ? { full_name: sp.full_name, role: sp.role ?? "", email: sp.email ?? "" } : null,
@@ -108,7 +113,7 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
             </Field>
           )}
   </>);
-  const pickSlot = (iso: string, room: string | null) => { setSlotIso(iso); setTime(""); if (room) setRoom(room); if (!(empresa && sponsor)) setPreSlot(occ.some((o) => o.iso === iso) ? iso : ""); };
+  const pickSlot = (iso: string, room: string | null) => { setSlotIso(iso); setTime(""); if (room) setRoom(room); };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
@@ -129,7 +134,7 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
         <div className="space-y-4">
           {occ.length > 0 && (
             <Field label="Empezar por slot (opcional)">
-              <select value={preSlot} onChange={(e) => setPreSlot(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
+              <select value={preSlot} onChange={(e) => pickSlot(e.target.value, null)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
                 <option value="">— Cualquier slot —</option>
                 {occ.map((o, i) => {
                   const busy = (empresa && o.empresas.includes(empresa)) || (sponsor && o.sponsors.includes(sponsor));
@@ -173,7 +178,7 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
 
         <div className="flex gap-2 pt-5">
           <button onClick={onClose} className="flex-1 rounded-md border border-border py-2.5 text-sm font-bold text-uppercase-wide">Cancelar</button>
-          <button onClick={submit} disabled={busy} className="flex-[2] rounded-md bg-primary py-2.5 text-sm font-bold text-primary-foreground text-uppercase-wide disabled:opacity-50">
+          <button onClick={submit} disabled={busy || (!!slotIso && !chosen?.free)} className="flex-[2] rounded-md bg-primary py-2.5 text-sm font-bold text-primary-foreground text-uppercase-wide disabled:opacity-50">
             {busy ? "Creando…" : rescue.length ? "Rescatar y crear reunión" : "Crear reunión"}
           </button>
         </div>
