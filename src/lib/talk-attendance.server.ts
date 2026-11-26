@@ -24,3 +24,14 @@ export async function profileTalks(client: SupabaseClient<Database>, talks: Talk
   if (accountError) throw new Error(accountError.message);
   return talks.filter((t) => personAttendsTalk(t, person.full_name ?? "", account?.company_name));
 }
+/** Talks a profile attends, with the exact Talk entry so it can be excluded (rescued). */
+export async function profileTalkEntries(client: SupabaseClient<Database>, talks: Talk[], userId: string) {
+  const mine = await profileTalks(client, talks, userId);
+  if (!mine.length) return [];
+  const { data: person } = await client.from("profiles").select("full_name").eq("id", userId).maybeSingle();
+  const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+  return mine.flatMap((t) => {
+    const p = t.people.find((x) => norm(x.name) === norm(person?.full_name ?? ""));
+    return p ? [{ talk: t, person: p, user_id: userId }] : [];
+  });
+}

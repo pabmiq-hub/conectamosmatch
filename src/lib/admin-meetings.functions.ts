@@ -135,11 +135,13 @@ export const createMeeting = createServerFn({ method: "POST" })
       duration_minutes: z.number().int().min(5).max(180).optional(),
       empresa_responsable: responsableSchema,
       sponsor_responsable: responsableSchema,
+      rescue_from_talks: z.boolean().optional(),
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let rescues: { talk_id: string; person_name: string; company_name: string }[] = [];
     // Resolve account ids for both sides so dashboards can filter by account
     const { data: pr } = await supabaseAdmin
       .from("profiles")
@@ -149,11 +151,12 @@ export const createMeeting = createServerFn({ method: "POST" })
 
     if (data.scheduled_time && data.event_id) {
       const iso = new Date(data.scheduled_time).toISOString();
-      const { readEventTalks, profileTalks } = await import("./talk-attendance.server");
+      const { readEventTalks, profileTalkEntries } = await import("./talk-attendance.server");
       const talks = await readEventTalks(supabaseAdmin, data.event_id);
-      const personTalks = (await Promise.all([data.empresa_user_id, data.sponsor_user_id].map((id) => profileTalks(supabaseAdmin, talks, id)))).flat();
-      const conflict = personTalks.find((t) => overlapsTalk(iso, data.duration_minutes ?? 15, t));
-      if (conflict) throw new Error(`La persona está en ${conflict.id}. Quítala de ese Talk antes de crear la reunión.`);
+      const entries = (await Promise.all([data.empresa_user_id, data.sponsor_user_id].map((id) => profileTalkEntries(supabaseAdmin, talks, id)))).flat();
+      const conflicts = entries.filter((e) => overlapsTalk(iso, data.duration_minutes ?? 15, e.talk));
+      if (conflicts.length && !data.rescue_from_talks) throw new Error(`${conflicts[0]!.person.name} está en ${conflicts[0]!.talk.id}. Confirma el rescate para moverla a la reunión.`);
+      rescues = conflicts.map((c) => ({ talk_id: c.talk.id, person_name: c.person.name, company_name: c.person.empresa }));
       const { data: clash } = await supabaseAdmin.from("meetings_1to1")
         .select("empresa_user_id, sponsor_account_id, room")
         .eq("event_id", data.event_id).eq("scheduled_time", iso).neq("status", "cancelled");
@@ -184,7 +187,16 @@ export const createMeeting = createServerFn({ method: "POST" })
       .select()
       .single();
     if (error) throw new Response(error.message, { status: 400 });
-    return { meeting: m };
+    if (rescues.length && data.event_id) {
+      const { error: exErr } = await supabaseAdmin.from("event_talk_exclusions").upsert(
+        rescues.map((r) => ({ ...r, event_id: data.event_id!, removed_by: context.userId })),
+        { onConflict: "event_id,talk_id,person_name,company_name", ignoreDuplicates: true });
+      if (exErr) {
+        await supabaseAdmin.from("meetings_1to1").delete().eq("id", m.id);
+        throw new Error("No se ha podido sacar a la persona del Talk; la reunión no se ha creado");
+      }
+    }
+    return { meeting: m, rescued: rescues };
   });
 
 export const listAllParticipants = createServerFn({ method: "POST" })
@@ -640,8 +652,8 @@ export const getMeetingSlotAvailability = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
     z.object({
       event_id: z.string().uuid(),
-      empresa_account_id: z.string().uuid(),
-      sponsor_account_id: z.string().uuid(),
+      empresa_account_id: z.string().uuid().nullable().optional(),
+      sponsor_account_id: z.string().uuid().nullable().optional(),
       empresa_user_id: z.string().uuid().nullable().optional(),
       sponsor_user_id: z.string().uuid().nullable().optional(),
     }).parse(input),
@@ -660,21 +672,21 @@ export const getMeetingSlotAvailability = createServerFn({ method: "POST" })
     for (const r of rows as any[]) if (r.sponsor_account_id === data.sponsor_account_id && r.room) roomCount.set(r.room, (roomCount.get(r.room) ?? 0) + 1);
     const sponsorRooms = [...roomCount.entries()].sort((a, b) => b[1] - a[1]).map(([r]) => r);
     // The panel and manual creation use the same durable Talk exclusions.
-    const { readEventTalks, profileTalks } = await import("./talk-attendance.server");
+    const { readEventTalks, profileTalkEntries } = await import("./talk-attendance.server");
     const talks = await readEventTalks(supabaseAdmin, data.event_id);
-    const personTalks = (await Promise.all([data.empresa_user_id, data.sponsor_user_id]
+    const entries = (await Promise.all([data.empresa_user_id, data.sponsor_user_id]
       .filter((id): id is string => !!id)
-      .map((id) => profileTalks(supabaseAdmin, talks, id)))).flat();
+      .map((id) => profileTalkEntries(supabaseAdmin, talks, id)))).flat();
     const slots = times.map((iso) => {
       const at = rows.filter((r: any) => new Date(r.scheduled_time).toISOString() === iso) as any[];
       const reasons: string[] = [];
-      if (at.some((r) => r.empresa_account_id === data.empresa_account_id && (!data.empresa_user_id || r.empresa_user_id === data.empresa_user_id))) reasons.push("Empresa ocupada");
-      if (at.some((r) => r.sponsor_account_id === data.sponsor_account_id)) reasons.push("Solución ocupada");
-      const talk = personTalks.find((t) => overlapsTalk(iso, 15, t));
-      if (talk) reasons.push(`En ${talk.id}`);
+      if (data.empresa_account_id && at.some((r) => r.empresa_account_id === data.empresa_account_id && (!data.empresa_user_id || r.empresa_user_id === data.empresa_user_id))) reasons.push("Empresa ocupada");
+      if (data.sponsor_account_id && at.some((r) => r.sponsor_account_id === data.sponsor_account_id)) reasons.push("Solución ocupada");
+      // Talk conflicts are rescuable: creating the meeting moves the person out of the Talk.
+      const talk_conflicts = entries.filter((e) => overlapsTalk(iso, 15, e.talk)).map((e) => ({ person: e.person.name, talk: e.talk.id, start: e.talk.start, end: e.talk.end }));
       const used = new Set(at.map((r) => r.room).filter(Boolean));
       const room = sponsorRooms.find((r) => !used.has(r)) ?? null;
-      return { iso, free: reasons.length === 0, reasons, suggested_room: room };
+      return { iso, free: reasons.length === 0, reasons, talk_conflicts, suggested_room: room };
     });
     return { slots };
   });

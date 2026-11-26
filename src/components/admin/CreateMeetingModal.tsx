@@ -19,7 +19,9 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
   const [room, setRoom] = useState("");
   const [busy, setBusy] = useState(false);
   const avail = useServerFn(getMeetingSlotAvailability);
-  const [slots, setSlots] = useState<{ iso: string; free: boolean; reasons: string[]; suggested_room: string | null }[] | null>(null);
+  type TalkConflict = { person: string; talk: string; start: string; end: string };
+  const [slots, setSlots] = useState<{ iso: string; free: boolean; reasons: string[]; talk_conflicts: TalkConflict[]; suggested_room: string | null }[] | null>(null);
+  const [mode, setMode] = useState<"empresa" | "sponsor">("empresa");
   const [slotIso, setSlotIso] = useState("");
   const occFn = useServerFn(getEventSlotOccupancy);
   const [occ, setOcc] = useState<{ iso: string; empresas: string[]; sponsors: string[] }[]>([]);
@@ -39,12 +41,14 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
   useEffect(() => { setSpResp(""); }, [sponsor]);
   useEffect(() => {
     setSlots(null); setSlotIso("");
-    if (!eventId || !empresa || !sponsor) return;
-    avail({ data: { event_id: eventId, empresa_account_id: empresa, sponsor_account_id: sponsor, empresa_user_id: empResp || empParty?.user_id || null, sponsor_user_id: spResp || spParty?.user_id || null } })
+    if (!eventId || (!empresa && !sponsor)) return;
+    avail({ data: { event_id: eventId, empresa_account_id: empresa || null, sponsor_account_id: sponsor || null, empresa_user_id: empresa ? (empResp || empParty?.user_id || null) : null, sponsor_user_id: sponsor ? (spResp || spParty?.user_id || null) : null } })
       .then((r: any) => { setSlots(r.slots); const m = r.slots.find((x: any) => x.iso === preSlot && x.free); if (m) { setSlotIso(m.iso); if (m.suggested_room) setRoom(m.suggested_room); } }).catch(() => setSlots([]));
   }, [eventId, empresa, sponsor, empResp, spResp, empParty?.user_id, spParty?.user_id]);
   const fmt = (iso: string) => new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 
+  const chosen = slots?.find((x) => x.iso === slotIso);
+  const rescue = empresa && sponsor ? chosen?.talk_conflicts ?? [] : [];
   async function submit() {
     if (!empresa || !sponsor) return toast.error("Elige empresa y solución");
     const ep = empRespList.find((r) => r.profile_id === empResp);
@@ -63,36 +67,16 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
         room: room || null,
         empresa_responsable: ep ? { full_name: ep.full_name, role: ep.role ?? "", email: ep.email ?? "" } : null,
         sponsor_responsable: sp ? { full_name: sp.full_name, role: sp.role ?? "", email: sp.email ?? "" } : null,
+        rescue_from_talks: rescue.length > 0,
       }});
-      toast.success("Reunión creada");
+      toast.success(rescue.length ? `Reunión creada · ${rescue.map((r) => r.person).join(", ")} sale de ${rescue.map((r) => r.talk).join(", ")}` : "Reunión creada");
       onCreated();
       onClose();
     } catch (e: any) { toast.error(e?.message ?? "Error"); }
     finally { setBusy(false); }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
-      <div className="w-full max-w-lg rounded-xl border border-border bg-card p-6" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="font-display text-lg font-bold text-uppercase-wide">Crear reunión 1to1</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
-        </div>
-        <p className="text-[11px] text-muted-foreground mb-4">Puedes asignar una reunión entre cualquier empresa y solución, aunque no exista match entre ambos.</p>
-
-        <div className="space-y-4">
-          {occ.length > 0 && (
-            <Field label="Empezar por slot (opcional)">
-              <select value={preSlot} onChange={(e) => setPreSlot(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
-                <option value="">— Cualquier slot —</option>
-                {occ.map((o, i) => {
-                  const busy = (empresa && o.empresas.includes(empresa)) || (sponsor && o.sponsors.includes(sponsor));
-                  return <option key={o.iso} value={o.iso} disabled={!!busy}>Slot {i + 1} · {fmt(o.iso)}{busy ? " · Ocupado" : ""}</option>;
-                })}
-              </select>
-              {preSlot && oneSide && <p className="mt-1 text-[11px] text-muted-foreground">En la otra lista solo podrás elegir cuentas libres en ese slot.</p>}
-            </Field>
-          )}
+  const empBlock = (<>
           <Field label="Empresa *">
             <select value={empresa} onChange={(e) => setEmpresa(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
               <option value="">— Selecciona empresa —</option>
@@ -107,6 +91,8 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
               </select>
             </Field>
           )}
+  </>);
+  const spBlock = (<>
           <Field label="Solución *">
             <select value={sponsor} onChange={(e) => setSponsor(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
               <option value="">— Selecciona solución —</option>
@@ -121,20 +107,59 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
               </select>
             </Field>
           )}
+  </>);
+  const pickSlot = (iso: string, room: string | null) => { setSlotIso(iso); setTime(""); if (room) setRoom(room); if (!(empresa && sponsor)) setPreSlot(occ.some((o) => o.iso === iso) ? iso : ""); };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div className="w-full max-w-lg rounded-xl border border-border bg-card p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="font-display text-lg font-bold text-uppercase-wide">Crear reunión 1to1</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
+        </div>
+        <p className="text-[11px] text-muted-foreground mb-4">Puedes asignar una reunión entre cualquier empresa y solución, aunque no exista match entre ambos.</p>
+
+        <div className="mb-4 grid grid-cols-2 gap-1 rounded-md border border-border p-1">
+          {(["empresa", "sponsor"] as const).map((m) => (
+            <button key={m} type="button" onClick={() => setMode(m)} className={`rounded px-3 py-1.5 text-xs font-bold text-uppercase-wide ${mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+              {m === "empresa" ? "Empezar por empresa" : "Empezar por solución"}
+            </button>
+          ))}
+        </div>
+        <div className="space-y-4">
+          {occ.length > 0 && (
+            <Field label="Empezar por slot (opcional)">
+              <select value={preSlot} onChange={(e) => setPreSlot(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
+                <option value="">— Cualquier slot —</option>
+                {occ.map((o, i) => {
+                  const busy = (empresa && o.empresas.includes(empresa)) || (sponsor && o.sponsors.includes(sponsor));
+                  return <option key={o.iso} value={o.iso} disabled={!!busy}>Slot {i + 1} · {fmt(o.iso)}{busy ? " · Ocupado" : ""}</option>;
+                })}
+              </select>
+              {preSlot && oneSide && <p className="mt-1 text-[11px] text-muted-foreground">En la otra lista solo podrás elegir cuentas libres en ese slot.</p>}
+            </Field>
+          )}
+          {mode === "empresa" ? <>{empBlock}{spBlock}</> : <>{spBlock}{empBlock}</>}
           {slots && slots.length > 0 && (
             <Field label="Slot disponible">
               <div className="grid grid-cols-2 gap-1.5 max-h-56 overflow-y-auto">
                 {slots.map((sl, i) => (
                   <button key={sl.iso} type="button" disabled={!sl.free}
-                    onClick={() => { setSlotIso(sl.iso); setTime(""); if (sl.suggested_room) setRoom(sl.suggested_room); }}
-                    title={sl.reasons.join(" · ")}
-                    className={`rounded-md border px-2 py-1.5 text-left text-xs ${slotIso === sl.iso ? "border-primary bg-primary/15" : sl.free ? "border-border hover:border-primary" : "border-destructive/40 bg-destructive/10 opacity-60 cursor-not-allowed"}`}>
+                    onClick={() => pickSlot(sl.iso, sl.suggested_room)}
+                    title={[...sl.reasons, ...sl.talk_conflicts.map((t) => `${t.person} en ${t.talk}`)].join(" · ")}
+                    className={`rounded-md border px-2 py-1.5 text-left text-xs ${slotIso === sl.iso ? "border-primary bg-primary/15" : !sl.free ? "border-destructive/40 bg-destructive/10 opacity-60 cursor-not-allowed" : sl.talk_conflicts.length ? "border-accent bg-accent/15 hover:border-primary" : "border-border hover:border-primary"}`}>
                     <div className="font-bold">Slot {i + 1} · {fmt(sl.iso)}</div>
-                    <div className={sl.free ? "text-muted-foreground" : "text-destructive"}>{sl.free ? `Libre${sl.suggested_room ? ` · ${sl.suggested_room}` : ""}` : sl.reasons.join(" · ")}</div>
+                    <div className={!sl.free ? "text-destructive" : "text-muted-foreground"}>{!sl.free ? sl.reasons.join(" · ") : sl.talk_conflicts.length ? `⚠ En ${sl.talk_conflicts.map((t) => t.talk).join(", ")} · Rescatable` : `Libre${sl.suggested_room ? ` · ${sl.suggested_room}` : ""}`}</div>
                   </button>
                 ))}
               </div>
             </Field>
+          )}
+          {slots && !(empresa && sponsor) && <p className="text-[11px] text-muted-foreground">Elige un slot y después la {empresa ? "solución" : "empresa"}: solo podrás elegir cuentas libres en ese slot.</p>}
+          {rescue.length > 0 && (
+            <div className="rounded-md border border-accent bg-accent/15 p-3 text-xs">
+              {rescue.map((r) => <p key={r.person + r.talk}><b>{r.person}</b> está en <b>{r.talk}</b> ({r.start}–{r.end}). Al crear la reunión saldrá de la Talk y quedará en esta reunión 1to1.</p>)}
+            </div>
           )}
           <div className="grid grid-cols-2 gap-3">
             <Field label={slots && slots.length ? "u otra hora (opcional)" : "Hora (opcional)"}>
@@ -149,7 +174,7 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
         <div className="flex gap-2 pt-5">
           <button onClick={onClose} className="flex-1 rounded-md border border-border py-2.5 text-sm font-bold text-uppercase-wide">Cancelar</button>
           <button onClick={submit} disabled={busy} className="flex-[2] rounded-md bg-primary py-2.5 text-sm font-bold text-primary-foreground text-uppercase-wide disabled:opacity-50">
-            {busy ? "Creando…" : "Crear reunión"}
+            {busy ? "Creando…" : rescue.length ? "Rescatar y crear reunión" : "Crear reunión"}
           </button>
         </div>
       </div>
