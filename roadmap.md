@@ -1,3 +1,10 @@
+# Disponibilidad por responsable y mesa
+- [x] Permitir reuniones paralelas de una misma cuenta con responsables y mesas distintos.
+- [x] Mostrar responsables ocupados/libres y mantener seleccionables las cuentas con alguien disponible.
+- [x] Asignar automáticamente un responsable libre y sugerir una mesa libre de la solución.
+- [x] Validar 20 pruebas, tipos y compilación; datos reales de ADP/Job&Talent leídos sin modificar reuniones.
+- [ ] Comprobar creación desde el panel real: sesión de administrador no disponible en este Supabase externo.
+
 # Reunión Cloud and Delivery–Adevinta y guardado de slots
 - [x] Fijar una sola reunión el 27/11 a las 11:20 con Jim Ballesta y Begoña Dominguez, Mesa 23; eliminar la otra entrada pendiente. Guardado leído de vuelta en Madrid.
 - [x] Unificar ambos selectores de slot y rechazar el envío de slots pendientes de comprobar o no disponibles.

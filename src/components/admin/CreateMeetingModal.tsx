@@ -4,9 +4,30 @@ import { X } from "lucide-react";
 import { toast } from "sonner";
 import { createMeeting, listAllParticipants, getMeetingSlotAvailability, getEventSlotOccupancy } from "@/lib/admin-meetings.functions";
 import { resolveMeetingFormTime } from "@/lib/meeting-form-time";
+import { accountHasFreeResponsible, type MeetingSide } from "@/lib/meeting-availability";
 
 type Responsable = { profile_id: string; full_name: string; role?: string | null; email?: string | null };
 type Party = { account_id: string; user_id: string | null; name: string; responsables: Responsable[] };
+type TalkConflict = { person: string; talk: string; start: string; end: string };
+type SlotAvailability = {
+  iso: string;
+  free: boolean;
+  reasons: string[];
+  talk_conflicts: TalkConflict[];
+  suggested_room: string | null;
+  available_empresa_users: string[];
+  available_sponsor_users: string[];
+};
+type ResponsibleOccupancy = { user_id: string; room: string | null };
+type EventOccupancy = {
+  iso: string;
+  empresas: string[];
+  sponsors: string[];
+  empresa_users: string[];
+  sponsor_users: string[];
+  empresa_responsables: ResponsibleOccupancy[];
+  sponsor_responsables: ResponsibleOccupancy[];
+};
 
 export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: string | null; onClose: () => void; onCreated: () => void }) {
   const list = useServerFn(listAllParticipants);
@@ -20,12 +41,11 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
   const [room, setRoom] = useState("");
   const [busy, setBusy] = useState(false);
   const avail = useServerFn(getMeetingSlotAvailability);
-  type TalkConflict = { person: string; talk: string; start: string; end: string };
-  const [slots, setSlots] = useState<{ iso: string; free: boolean; reasons: string[]; talk_conflicts: TalkConflict[]; suggested_room: string | null }[] | null>(null);
+  const [slots, setSlots] = useState<SlotAvailability[] | null>(null);
   const [mode, setMode] = useState<"empresa" | "sponsor">("empresa");
   const [slotIso, setSlotIso] = useState("");
   const occFn = useServerFn(getEventSlotOccupancy);
-  const [occ, setOcc] = useState<{ iso: string; empresas: string[]; sponsors: string[] }[]>([]);
+  const [occ, setOcc] = useState<EventOccupancy[]>([]);
   const preSlot = slotIso;
   useEffect(() => { if (eventId) occFn({ data: { event_id: eventId } }).then((r: any) => setOcc(r.slots)).catch(() => setOcc([])); }, [eventId]);
   const preOcc = occ.find((o) => o.iso === preSlot);
@@ -44,28 +64,58 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
     let cancelled = false;
     setSlots(null);
     if (!eventId || (!empresa && !sponsor)) return;
-    avail({ data: { event_id: eventId, empresa_account_id: empresa || null, sponsor_account_id: sponsor || null, empresa_user_id: empresa ? (empResp || empParty?.user_id || null) : null, sponsor_user_id: sponsor ? (spResp || spParty?.user_id || null) : null } })
+    avail({ data: {
+      event_id: eventId,
+      empresa_account_id: empresa || null,
+      sponsor_account_id: sponsor || null,
+      empresa_user_id: empResp || null,
+      sponsor_user_id: spResp || null,
+    } })
       .then((r: any) => { if (!cancelled) setSlots(r.slots); }).catch(() => { if (!cancelled) setSlots([]); });
     return () => { cancelled = true; };
-  }, [eventId, empresa, sponsor, empResp, spResp, empParty?.user_id, spParty?.user_id]);
+  }, [eventId, empresa, sponsor, empResp, spResp]);
   const fmt = (iso: string) => new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 
   const chosen = slots?.find((x) => x.iso === slotIso);
   useEffect(() => { if (chosen?.free && chosen.suggested_room) setRoom(chosen.suggested_room); }, [chosen]);
   const rescue = empresa && sponsor ? chosen?.talk_conflicts ?? [] : [];
+
+  const busyIds = (side: MeetingSide) => new Set(preOcc?.[side === "empresa" ? "empresa_users" : "sponsor_users"] ?? []);
+  const accountBusy = (party: Party, side: MeetingSide) => !!preOcc && !accountHasFreeResponsible(party, busyIds(side));
+  const accountSlotLabel = (party: Party, side: MeetingSide) => {
+    if (!preOcc) return "";
+    const busy = busyIds(side);
+    if (!accountHasFreeResponsible(party, busy)) return " · Equipo ocupado en ese slot";
+    const ids = party.responsables.map((person) => person.profile_id);
+    return ids.some((id) => busy.has(id)) ? " · Algunos responsables ocupados" : "";
+  };
+  const responsibleOccupancy = (side: MeetingSide, profileId: string) =>
+    preOcc?.[side === "empresa" ? "empresa_responsables" : "sponsor_responsables"].find((person) => person.user_id === profileId);
+  const roomLabel = (value: string | null) => value ? (/^mesa\b/i.test(value) ? value : `Mesa ${value}`) : "";
+  const responsibleLabel = (person: Responsable, side: MeetingSide) => {
+    const base = `${person.full_name}${person.role ? ` · ${person.role}` : ""}`;
+    if (!preOcc) return base;
+    const occupied = responsibleOccupancy(side, person.profile_id);
+    return `${base}${occupied ? ` · Ocupado/a${occupied.room ? ` en ${roomLabel(occupied.room)}` : ""}` : " · Disponible"}`;
+  };
+  const automaticResponsibleName = (side: MeetingSide) => {
+    const id = side === "empresa" ? chosen?.available_empresa_users[0] : chosen?.available_sponsor_users[0];
+    return (side === "empresa" ? empRespList : spRespList).find((person) => person.profile_id === id)?.full_name ?? null;
+  };
+
   async function submit() {
     if (!empresa || !sponsor) return toast.error("Elige empresa y solución");
-    const ep = empRespList.find((r) => r.profile_id === empResp);
-    const sp = spRespList.find((r) => r.profile_id === spResp);
-    const empresaUserId = ep?.profile_id ?? empParty?.user_id;
-    const sponsorUserId = sp?.profile_id ?? spParty?.user_id;
+    const empresaUserId = empResp || chosen?.available_empresa_users[0] || empParty?.user_id;
+    const sponsorUserId = spResp || chosen?.available_sponsor_users[0] || spParty?.user_id;
     if (!empresaUserId || !sponsorUserId) return toast.error("La cuenta necesita un responsable activo para crear una reunión");
+    const ep = empRespList.find((r) => r.profile_id === empresaUserId);
+    const sp = spRespList.find((r) => r.profile_id === sponsorUserId);
     setBusy(true);
     try {
       const scheduledTime = resolveMeetingFormTime(slotIso, time, slots);
       await create({ data: {
         event_id: eventId,
-        // If a responsable is chosen, the meeting belongs to that profile so it shows in their agenda
+        // The selected or first free responsable owns the meeting in their agenda.
         empresa_user_id: empresaUserId,
         sponsor_user_id: sponsorUserId,
         scheduled_time: scheduledTime,
@@ -82,38 +132,40 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
   }
 
   const empBlock = (<>
-          <Field label="Empresa *">
-            <select value={empresa} onChange={(e) => setEmpresa(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
-              <option value="">— Selecciona empresa —</option>
-              {parts?.empresas.map((e) => <option key={e.account_id} value={e.account_id} disabled={!e.user_id || !!preOcc?.empresas.includes(e.account_id)}>{e.name}{!e.user_id ? " · Sin responsable activo" : preOcc?.empresas.includes(e.account_id) ? " · Ocupada en ese slot" : ""}</option>)}
-            </select>
-          </Field>
-          {empresa && (
-            <Field label="Responsable empresa (opcional)">
-              <select value={empResp} onChange={(e) => setEmpResp(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
-                <option value="">{empRespList.length === 0 ? "— Sin equipo registrado —" : "— Sin asignar —"}</option>
-                {empRespList.map((r) => <option key={r.profile_id} value={r.profile_id}>{r.full_name}{r.role ? ` · ${r.role}` : ""}</option>)}
-              </select>
-            </Field>
-          )}
+    <Field label="Empresa *">
+      <select value={empresa} onChange={(e) => setEmpresa(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
+        <option value="">— Selecciona empresa —</option>
+        {parts?.empresas.map((party) => <option key={party.account_id} value={party.account_id} disabled={!party.user_id || accountBusy(party, "empresa")}>{party.name}{!party.user_id ? " · Sin responsable activo" : accountSlotLabel(party, "empresa")}</option>)}
+      </select>
+    </Field>
+    {empresa && (
+      <Field label="Responsable empresa (opcional)">
+        <select value={empResp} onChange={(e) => setEmpResp(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
+          <option value="">{empRespList.length === 0 ? "— Sin equipo registrado —" : "— Asignar automáticamente —"}</option>
+          {empRespList.map((person) => <option key={person.profile_id} value={person.profile_id} disabled={!!responsibleOccupancy("empresa", person.profile_id)}>{responsibleLabel(person, "empresa")}</option>)}
+        </select>
+        {!empResp && automaticResponsibleName("empresa") && <p className="mt-1 text-[11px] text-muted-foreground">Se asignará a {automaticResponsibleName("empresa")}, que está libre.</p>}
+      </Field>
+    )}
   </>);
   const spBlock = (<>
-          <Field label="Solución *">
-            <select value={sponsor} onChange={(e) => setSponsor(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
-              <option value="">— Selecciona solución —</option>
-              {parts?.sponsors.map((s) => <option key={s.account_id} value={s.account_id} disabled={!s.user_id || !!preOcc?.sponsors.includes(s.account_id)}>{s.name}{!s.user_id ? " · Sin responsable activo" : preOcc?.sponsors.includes(s.account_id) ? " · Ocupada en ese slot" : ""}</option>)}
-            </select>
-          </Field>
-          {sponsor && (
-            <Field label="Responsable solución (opcional)">
-              <select value={spResp} onChange={(e) => setSpResp(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
-                <option value="">{spRespList.length === 0 ? "— Sin equipo registrado —" : "— Sin asignar —"}</option>
-                {spRespList.map((r) => <option key={r.profile_id} value={r.profile_id}>{r.full_name}{r.role ? ` · ${r.role}` : ""}</option>)}
-              </select>
-            </Field>
-          )}
+    <Field label="Solución *">
+      <select value={sponsor} onChange={(e) => setSponsor(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
+        <option value="">— Selecciona solución —</option>
+        {parts?.sponsors.map((party) => <option key={party.account_id} value={party.account_id} disabled={!party.user_id || accountBusy(party, "sponsor")}>{party.name}{!party.user_id ? " · Sin responsable activo" : accountSlotLabel(party, "sponsor")}</option>)}
+      </select>
+    </Field>
+    {sponsor && (
+      <Field label="Responsable solución (opcional)">
+        <select value={spResp} onChange={(e) => setSpResp(e.target.value)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
+          <option value="">{spRespList.length === 0 ? "— Sin equipo registrado —" : "— Asignar automáticamente —"}</option>
+          {spRespList.map((person) => <option key={person.profile_id} value={person.profile_id} disabled={!!responsibleOccupancy("sponsor", person.profile_id)}>{responsibleLabel(person, "sponsor")}</option>)}
+        </select>
+        {!spResp && automaticResponsibleName("sponsor") && <p className="mt-1 text-[11px] text-muted-foreground">Se asignará a {automaticResponsibleName("sponsor")}, que está libre.</p>}
+      </Field>
+    )}
   </>);
-  const pickSlot = (iso: string, room: string | null) => { setSlotIso(iso); setTime(""); if (room) setRoom(room); };
+  const pickSlot = (iso: string, suggestedRoom: string | null) => { setSlotIso(iso); setTime(""); setRoom(suggestedRoom ?? ""); };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
@@ -137,11 +189,11 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
               <select value={preSlot} onChange={(e) => pickSlot(e.target.value, null)} className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm">
                 <option value="">— Cualquier slot —</option>
                 {occ.map((o, i) => {
-                  const busy = (empresa && o.empresas.includes(empresa)) || (sponsor && o.sponsors.includes(sponsor));
-                  return <option key={o.iso} value={o.iso} disabled={!!busy}>Slot {i + 1} · {fmt(o.iso)}{busy ? " · Ocupado" : ""}</option>;
+                  const occupied = (empParty && accountBusy(empParty, "empresa")) || (spParty && accountBusy(spParty, "sponsor"));
+                  return <option key={o.iso} value={o.iso} disabled={!!occupied}>Slot {i + 1} · {fmt(o.iso)}{occupied ? " · Equipo ocupado" : ""}</option>;
                 })}
               </select>
-              {preSlot && oneSide && <p className="mt-1 text-[11px] text-muted-foreground">En la otra lista solo podrás elegir cuentas libres en ese slot.</p>}
+              {preSlot && oneSide && <p className="mt-1 text-[11px] text-muted-foreground">En la otra lista solo podrás elegir cuentas con algún responsable libre en ese slot.</p>}
             </Field>
           )}
           {mode === "empresa" ? <>{empBlock}{spBlock}</> : <>{spBlock}{empBlock}</>}
@@ -160,7 +212,7 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
               </div>
             </Field>
           )}
-          {slots && !(empresa && sponsor) && <p className="text-[11px] text-muted-foreground">Elige un slot y después la {empresa ? "solución" : "empresa"}: solo podrás elegir cuentas libres en ese slot.</p>}
+          {slots && !(empresa && sponsor) && <p className="text-[11px] text-muted-foreground">Elige un slot y después la {empresa ? "solución" : "empresa"}: solo podrás elegir cuentas con algún responsable libre en ese slot.</p>}
           {rescue.length > 0 && (
             <div className="rounded-md border border-accent bg-accent/15 p-3 text-xs">
               {rescue.map((r) => <p key={r.person + r.talk}><b>{r.person}</b> está en <b>{r.talk}</b> ({r.start}–{r.end}). Al crear la reunión saldrá de la Talk y quedará en esta reunión 1to1.</p>)}
@@ -172,6 +224,7 @@ export function CreateMeetingModal({ eventId, onClose, onCreated }: { eventId: s
             </Field>
             <Field label="Mesa (opcional)">
               <input value={room} onChange={(e) => setRoom(e.target.value)} placeholder="Mesa 1" className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm" />
+              {chosen?.suggested_room && <p className="mt-1 text-[11px] text-muted-foreground">Mesa libre sugerida para esta solución.</p>}
             </Field>
           </div>
         </div>

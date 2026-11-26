@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertSuperAdmin } from "./admin-shared.server";
 import { fetchAll, getEventScope } from "./event-scope.server";
 import { buildMeetingParticipants } from "./meeting-participants";
+import { availableResponsibleIds, findMeetingConflict, firstFreeRoom } from "./meeting-availability";
 import { overlapsTalk } from "./talk-attendance";
 
 export const listMeetings = createServerFn({ method: "POST" })
@@ -158,14 +159,17 @@ export const createMeeting = createServerFn({ method: "POST" })
       if (conflicts.length && !data.rescue_from_talks) throw new Error(`${conflicts[0]!.person.name} está en ${conflicts[0]!.talk.id}. Confirma el rescate para moverla a la reunión.`);
       rescues = conflicts.map((c) => ({ talk_id: c.talk.id, person_name: c.person.name, company_name: c.person.empresa }));
       const { data: clash } = await supabaseAdmin.from("meetings_1to1")
-        .select("empresa_user_id, sponsor_account_id, room")
+        .select("scheduled_time, empresa_user_id, sponsor_user_id, room")
         .eq("event_id", data.event_id).eq("scheduled_time", iso).neq("status", "cancelled");
-      const spAcc = accMap.get(data.sponsor_user_id);
-      for (const c of clash ?? []) {
-        if (c.empresa_user_id === data.empresa_user_id) throw new Response("La persona de la empresa ya tiene una reunión a esa hora", { status: 409 });
-        if (spAcc && c.sponsor_account_id === spAcc) throw new Response("La solución ya tiene una reunión a esa hora", { status: 409 });
-        if (data.room && c.room && c.room.trim().toLowerCase() === data.room.trim().toLowerCase()) throw new Response("Esa mesa ya está ocupada a esa hora", { status: 409 });
-      }
+      const conflict = findMeetingConflict(clash ?? [], {
+        scheduled_time: iso,
+        empresa_user_id: data.empresa_user_id,
+        sponsor_user_id: data.sponsor_user_id,
+        room: data.room,
+      });
+      if (conflict === "empresa_person") throw new Response("La persona de la empresa ya tiene una reunión a esa hora", { status: 409 });
+      if (conflict === "sponsor_person") throw new Response("La persona de la solución ya tiene una reunión a esa hora", { status: 409 });
+      if (conflict === "room") throw new Response("Esa mesa ya está ocupada a esa hora", { status: 409 });
     }
 
     const { data: m, error } = await supabaseAdmin
@@ -663,30 +667,58 @@ export const getMeetingSlotAvailability = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const rows = await fetchAll((from, to) =>
       supabaseAdmin.from("meetings_1to1")
-        .select("id, scheduled_time, room, empresa_account_id, sponsor_account_id, empresa_user_id, status")
+        .select("id, scheduled_time, room, empresa_account_id, sponsor_account_id, empresa_user_id, sponsor_user_id, status")
         .eq("event_id", data.event_id).not("scheduled_time", "is", null).neq("status", "cancelled")
         .order("id").range(from, to));
     const times = Array.from(new Set(rows.map((r: any) => new Date(r.scheduled_time).toISOString()))).sort();
-    // Sponsor's usual tables, most used first
+
+    // Sponsor's usual tables, most used first. A parallel meeting can use another one.
     const roomCount = new Map<string, number>();
     for (const r of rows as any[]) if (r.sponsor_account_id === data.sponsor_account_id && r.room) roomCount.set(r.room, (roomCount.get(r.room) ?? 0) + 1);
     const sponsorRooms = [...roomCount.entries()].sort((a, b) => b[1] - a[1]).map(([r]) => r);
+
+    const accountIds = [data.empresa_account_id, data.sponsor_account_id].filter((id): id is string => !!id);
+    const members = accountIds.length ? await fetchAll((from, to) =>
+      supabaseAdmin.from("profiles").select("id, account_id, is_active")
+        .in("account_id", accountIds).order("id").range(from, to)) : [];
+    const teamIds = (accountId: string | null | undefined) => accountId
+      ? (members as any[]).filter((member) => member.account_id === accountId && member.is_active !== false).map((member) => member.id)
+      : [];
+    // An explicit responsable restricts the check to that person; otherwise any active teammate can attend.
+    const empresaCandidates = data.empresa_user_id ? [data.empresa_user_id] : teamIds(data.empresa_account_id);
+    const sponsorCandidates = data.sponsor_user_id ? [data.sponsor_user_id] : teamIds(data.sponsor_account_id);
+
     // The panel and manual creation use the same durable Talk exclusions.
     const { readEventTalks, profileTalkEntries } = await import("./talk-attendance.server");
     const talks = await readEventTalks(supabaseAdmin, data.event_id);
-    const entries = (await Promise.all([data.empresa_user_id, data.sponsor_user_id]
-      .filter((id): id is string => !!id)
-      .map((id) => profileTalkEntries(supabaseAdmin, talks, id)))).flat();
+    const talkEntriesByUser = new Map<string, any[]>();
+    await Promise.all([...new Set([...empresaCandidates, ...sponsorCandidates])].map(async (id) => {
+      talkEntriesByUser.set(id, await profileTalkEntries(supabaseAdmin, talks, id));
+    }));
+
     const slots = times.map((iso) => {
-      const at = rows.filter((r: any) => new Date(r.scheduled_time).toISOString() === iso) as any[];
+      const availableEmpresaUsers = data.empresa_account_id ? availableResponsibleIds(rows, iso, "empresa", empresaCandidates) : [];
+      const availableSponsorUsers = data.sponsor_account_id ? availableResponsibleIds(rows, iso, "sponsor", sponsorCandidates) : [];
       const reasons: string[] = [];
-      if (data.empresa_account_id && at.some((r) => r.empresa_account_id === data.empresa_account_id && (!data.empresa_user_id || r.empresa_user_id === data.empresa_user_id))) reasons.push("Empresa ocupada");
-      if (data.sponsor_account_id && at.some((r) => r.sponsor_account_id === data.sponsor_account_id)) reasons.push("Solución ocupada");
-      // Talk conflicts are rescuable: creating the meeting moves the person out of the Talk.
-      const talk_conflicts = entries.filter((e) => overlapsTalk(iso, 15, e.talk)).map((e) => ({ person: e.person.name, talk: e.talk.id, start: e.talk.start, end: e.talk.end }));
-      const used = new Set(at.map((r) => r.room).filter(Boolean));
-      const room = sponsorRooms.find((r) => !used.has(r)) ?? null;
-      return { iso, free: reasons.length === 0, reasons, talk_conflicts, suggested_room: room };
+      if (data.empresa_account_id && !empresaCandidates.length) reasons.push("Empresa sin responsable activo");
+      else if (data.empresa_account_id && !availableEmpresaUsers.length) reasons.push(data.empresa_user_id ? "Responsable empresa ocupado" : "Equipo empresa ocupado");
+      if (data.sponsor_account_id && !sponsorCandidates.length) reasons.push("Solución sin responsable activo");
+      else if (data.sponsor_account_id && !availableSponsorUsers.length) reasons.push(data.sponsor_user_id ? "Responsable solución ocupado" : "Equipo solución ocupado");
+
+      // Talk conflicts belong to the people who would actually be assigned and remain rescuable.
+      const assignedUsers = [availableEmpresaUsers[0], availableSponsorUsers[0]].filter((id): id is string => !!id);
+      const talk_conflicts = assignedUsers.flatMap((id) => talkEntriesByUser.get(id) ?? [])
+        .filter((entry) => overlapsTalk(iso, 15, entry.talk))
+        .map((entry) => ({ person: entry.person.name, talk: entry.talk.id, start: entry.talk.start, end: entry.talk.end }));
+      return {
+        iso,
+        free: reasons.length === 0,
+        reasons,
+        talk_conflicts,
+        suggested_room: firstFreeRoom(rows, iso, sponsorRooms),
+        available_empresa_users: availableEmpresaUsers,
+        available_sponsor_users: availableSponsorUsers,
+      };
     });
     return { slots };
   });
@@ -700,16 +732,47 @@ export const getEventSlotOccupancy = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const rows = await fetchAll((from, to) =>
       supabaseAdmin.from("meetings_1to1")
-        .select("id, scheduled_time, empresa_account_id, sponsor_account_id")
+        .select("id, scheduled_time, room, empresa_account_id, sponsor_account_id, empresa_user_id, sponsor_user_id")
         .eq("event_id", data.event_id).not("scheduled_time", "is", null).neq("status", "cancelled")
         .order("id").range(from, to));
-    const map = new Map<string, { empresas: Set<string>; sponsors: Set<string> }>();
+    type ResponsibleOccupancy = { user_id: string; room: string | null };
+    type SlotOccupancy = {
+      empresas: Set<string>;
+      sponsors: Set<string>;
+      empresa_users: Set<string>;
+      sponsor_users: Set<string>;
+      empresa_responsables: ResponsibleOccupancy[];
+      sponsor_responsables: ResponsibleOccupancy[];
+    };
+    const map = new Map<string, SlotOccupancy>();
     for (const r of rows as any[]) {
       const iso = new Date(r.scheduled_time).toISOString();
-      const e = map.get(iso) ?? { empresas: new Set(), sponsors: new Set() };
-      if (r.empresa_account_id) e.empresas.add(r.empresa_account_id);
-      if (r.sponsor_account_id) e.sponsors.add(r.sponsor_account_id);
-      map.set(iso, e);
+      const slot = map.get(iso) ?? {
+        empresas: new Set<string>(), sponsors: new Set<string>(),
+        empresa_users: new Set<string>(), sponsor_users: new Set<string>(),
+        empresa_responsables: [], sponsor_responsables: [],
+      };
+      if (r.empresa_account_id) slot.empresas.add(r.empresa_account_id);
+      if (r.sponsor_account_id) slot.sponsors.add(r.sponsor_account_id);
+      if (r.empresa_user_id) {
+        slot.empresa_users.add(r.empresa_user_id);
+        slot.empresa_responsables.push({ user_id: r.empresa_user_id, room: r.room ?? null });
+      }
+      if (r.sponsor_user_id) {
+        slot.sponsor_users.add(r.sponsor_user_id);
+        slot.sponsor_responsables.push({ user_id: r.sponsor_user_id, room: r.room ?? null });
+      }
+      map.set(iso, slot);
     }
-    return { slots: [...map.keys()].sort().map((iso) => ({ iso, empresas: [...map.get(iso)!.empresas], sponsors: [...map.get(iso)!.sponsors] })) };
+    return {
+      slots: [...map.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([iso, slot]) => ({
+        iso,
+        empresas: [...slot.empresas],
+        sponsors: [...slot.sponsors],
+        empresa_users: [...slot.empresa_users],
+        sponsor_users: [...slot.sponsor_users],
+        empresa_responsables: slot.empresa_responsables,
+        sponsor_responsables: slot.sponsor_responsables,
+      })),
+    };
   });
